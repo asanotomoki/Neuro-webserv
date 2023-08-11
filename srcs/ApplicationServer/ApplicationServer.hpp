@@ -3,6 +3,7 @@
 
 #include <string>
 
+//大脳クラス
 class ApplicationServer
 {
 public:

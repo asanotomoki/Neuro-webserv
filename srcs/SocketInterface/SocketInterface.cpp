@@ -6,6 +6,7 @@
 #include <cstring>
 #include <iostream>
 
+//脊髄クラス
 SocketInterface::SocketInterface(const std::vector<std::string>& ports)
     : _numPorts(ports.size())
 {

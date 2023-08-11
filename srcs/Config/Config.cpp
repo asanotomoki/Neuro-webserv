@@ -7,6 +7,7 @@
 #include <fcntl.h>
 #include <iostream>
 
+//遺伝子クラス
 Config::Config(const std::string& filepath)
 {
     ConfigParser parser(*this);

@@ -1,6 +1,6 @@
 CC = g++
 INC	= -I ./srcs/Config/ -I ./srcs/SocketInterface/ -I ./srcs/ApplicationServer/
-CFLAGS = -Wall -std=c++11 $(INC)
+CFLAGS = -Wall -std=c++98 $(INC)
 LDFLAGS =
 SOURCES = srcs/main.cpp srcs/Config/Config.cpp srcs/SocketInterface/SocketInterface.cpp \
 			srcs/ApplicationServer/ApplicationServer.cpp \

@@ -15,15 +15,18 @@ SocketInterface::SocketInterface(const std::vector<std::string>& ports)
 
 SocketInterface::~SocketInterface()
 {
-    for (int socket : _sockets)
+    for (size_t i = 0; i < _sockets.size(); ++i) {
+        int socket = _sockets[i];
         close(socket);
+    }
     delete[] _pollfds;
 }
 
 void SocketInterface::createSockets(const std::vector<std::string>& ports)
 {
-    for (const auto& port : ports)
+    for (std::vector<std::string>::const_iterator it = ports.begin(); it != ports.end(); ++it) 
     {
+        const std::string& port = *it;
         int sockfd = socket(AF_INET, SOCK_STREAM, 0);
         sockaddr_in addr;
         addr.sin_family = AF_INET;
@@ -31,7 +34,7 @@ void SocketInterface::createSockets(const std::vector<std::string>& ports)
         addr.sin_addr.s_addr = INADDR_ANY;
         
         bind(sockfd, (struct sockaddr*)&addr, sizeof(addr));
-        ::listen(sockfd, 5); // Allow up to 5 pending connections
+        ::listen(sockfd,4); // Allow up to 5 pending connections
 
         _sockets.push_back(sockfd);
     }

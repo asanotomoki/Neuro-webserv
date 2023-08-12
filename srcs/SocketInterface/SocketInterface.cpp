@@ -1,16 +1,17 @@
 #include "SocketInterface.hpp"
 #include "ApplicationServer.hpp"
+#include "HttpContext.hpp"
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <unistd.h>
 #include <cstring>
 #include <iostream>
 
-//脊髄クラス
-SocketInterface::SocketInterface(const std::vector<std::string>& ports)
-    : _numPorts(ports.size())
+SocketInterface::SocketInterface(Config* config)
+    : _config(config)
 {
-    createSockets(ports);
+    _numPorts = config->getPorts().size();
+    createSockets(config->getPorts());
     setupPoll();
 }
 
@@ -89,6 +90,23 @@ void SocketInterface::acceptConnection()
     }
 }
 
+std::pair<std::string, std::string> SocketInterface::parseHostAndPortFromRequest(const std::string& request) {
+    std::string hostHeader = "Host: ";
+    size_t start = request.find(hostHeader);
+    if (start == std::string::npos) return {"", ""}; // Host header not found
+    start += hostHeader.length();
+    size_t end = request.find("\r\n", start);
+    if (end == std::string::npos) return {"", ""}; // Malformed request
+
+    std::string hostPortStr = request.substr(start, end - start);
+    size_t colonPos = hostPortStr.find(':');
+    if (colonPos != std::string::npos) {
+        return {hostPortStr.substr(0, colonPos), hostPortStr.substr(colonPos + 1)};
+    } else {
+        return {hostPortStr, ""}; // No port specified
+    }
+}
+
 void SocketInterface::handleClient(int clientSocket)
 {
     char buffer[1024];
@@ -99,11 +117,20 @@ void SocketInterface::handleClient(int clientSocket)
         return;
     }
 
-    buffer[bytesRead] = '\0'; // NULL終端
+    buffer[bytesRead] = '\0';
+    std::string request(buffer);
 
+    // ホストとポートの解析
+    std::pair<std::string, std::string> hostPort = parseHostAndPortFromRequest(request);
+
+    // ここで、ホストとポートを使用して、適切なServerContextを取得
+    const ServerContext& serverContext = _config->getHttpContext().getServerContext(hostPort.second, hostPort.first);
+
+    // responseの生成
     ApplicationServer appServer;
-    std::string response = appServer.processRequest(buffer);
-    
+    std::string response = appServer.processRequest(buffer, serverContext);
+ 
     write(clientSocket, response.c_str(), response.length()); // レスポンスの送信
     close(clientSocket); // ソケットのクローズ
 }
+

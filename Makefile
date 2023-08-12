@@ -6,7 +6,8 @@ SOURCES = srcs/main.cpp srcs/Config/Config.cpp srcs/SocketInterface/SocketInterf
 			srcs/ApplicationServer/ApplicationServer.cpp \
 			srcs/Config/ConfigError.cpp srcs/Config/ConfigParser.cpp \
 			srcs/Config/HTTPContext.cpp srcs/Config/LocationContext.cpp \
-			srcs/Config/ServerContext.cpp
+			srcs/Config/ServerContext.cpp srcs/ApplicationServer/RequestParser.cpp \
+			srcs/ApplicationServer/StaticFileReader.cpp
 OBJECTS_DIR = objs
 OBJECTS = $(addprefix $(OBJECTS_DIR)/, $(SOURCES:.cpp=.o))
 EXECUTABLE = server

@@ -10,14 +10,13 @@ int main(int argc, char** argv)
     }
 
     // 設定ファイルを読み込む
-    Config* config = new Config(configFilePath);
+    Config(static_cast<std::string>(configFilePath));
 
     // ソケットインターフェースを作成
-    SocketInterface socketInterface(config->getPorts());
+    SocketInterface socketInterface(Config::getInstance());
 
     // クライアントからの接続を待機
     socketInterface.listen();
 
-    delete config;
     return 0;
 }

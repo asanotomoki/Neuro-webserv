@@ -2,7 +2,6 @@
 #define CONFIGPARSER_HPP
 
 #include "Config.hpp"
-#include "HTTPContext.hpp"
 #include "LocationContext.hpp"
 #include "ServerContext.hpp"
 #include <string>

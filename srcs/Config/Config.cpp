@@ -7,17 +7,16 @@
 #include <fcntl.h>
 #include <iostream>
 
-//遺伝子クラス
 Config::Config(const std::string& filepath)
 {
     ConfigParser parser(*this);
     parser.parseFile(filepath);
     _instance = this;
 
-	std::string errorLogFile = getHTTPBlock().getErrorLogFile();
+	std::string errorLogFile = getHttpContext().getErrorLogFile();
 	redirectErrorLogFile(errorLogFile);
 
-	std::string accessLogFile = getHTTPBlock().getAccessLogFile();
+	std::string accessLogFile = getHttpContext().getAccessLogFile();
 	redirectAccessLogFile(accessLogFile);
 }
 
@@ -43,7 +42,7 @@ int	Config::redirectErrorLogFile(std::string errorLogFile)
 	return (0);
 }
 
-int Config::redirectAccessLogFile(std::string  accessLogFile)
+int Config::redirectAccessLogFile(std::string accessLogFile)
 {
 	if (accessLogFile.empty())
 		return (0);
@@ -69,9 +68,9 @@ Config::~Config()
 {
 }
 
-HTTPContext& Config::getHTTPBlock()
+HttpContext& Config::getHttpContext()
 {
-    return _http_block;
+    return _http_context;
 }
 
 Config* Config::getInstance()
@@ -84,8 +83,8 @@ const std::vector<std::string> Config::getPorts()
 	std::vector<std::string> ports;
 
 	
-	for (std::map<std::string, std::vector<ServerContext> >::const_iterator it = _http_block.getServers().begin();
-			it != _http_block.getServers().end(); ++it)
+	for (std::map<std::string, std::vector<ServerContext> >::const_iterator it = _http_context.getServers().begin();
+			it != _http_context.getServers().end(); ++it)
 	{
 		for (std::vector<ServerContext>::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2)
 		{

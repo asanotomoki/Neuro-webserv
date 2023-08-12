@@ -1,20 +1,21 @@
 #ifndef CONFIG_HPP
 #define CONFIG_HPP
 
-#include "HTTPContext.hpp"
+#include "HttpContext.hpp"
 #include <string>
 
+//遺伝子クラス
 class Config
 {
     public:
         Config(const std::string& filepath);
-		HTTPContext& getHTTPBlock();
+		HttpContext& getHttpContext();
 		static Config* getInstance();
 		const std::vector<std::string> getPorts();
 		~Config();
 
     private:
-        HTTPContext _http_block;
+        HttpContext _http_context;
         static Config* _instance;
 		int	redirectErrorLogFile(std::string errorLogFile);
         int redirectAccessLogFile(std::string accessLogFile);

@@ -8,7 +8,7 @@ class ApplicationServer
 {
 public:
     ApplicationServer();
-    std::string processRequest(const std::string& request);
+    std::string processRequest(const std::string& request, Config* config);
     ~ApplicationServer();
 };
 

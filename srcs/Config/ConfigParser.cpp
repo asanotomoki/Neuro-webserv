@@ -1,5 +1,5 @@
 #include "ConfigParser.hpp"
-#include "HTTPContext.hpp"
+#include "HttpContext.hpp"
 #include "ServerContext.hpp"
 #include "LocationContext.hpp"
 #include "ConfigError.hpp"
@@ -175,15 +175,15 @@ void ConfigParser::setHTTPContext()
 		else if (_directive_type == SERVER)
 		{
 			ServerContext server_context = getServerContext();
-			_config.getHTTPBlock().addServerBlock(server_context);
+			_config.getHttpContext().addServerBlock(server_context);
 		}
 		else
 		{
-			_config.getHTTPBlock().addDirective(_one_line[0], _one_line[1], _filepath, _line_number + 1);
+			_config.getHttpContext().addDirective(_one_line[0], _one_line[1], _filepath, _line_number + 1);
 			if (_directive_type == ACCESS_LOG)
-				_config.getHTTPBlock().setAccessLogFile(_one_line[1]);
+				_config.getHttpContext().setAccessLogFile(_one_line[1]);
 			else if (_directive_type == ERROR_LOG)
-				_config.getHTTPBlock().setErrorLogFile(_one_line[1]);
+				_config.getHttpContext().setErrorLogFile(_one_line[1]);
 		}
 		setContextType(HTTP_CONTEXT);
 	}

@@ -5,11 +5,11 @@
 #include <string>
 #include <map>
 
-class HTTPContext
+class HttpContext
 {
 	public:
-		HTTPContext();
-		~HTTPContext();
+		HttpContext();
+		~HttpContext();
 		void setAccessLogFile(const std::string& accessLogFile);
 		void setErrorLogFile(const std::string& errorLogFile);
 		void addServerBlock(const ServerContext& server);

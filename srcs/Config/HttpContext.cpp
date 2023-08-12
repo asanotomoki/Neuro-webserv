@@ -1,28 +1,28 @@
-#include "HTTPContext.hpp"
+#include "HttpContext.hpp"
 #include "ConfigError.hpp"
 #include <stdexcept>
 
-HTTPContext::HTTPContext():
+HttpContext::HttpContext():
 	_accessLogFile(""),
 	_errorLogFile("")
 {
 }
 
-HTTPContext::~HTTPContext()
+HttpContext::~HttpContext()
 {
 }
 
-void HTTPContext::setAccessLogFile(const std::string& accessLogFile)
+void HttpContext::setAccessLogFile(const std::string& accessLogFile)
 {
 	_accessLogFile = accessLogFile;
 }
 
-void HTTPContext::setErrorLogFile(const std::string& errorLogFile)
+void HttpContext::setErrorLogFile(const std::string& errorLogFile)
 {
 	_errorLogFile = errorLogFile;
 }
 
-void HTTPContext::addServerBlock(const ServerContext& server)
+void HttpContext::addServerBlock(const ServerContext& server)
 {
     std::string listen = server.getListen();
     std::map<std::string, std::vector<ServerContext> >::iterator
@@ -52,7 +52,7 @@ void HTTPContext::addServerBlock(const ServerContext& server)
     }
 }
 
-void HTTPContext::addDirective(const std::string& directive, const std::string& value,
+void HttpContext::addDirective(const std::string& directive, const std::string& value,
                                 const std::string& filepath, int line_number)
 {
     // check if directive is not duplicated
@@ -62,17 +62,17 @@ void HTTPContext::addDirective(const std::string& directive, const std::string& 
     _directives.insert(std::make_pair(directive, value));
 }
 
-const std::string& HTTPContext::getAccessLogFile() const
+const std::string& HttpContext::getAccessLogFile() const
 {
 	return _accessLogFile;
 }
 
-const std::string& HTTPContext::getErrorLogFile() const
+const std::string& HttpContext::getErrorLogFile() const
 {
 	return _errorLogFile;
 }
 
-const std::map<std::string, std::vector<ServerContext> >& HTTPContext::getServers() const
+const std::map<std::string, std::vector<ServerContext> >& HttpContext::getServers() const
 {
     return _servers;
 }
@@ -84,7 +84,7 @@ const std::map<std::string, std::vector<ServerContext> >& HTTPContext::getServer
  * @param port
  * @return const std::vector<ServerContext>&
  */
-const ServerContext& HTTPContext::getServerContext(const std::string& port, const std::string& host) const
+const ServerContext& HttpContext::getServerContext(const std::string& port, const std::string& host) const
 {
     try
     {

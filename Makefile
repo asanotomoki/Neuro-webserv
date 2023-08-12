@@ -31,5 +31,5 @@ re: fclean all
 pull:
 	git pull origin 11
 
-.PHONY: all clean fclean re
+.PHONY: all clean fclean re pull
 

@@ -1,7 +1,6 @@
 #ifndef CONFIG_HPP
 #define CONFIG_HPP
 
-#include "HttpContext.hpp"
 #include <string>
 
 //遺伝子クラス
@@ -9,7 +8,6 @@ class Config
 {
     public:
         Config(const std::string& filepath);
-		HttpContext& getHttpContext();
 		const std::vector<std::string> getPorts();
 		~Config();
         void addServerContext(const ServerContext& server);

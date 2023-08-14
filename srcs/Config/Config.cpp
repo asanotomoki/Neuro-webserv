@@ -75,6 +75,8 @@ HttpContext& Config::getHttpContext()
 
 Config* Config::getInstance()
 {
+	// if (_instance == NULL)
+	// 	_instance = new Config("./conf/default.conf");
     return _instance;
 }
 
@@ -82,7 +84,6 @@ const std::vector<std::string> Config::getPorts()
 {
 	std::vector<std::string> ports;
 
-	
 	for (std::map<std::string, std::vector<ServerContext> >::const_iterator it = _http_context.getServers().begin();
 			it != _http_context.getServers().end(); ++it)
 	{

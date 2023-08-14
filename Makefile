@@ -5,12 +5,12 @@ LDFLAGS =
 SOURCES = srcs/main.cpp srcs/Config/Config.cpp srcs/SocketInterface/SocketInterface.cpp \
 			srcs/ApplicationServer/ApplicationServer.cpp \
 			srcs/Config/ConfigError.cpp srcs/Config/ConfigParser.cpp \
-			srcs/Config/HTTPContext.cpp srcs/Config/LocationContext.cpp \
-			srcs/Config/ServerContext.cpp srcs/ApplicationServer/RequestParser.cpp \
-			srcs/ApplicationServer/StaticFileReader.cpp
+			srcs/Config/HttpContext.cpp srcs/Config/LocationContext.cpp \
+			srcs/Config/ServerContext.cpp srcs/ApplicationServer/RequestParser/RequestParser.cpp \
+			srcs/ApplicationServer/StaticFileReader/StaticFileReader.cpp
 OBJECTS_DIR = objs
 OBJECTS = $(addprefix $(OBJECTS_DIR)/, $(SOURCES:.cpp=.o))
-EXECUTABLE = server
+EXECUTABLE = NeuroSrv
 
 all: $(EXECUTABLE)
 

@@ -1,7 +1,7 @@
 #ifndef STATIC_FILE_READER_HPP
 #define STATIC_FILE_READER_HPP
 
-#include "Config.hpp"
+#include "ServerContext.hpp"
 #include <string>
 #include <vector>
 
@@ -9,7 +9,7 @@
 class StaticFileReader {
 public:
     StaticFileReader();
-    std::string readFile(const std::string& path, Config* config);
+    std::string readFile(const std::string& path, const ServerContext& server_context);
     ~StaticFileReader();
 };
 

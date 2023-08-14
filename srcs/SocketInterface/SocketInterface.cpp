@@ -1,6 +1,7 @@
 #include "SocketInterface.hpp"
 #include "ApplicationServer.hpp"
 #include "HttpContext.hpp"
+#include "ServerContext.hpp"
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <unistd.h>
@@ -10,8 +11,8 @@
 SocketInterface::SocketInterface(Config* config)
     : _config(config)
 {
-    _numPorts = config->getPorts().size();
-    createSockets(config->getPorts());
+    _numPorts = _config->getPorts().size();
+    createSockets(_config->getPorts());
     setupPoll();
 }
 
@@ -67,7 +68,7 @@ void SocketInterface::listen()
                 }
             }
         }
-        // エラー処理
+        std::cerr << "poll() returned " << ret << std::endl; // TODO: remove
     }
 }
 
@@ -85,7 +86,7 @@ void SocketInterface::acceptConnection()
             {
                 handleClient(clientFd);
             }
-            // エラー処理
+            std::cerr << "accept() returned " << clientFd << std::endl; // TODO: remove
         }
     }
 }
@@ -113,7 +114,7 @@ void SocketInterface::handleClient(int clientSocket)
     ssize_t bytesRead = read(clientSocket, buffer, sizeof(buffer) - 1);
     
     if (bytesRead < 0) {
-        // エラー処理
+        std::cerr << "read() returned " << bytesRead << std::endl;
         return;
     }
 

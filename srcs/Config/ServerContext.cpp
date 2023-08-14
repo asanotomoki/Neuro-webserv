@@ -53,13 +53,6 @@ const std::vector<LocationContext>& ServerContext::getLocations() const
 	return _locations;
 }
 
-/**
- * @brief パスパターンが一致するLocationブロックを取得する
- *
- * @detail 前方一致で検索し、最も長い文字列がマッチしたLocationブロックを返す
- * @param path 検索するパスパターン
- * @return const LocationContext& 一致したLocationContext
- */
 const LocationContext& ServerContext::getLocationContext(const std::string& path) const
 {
 	const std::vector<LocationContext>& locations = getLocations();
@@ -90,14 +83,6 @@ const LocationContext& ServerContext::getLocationContext(const std::string& path
 	return *matched;
 }
 
-/**
- * @brief 前方一致する最大の長さを求める
- *
- * @detail
- * @param str1 比較する文字列1
- * @param str2 比較する文字列2
- * @return std::string::size_type 前方一致する最大の長さ
- */
 std::string::size_type ServerContext::getMaxPrefixLength(const std::string& str1, const std::string& str2) const
 {
 	std::string::size_type i = 0;

@@ -20,9 +20,6 @@ class ConfigParser
 
     enum DirectiveType
     {
-        HTTP,
-        ACCESS_LOG,
-        ERROR_LOG,
         SERVER,
         LISTEN,
         SERVER_NAME,
@@ -40,13 +37,12 @@ class ConfigParser
         void getAndSplitLines(std::ifstream& ifs);
         std::vector<std::string> splitLine(const std::string& line);
         void parseLines();
-        void setHTTPContext();
-        const ServerContext getServerContext();
-        const LocationContext getLocationContext();
+        const ServerContext setServerContext();
+        const LocationContext setLocationContext();
         void setContextType(ContextType context);
         void setDirectiveType(const std::string& directive);
         bool isAllowedDirective();
-        bool isInHTTPContext();
+        bool isInHttpContext();
         bool isInServerContext();
         bool isInLocationContext();
 

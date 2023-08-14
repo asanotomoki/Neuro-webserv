@@ -25,6 +25,9 @@ void ConfigError::setErrorMessage(const ErrorType error_type, const std::string&
 {
 	switch (error_type)
 	{
+		case NEED_SERVER_CONTEXT:
+			_error_message += "need server context" + _file_info;
+			break;
 		case DUPRICATE_DIRECTIVE:
 			_error_message += "duplicate \"" + error_word + "\" directive" + _file_info;
 			break;

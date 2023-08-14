@@ -1,6 +1,5 @@
 #include "SocketInterface.hpp"
 #include "ApplicationServer.hpp"
-#include "HttpContext.hpp"
 #include "ServerContext.hpp"
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -122,7 +121,7 @@ void SocketInterface::handleClient(int clientSocket)
     std::pair<std::string, std::string> hostPort = parseHostAndPortFromRequest(request);
 
     // ここで、ホストとポートを使用して、適切なServerContextを取得
-    const ServerContext& serverContext = _config->getHttpContext().getServerContext(hostPort.second, hostPort.first);
+    const ServerContext& serverContext = _config->getServerContext(hostPort.second, hostPort.first);
 
     // responseの生成
     ApplicationServer appServer;

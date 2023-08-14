@@ -1,5 +1,4 @@
 #include "ConfigParser.hpp"
-#include "HttpContext.hpp"
 #include "ServerContext.hpp"
 #include "LocationContext.hpp"
 #include "ConfigError.hpp"
@@ -26,13 +25,7 @@ void ConfigParser::setContextType(ContextType context)
 
 void ConfigParser::setDirectiveType(const std::string& directive)
 {
-	if (directive == "http")
-		_directive_type = HTTP;
-	else if (directive == "access_log")
-		_directive_type = ACCESS_LOG;
-	else if (directive == "error_log")
-		_directive_type = ERROR_LOG;
-	else if (directive == "server")
+	if (directive == "server")
 		_directive_type = SERVER;
 	else if (directive == "listen")
 		_directive_type = LISTEN;
@@ -50,10 +43,9 @@ void ConfigParser::setDirectiveType(const std::string& directive)
 		_directive_type = UNKNOWN;
 }
 
-bool ConfigParser::isInHTTPContext()
+bool ConfigParser::isInHttpContext()
 {
-	return _directive_type == HTTP || _directive_type == ACCESS_LOG
-			|| _directive_type == ERROR_LOG || _directive_type == SERVER;
+	return _directive_type == SERVER;
 }
 
 bool ConfigParser::isInServerContext()
@@ -71,7 +63,7 @@ bool ConfigParser::isInLocationContext()
 bool ConfigParser::isAllowedDirective()
 {
 	if (_context_type == HTTP_CONTEXT)
-		return isInHTTPContext();
+		return isInHttpContext();
 	else if (_context_type == SERVER_CONTEXT)
 		return isInServerContext();
 	else if (_context_type == LOCATION_CONTEXT)
@@ -138,7 +130,6 @@ std::vector<std::string> ConfigParser::splitLine(const std::string& line)
 
 void ConfigParser::parseLines()
 {
-	//parse each line
 	for ( ; _line_number < _lines.size(); _line_number++)
 	{
 		setContextType(HTTP_CONTEXT);
@@ -153,43 +144,18 @@ void ConfigParser::parseLines()
 		{
 			throw ConfigError(NOT_ALLOWED_DIRECTIVE, _one_line[0], _filepath, _line_number + 1);
 		}
-		else if (_directive_type == HTTP)
-			setHTTPContext();
-	}
-}
-
-void ConfigParser::setHTTPContext()
-{
-	_line_number++;
-	for ( ; _line_number < _lines.size(); _line_number++)
-	{
-		_one_line.clear();
-		_one_line = _lines[_line_number];
-		if (_one_line.empty() || _one_line[0] == "#")
-			continue ;
-		if (_one_line[0] == "}")
-			break ;
-		setDirectiveType(_one_line[0]);
-		if (!isAllowedDirective())
-			throw ConfigError(NOT_ALLOWED_DIRECTIVE, _one_line[0], _filepath, _line_number + 1);
-		else if (_directive_type == SERVER)
-		{
-			ServerContext server_context = getServerContext();
-			_config.getHttpContext().addServerBlock(server_context);
+		else if (_directive_type == SERVER){
+			ServerContext server_context = setServerContext();
+			_config.addServerContext(server_context);
 		}
 		else
 		{
-			_config.getHttpContext().addDirective(_one_line[0], _one_line[1], _filepath, _line_number + 1);
-			if (_directive_type == ACCESS_LOG)
-				_config.getHttpContext().setAccessLogFile(_one_line[1]);
-			else if (_directive_type == ERROR_LOG)
-				_config.getHttpContext().setErrorLogFile(_one_line[1]);
+			throw ConfigError(NEED_SERVER_CONTEXT, _one_line[0], _filepath, _line_number + 1);
 		}
-		setContextType(HTTP_CONTEXT);
 	}
 }
 
-const ServerContext ConfigParser::getServerContext()
+const ServerContext ConfigParser::setServerContext()
 {
 	ServerContext server_context = ServerContext();
 
@@ -208,7 +174,7 @@ const ServerContext ConfigParser::getServerContext()
 			throw ConfigError(NOT_ALLOWED_DIRECTIVE, _one_line[0], _filepath, _line_number + 1);
 		else if (_directive_type == LOCATION)
 		{
-			LocationContext location_context = getLocationContext();
+			LocationContext location_context = setLocationContext();
 			server_context.addLocationBlock(location_context);
 		}
 		else
@@ -223,12 +189,11 @@ const ServerContext ConfigParser::getServerContext()
 	return server_context;
 }
 
-const LocationContext ConfigParser::getLocationContext()
+const LocationContext ConfigParser::setLocationContext()
 {
 	LocationContext location_context = LocationContext();
 
 	location_context.addDirective("path", _one_line[1], _filepath, _line_number + 1);
-	//std::cout << "path: " << _one_line[1] << std::endl;
 	_line_number++;
 	for ( ; _line_number < _lines.size(); _line_number++)
 	{
@@ -250,11 +215,6 @@ const LocationContext ConfigParser::getLocationContext()
 	return location_context;
 }
 
-/**
- * @brief パスがファイルかどうかを判定する
- *
- * @param path
- */
 bool ConfigParser::isFile(const char *path)
 {
 	struct stat st;

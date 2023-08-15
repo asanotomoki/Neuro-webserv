@@ -1,7 +1,10 @@
 #ifndef CONFIG_HPP
 #define CONFIG_HPP
 
+#include "ServerContext.hpp"
 #include <string>
+#include <vector>
+#include <map>
 
 //遺伝子クラス
 class Config

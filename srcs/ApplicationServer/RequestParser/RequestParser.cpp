@@ -6,12 +6,8 @@ HttpRequest RequestParser::parse(const std::string& request) {
     HttpRequest httpRequest;
     std::istringstream requestStream(request);
 
-    std::cout << "DEBUG MESSAGE 1\n";
-
     // メソッドとURLを解析
     requestStream >> httpRequest.method >> httpRequest.url;
-
-    std::cout << "DEBUG MESSAGE 2\n";
 
     // ヘッダーを解析
     std::string headerLine;
@@ -30,8 +26,13 @@ HttpRequest RequestParser::parse(const std::string& request) {
         }
         httpRequest.headers[key] = value;
     }
-
-    std::cout << "DEBUG MESSAGE 3\n";
+    // ボディを解析 (存在すれば)
+    std::string bodyLine;
+    std::ostringstream bodyStream;
+    while (std::getline(requestStream, bodyLine)) {
+        bodyStream << bodyLine << "\r\n";
+    }
+    httpRequest.body = bodyStream.str();
 
     return httpRequest;
 }

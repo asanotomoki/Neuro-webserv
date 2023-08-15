@@ -8,6 +8,7 @@ struct HttpRequest {
     std::string method;
     std::string url;
     std::map<std::string, std::string> headers;
+    std::string body;
 };
 
 //大脳における感覚情報の解析と処理

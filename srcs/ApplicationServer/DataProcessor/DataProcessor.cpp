@@ -3,7 +3,7 @@
 
 std::string DataProcessor::processPostData(const std::string& postData, const ServerContext& server_context) {
     // ファイルデータの部分を解析
-    size_t fileDataStart = postData.find("\r\n\r\n") + 4;
+    size_t fileDataStart = postData.find("\r\n") + 1;
     size_t fileDataEnd = postData.find("\r\n", fileDataStart);
     std::string fileData = postData.substr(fileDataStart, fileDataEnd - fileDataStart);
 

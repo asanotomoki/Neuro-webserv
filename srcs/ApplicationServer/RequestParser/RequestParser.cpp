@@ -11,7 +11,8 @@ HttpRequest RequestParser::parse(const std::string& request) {
 
     // ヘッダーを解析
     std::string headerLine;
-    
+    int contentLength = 0; // Content-Lengthを保存する変数
+
     while (std::getline(requestStream, headerLine)) {
         if (headerLine == "\r" || headerLine.empty())
             break;
@@ -25,14 +26,22 @@ HttpRequest RequestParser::parse(const std::string& request) {
             value = value.substr(1); // コロンの後のスペースをスキップ
         }
         httpRequest.headers[key] = value;
+
+        // Content-Lengthの取得
+        if (key == "Content-Length") {
+            contentLength = std::stoi(value);
+        }
     }
-    // ボディを解析 (存在すれば)
-    std::string bodyLine;
-    std::ostringstream bodyStream;
-    while (std::getline(requestStream, bodyLine)) {
-        bodyStream << bodyLine << "\r\n";
+
+    // ボディを解析 (Content-Lengthが指定されていれば)
+    if (contentLength > 0) {
+        std::cout << "DEBUG MSG:: contentLength: " << contentLength << std::endl;
+        char* buffer = new char[contentLength];
+        requestStream.read(buffer, contentLength);
+        httpRequest.body = std::string(buffer, contentLength);
+        std::cout << "DEBUG MSG:: body: " << httpRequest.body << std::endl;
+        delete[] buffer;
     }
-    httpRequest.body = bodyStream.str();
 
     return httpRequest;
 }

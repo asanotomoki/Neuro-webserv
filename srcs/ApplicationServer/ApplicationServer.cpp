@@ -31,16 +31,16 @@ std::string ApplicationServer::processRequest(const std::string& request, const 
         response += "\r\n";
         response += fileContent;
 
-        std::cout << "DEBUG MESSAGE: GET SUCCESS\n";
+        std::cout << "DEBUG MSG: GET SUCCESS\n";
         return response; // レスポンスを返す
     }
     // POSTメソッドの処理
     else if (httpRequest.method == "POST") {
-        std::cout << "DEBUG MESSAGE: POST" << std::endl;
+        std::cout << "DEBUG MSG: POST" << std::endl;
         
         if (httpRequest.body.empty()) {
-        std::cerr << "ERROR: Empty body.\n";
-        return "HTTP/1.1 400 Bad Request\r\n\r\n"; // クライアントにエラーレスポンスを返す
+            std::cerr << "ERROR: Empty body.\n";
+            return "HTTP/1.1 400 Bad Request\r\n\r\n"; // クライアントにエラーレスポンスを返す
         }
         
         // データ処理クラスを使用してPOSTデータを処理
@@ -54,7 +54,8 @@ std::string ApplicationServer::processRequest(const std::string& request, const 
         response += "\r\n";
         response += result;
 
-        std::cout << "DEBUG MESSAGE: POST SUCCESS\n";
+        std::cout << "DEBUG MSG: POST SUCCESS\n";
+        std::cout << "DEBUG MSG:: response: " << response << "\n";
         return response; // レスポンスを返す
     }
     // 他のHTTPメソッドの処理...

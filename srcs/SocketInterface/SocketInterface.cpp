@@ -64,7 +64,10 @@ void SocketInterface::listen()
                 }
             }
         }
-        std::cerr << "poll() returned " << ret << std::endl; // TODO: remove
+        else if (ret < 0)
+        {
+            std::cerr << "poll() returned " << ret << std::endl;
+        }
     }
 }
 
@@ -82,7 +85,10 @@ void SocketInterface::acceptConnection()
             {
                 handleClient(clientFd);
             }
-            std::cerr << "accept() returned " << clientFd << std::endl; // TODO: remove
+            else
+            {
+                std::cerr << "accept() returned " << clientFd << std::endl;
+            }
         }
     }
 }
@@ -115,6 +121,8 @@ void SocketInterface::handleClient(int clientSocket)
     }
 
     buffer[bytesRead] = '\0';
+    std::cout << "Received request:\n" << buffer << std::endl;
+    std::cout << "///////////////////////////" << std::endl; 
     std::string request(buffer);
 
     // ホストとポートの解析

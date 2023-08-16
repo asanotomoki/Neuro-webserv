@@ -2,7 +2,7 @@
 #include <sstream>
 #include <iostream>
 
-HttpRequest RequestParser::parse(const std::string& request) {
+HttpRequest RequestParser::parse(const std::string& request, const ServerContext &serverContext) {
     HttpRequest httpRequest;
     std::istringstream requestStream(request);
 
@@ -32,10 +32,12 @@ HttpRequest RequestParser::parse(const std::string& request) {
             contentLength = std::stoi(value);
         }
     }
-
+    std::cout << "DEBUG MSG:: contentLength: " << contentLength << std::endl;
     // ボディを解析 (Content-Lengthが指定されていれば)
     if (contentLength > 0) {
-        std::cout << "DEBUG MSG:: contentLength: " << contentLength << std::endl;
+        if (contentLength > std::stoi(serverContext.getMaxBodySize())) {
+            contentLength = std::stoi(serverContext.getMaxBodySize());
+        }
         char* buffer = new char[contentLength];
         requestStream.read(buffer, contentLength);
         httpRequest.body = std::string(buffer, contentLength);

@@ -23,6 +23,11 @@ void ServerContext::setServerName(const std::string& server_name)
 	_server_name = server_name;
 }
 
+void ServerContext::setMaxBodySize(const std::string& max_body_size)
+{
+	_max_body_size = max_body_size;
+}
+
 const std::string& ServerContext::getListen() const
 {
 	return _listen;
@@ -31,6 +36,11 @@ const std::string& ServerContext::getListen() const
 const std::string& ServerContext::getServerName() const
 {
 	return _server_name;
+}
+
+const std::string& ServerContext::getMaxBodySize() const
+{
+	return _max_body_size;
 }
 
 void ServerContext::addLocationBlock(const LocationContext& location)

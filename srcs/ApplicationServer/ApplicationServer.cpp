@@ -11,7 +11,7 @@ ApplicationServer::ApplicationServer() {
 std::string ApplicationServer::processRequest(const std::string& request, const ServerContext& server_context) {
     // リクエストを解析
     RequestParser parser;
-    HttpRequest httpRequest = parser.parse(request);
+    HttpRequest httpRequest = parser.parse(request, server_context);
 
     if (httpRequest.method == "GET") {
         std::cout << "DEBUG MESSAGE: GET" << std::endl;

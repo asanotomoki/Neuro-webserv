@@ -31,6 +31,8 @@ void ConfigParser::setDirectiveType(const std::string& directive)
 		_directive_type = LISTEN;
 	else if (directive == "server_name")
 		_directive_type = SERVER_NAME;
+	else if (directive == "client_max_body_size")
+		_directive_type = MAX_BODY_SIZE;
 	else if (directive == "location")
 		_directive_type = LOCATION;
 	else if (directive == "alias")
@@ -51,7 +53,7 @@ bool ConfigParser::isInHttpContext()
 bool ConfigParser::isInServerContext()
 {
 	return _directive_type == LISTEN || _directive_type == SERVER_NAME
-			|| _directive_type == LOCATION;
+			|| _directive_type == MAX_BODY_SIZE || _directive_type == LOCATION;
 }
 
 bool ConfigParser::isInLocationContext()
@@ -184,6 +186,8 @@ const ServerContext ConfigParser::setServerContext()
 				server_context.setListen(_one_line[1]);
 			else if (_directive_type == SERVER_NAME)
 				server_context.setServerName(_one_line[1]);
+			else if (_directive_type == MAX_BODY_SIZE)
+				server_context.setMaxBodySize(_one_line[1]);
 		}
 	}
 	return server_context;

@@ -23,6 +23,7 @@ class ConfigParser
         SERVER,
         LISTEN,
         SERVER_NAME,
+        MAX_BODY_SIZE,
         LOCATION,
         ALIAS,
         INDEX,

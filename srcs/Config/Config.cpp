@@ -11,91 +11,92 @@ Config::Config(const std::string& filepath)
 {
     ConfigParser parser(*this);
     parser.parseFile(filepath);
-    _instance = this;
-
-	std::string errorLogFile = getHttpContext().getErrorLogFile();
-	redirectErrorLogFile(errorLogFile);
-
-	std::string accessLogFile = getHttpContext().getAccessLogFile();
-	redirectAccessLogFile(accessLogFile);
-}
-
-int	Config::redirectErrorLogFile(std::string errorLogFile)
-{
-	if (errorLogFile.empty())
-		return (0);
-	else
-	{
-		int logFile;
-		logFile = open(errorLogFile.c_str(), O_RDWR | O_CREAT | O_APPEND, 0666);
-		if (logFile > 0)
-		{
-			if (dup2(logFile, STDERR_FILENO) == -1)
-				throw (ConfigError(SYSTEM_ERROR, "dup2"));
-		}
-		else
-		{
-			std::cerr << "DEBUG MESSAGE 1: open error" << std::endl;
-			throw (ConfigError(SYSTEM_ERROR, "open"));
-		}
-	}
-	return (0);
-}
-
-int Config::redirectAccessLogFile(std::string accessLogFile)
-{
-	if (accessLogFile.empty())
-		return (0);
-	else
-	{
-		int logFile;
-		logFile = open(accessLogFile.c_str(), O_RDWR | O_CREAT | O_APPEND, 0666);
-		if (logFile > 0)
-		{
-			if (dup2(logFile, NEW_FD) == -1)
-				throw (ConfigError(SYSTEM_ERROR, "dup2"));
-		}
-		else
-		{	
-			std::cerr << "DEBUG MESSAGE 2: open error" << std::endl;
-			throw (ConfigError(SYSTEM_ERROR, "open"));
-		}
-	}
-	return (0);
 }
 
 Config::~Config()
 {
 }
 
-HttpContext& Config::getHttpContext()
-{
-    return _http_context;
-}
-
-Config* Config::getInstance()
-{
-	// if (_instance == NULL)
-	// 	_instance = new Config("./conf/default.conf");
-    return _instance;
-}
-
 const std::vector<std::string> Config::getPorts()
 {
 	std::vector<std::string> ports;
 
-	for (std::map<std::string, std::vector<ServerContext> >::const_iterator it = _http_context.getServers().begin();
-			it != _http_context.getServers().end(); ++it)
+	for (std::map<std::string, std::vector<ServerContext> >::const_iterator it = getServers().begin();
+			it != getServers().end(); ++it)
 	{
 		for (std::vector<ServerContext>::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2)
 		{
-			//test
-			//std::cout << it2->getListen() << std::endl;
 			ports.push_back(it2->getListen());
 		}
 	}
 	return ports;
 }
 
-Config* Config::_instance = NULL;
-const int Config::NEW_FD = 3;
+void Config::addServerContext(const ServerContext& server)
+{
+    std::string listen = server.getListen();
+    std::map<std::string, std::vector<ServerContext> >::iterator
+        port_found = _servers.find(listen);
+
+    if (port_found != _servers.end())
+    {
+        if (server.getServerName().empty())
+        {
+            //exception
+
+        }
+        std::vector<ServerContext> &servers = port_found->second;
+        for (size_t i = 0; i < servers.size(); i++)
+        {
+            if (servers.at(i).getServerName() == server.getServerName())
+            {
+                //exception
+            }
+        }
+        servers.push_back(server);
+    }
+    else
+    {
+        std::vector<ServerContext> new_servers(1, server);
+        _servers.insert(std::make_pair(listen, new_servers));
+    }
+}
+
+void Config::addDirective(const std::string& directive, const std::string& value,
+                                const std::string& filepath, int line_number)
+{
+    // check if directive is not duplicated
+    if (_directives.find(directive) != _directives.end())
+        throw ConfigError(DUPRICATE_DIRECTIVE, directive, filepath, line_number);
+
+    _directives.insert(std::make_pair(directive, value));
+}
+
+const std::map<std::string, std::vector<ServerContext> >& Config::getServers() const
+{
+    return _servers;
+}
+
+const ServerContext& Config::getServerContext(const std::string& port, const std::string& host) const
+{
+    try
+    {
+        // ポート番号が一致するServerブロックをすべて取得する
+        const std::vector<ServerContext>& serverContexts = getServers().at(port);
+
+        // server_nameがhostヘッダーと一致する場合、そのserverブロックを返す
+        for (std::vector<ServerContext>::const_iterator it = serverContexts.begin(); it != serverContexts.end(); ++it)
+        {
+            if (it->getServerName() == host)
+                return *it;
+        }
+        // server_nameがhostヘッダーと一致しない場合、最初のserverブロックを返す
+        return serverContexts.at(0);
+    }
+    catch (std::out_of_range& e)
+    {
+        // 一致するポート番号がない場合は上位に投げる
+        throw std::runtime_error("port not found!");
+    }
+}
+

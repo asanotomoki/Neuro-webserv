@@ -11,7 +11,7 @@ class LocationContext
 		LocationContext();
 		~LocationContext();
 		void addDirective(const std::string& directive, const std::string& value,
-							const std::string& filepath, int line_number);
+							const std::string& filepath = "", int line_number = -1);
 		const std::string& getDirective(const std::string& directive) const;
 		
 	private:

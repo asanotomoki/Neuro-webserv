@@ -39,8 +39,6 @@ void ConfigParser::setDirectiveType(const std::string& directive)
 		_directive_type = ALIAS;
 	else if (directive == "index")
 		_directive_type = INDEX;
-	else if (directive == "error_page")
-		_directive_type = ERROR_PAGE;
 	else
 		_directive_type = UNKNOWN;
 }

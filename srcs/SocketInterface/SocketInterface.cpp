@@ -1,5 +1,5 @@
 #include "SocketInterface.hpp"
-#include "../CoreHandler/CoreHandler.hpp"
+#include "CoreHandler.hpp"
 #include "ServerContext.hpp"
 #include <sys/socket.h>
 #include <netinet/in.h>

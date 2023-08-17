@@ -7,6 +7,8 @@ ServerContext::ServerContext():
 	_listen(),
 	_server_name()
 {
+	_errorLocationContext.addDirective("alias", "./docs/error_page/");
+	_errorLocationContext.addDirective("index", "404.html");
 }
 
 ServerContext::~ServerContext()
@@ -76,7 +78,7 @@ const LocationContext& ServerContext::getLocationContext(const std::string& path
 		std::string locationPath = it->getDirective("path");
 		// 前方一致の最大の長さを取得する
 		std::string::size_type currentMatch = getMaxPrefixLength(path, locationPath);
-		if (currentMatch != std::string::npos)
+		if (currentMatch != std::string::npos && currentMatch == locationPath.size() && currentMatch == path.size())
 		{
 			if (!isMatched || max < currentMatch)
 			{
@@ -88,7 +90,7 @@ const LocationContext& ServerContext::getLocationContext(const std::string& path
 	}
 	if (!isMatched)
 	{
-		throw std::runtime_error("No matching LocationContext found for the given path.");
+		return _errorLocationContext;
 	}
 	return *matched;
 }

@@ -29,6 +29,7 @@ class ServerContext
         std::string _max_body_size;
 		std::vector<LocationContext> _locations;
         std::map<std::string, std::string> _directives;
+        LocationContext _errorLocationContext;
 		std::string::size_type getMaxPrefixLength(const std::string &str1, const std::string &str2) const;
 };
 

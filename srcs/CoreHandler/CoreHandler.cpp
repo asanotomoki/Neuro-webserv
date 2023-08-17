@@ -14,7 +14,7 @@ std::string CoreHandler::processRequest(const std::string& request, const Server
     HttpRequest httpRequest = parser.parse(request, server_context);
 
     if (httpRequest.method == "GET") {
-        std::cout << "DEBUG MESSAGE: GET" << std::endl;
+        std::cout << "DEBUG MSG: GET" << std::endl;
         // 静的ファイルを提供する場合
         StaticFileReader fileReader;
         std::string filePath = httpRequest.url;

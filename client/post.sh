@@ -1,0 +1,1 @@
+curl -X POST -H "Content-Type: application/octet-stream" --data-binary "@./test1.txt" http://localhost:2000/

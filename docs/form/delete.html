@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DELETE Test</title>
+    <script>
+        function deleteResource() {
+            fetch('http://localhost:2000/post/post_file_1.txt', {
+                method: 'DELETE',
+            })
+            .then(response => response.json())
+            .then(data => console.log(data))
+            .catch(error => console.error('An error occurred:', error));
+        }
+    </script>
+</head>
+<body>
+    <h1>DELETE Test</h1>
+    <button onclick="deleteResource()">削除</button>
+</body>
+</html>

@@ -58,8 +58,24 @@ std::string CoreHandler::processRequest(const std::string& request, const Server
         std::cout << "DEBUG MSG:: response: " << response << "\n";
         return response; // レスポンスを返す
     }
-    // 他のHTTPメソッドの処理...
+    else if (httpRequest.method == "DELETE") {
+        std::cout << "DEBUG MSG: DELETE" << std::endl;
 
+        // 削除するファイルのパスを特定
+        std::string filePath = httpRequest.url;
+        std::cout << "DEBUG MSG: filePath: " << filePath << "\n";
+
+        // ファイルを削除
+        if (std::remove(("." + filePath).c_str()) != 0) {
+            std::perror("ERROR: File delete failed");
+            std::cerr << "ERROR: File not found or delete failed.\n";
+            return "HTTP/1.1 404 Not Found\r\n\r\n"; // エラーレスポンス
+        }
+
+        std::cout << "DEBUG MSG: DELETE SUCCESS\n";
+        return "HTTP/1.1 204 No Content\r\n\r\n"; // 成功のレスポンス
+    }
+    // 未実装のメソッドの場合
     return "HTTP/1.1 501 Not Implemented\r\n\r\n"; // 未実装のメソッド
 }
 

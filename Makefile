@@ -1,19 +1,19 @@
 CC = g++
-INC	= -I ./srcs/Config/ -I ./srcs/SocketInterface/ -I ./srcs/ApplicationServer/ \
-		-I ./srcs/ApplicationServer/RequestParser/ -I ./srcs/ApplicationServer/StaticFileReader/ \
-		-I ./srcs/ApplicationServer/DataProcessor
+INC	= -I ./srcs/Config/ -I ./srcs/SocketInterface/ -I ./srcs/CoreHandler/ \
+		-I ./srcs/CoreHandler/RequestParser/ -I ./srcs/CoreHandler/StaticFileReader/ \
+		-I ./srcs/CoreHandler/DataProcessor
 CFLAGS = -Wall -std=c++11 $(INC)
 LDFLAGS =
 SOURCES = srcs/main.cpp srcs/Config/Config.cpp srcs/SocketInterface/SocketInterface.cpp \
-			srcs/ApplicationServer/ApplicationServer.cpp \
+			srcs/CoreHandler/CoreHandler.cpp \
 			srcs/Config/ConfigError.cpp srcs/Config/ConfigParser.cpp \
 			srcs/Config/LocationContext.cpp srcs/Config/ServerContext.cpp \
-			srcs/ApplicationServer/RequestParser/RequestParser.cpp \
-			srcs/ApplicationServer/StaticFileReader/StaticFileReader.cpp \
-			srcs/ApplicationServer/DataProcessor/DataProcessor.cpp
+			srcs/CoreHandler/RequestParser/RequestParser.cpp \
+			srcs/CoreHandler/StaticFileReader/StaticFileReader.cpp \
+			srcs/CoreHandler/DataProcessor/DataProcessor.cpp
 OBJECTS_DIR = objs
 OBJECTS = $(addprefix $(OBJECTS_DIR)/, $(SOURCES:.cpp=.o))
-NAME = NeuroSrv
+NAME = webserv
 
 all: $(NAME)
 

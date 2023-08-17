@@ -1,14 +1,14 @@
-#include "ApplicationServer.hpp"
+#include "CoreHandler.hpp"
 #include "RequestParser.hpp"
 #include "StaticFileReader.hpp"
 #include "DataProcessor.hpp"
 #include <iostream>
 
-ApplicationServer::ApplicationServer() {
+CoreHandler::CoreHandler() {
     // 必要に応じて初期化処理をここに記述
 }
 
-std::string ApplicationServer::processRequest(const std::string& request, const ServerContext& server_context) {
+std::string CoreHandler::processRequest(const std::string& request, const ServerContext& server_context) {
     // リクエストを解析
     RequestParser parser;
     HttpRequest httpRequest = parser.parse(request, server_context);
@@ -49,7 +49,7 @@ std::string ApplicationServer::processRequest(const std::string& request, const 
 
         // レスポンスの生成
         std::string response = "HTTP/1.1 200 OK\r\n";
-        response += "Content-Type: application/json\r\n"; // もしJSONレスポンスであれば
+        response += "Content-Type: Web/json\r\n"; // もしJSONレスポンスであれば
         response += "Content-Length: " + std::to_string(result.size()) + "\r\n";
         response += "\r\n";
         response += result;
@@ -63,6 +63,6 @@ std::string ApplicationServer::processRequest(const std::string& request, const 
     return "HTTP/1.1 501 Not Implemented\r\n\r\n"; // 未実装のメソッド
 }
 
-ApplicationServer::~ApplicationServer() {
+CoreHandler::~CoreHandler() {
     // 必要に応じてクリーンアップ処理をここに記述
 }

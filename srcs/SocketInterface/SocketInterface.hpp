@@ -1,5 +1,5 @@
-#ifndef SOCKET_INTERFACE_HPP
-#define SOCKET_INTERFACE_HPP
+#ifndef SOCKETINTERFACE_HPP
+#define SOCKETINTERFACE_HPP
 
 #include "Config.hpp"
 #include <vector>

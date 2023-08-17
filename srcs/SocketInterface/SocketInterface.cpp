@@ -1,5 +1,5 @@
 #include "SocketInterface.hpp"
-#include "ApplicationServer.hpp"
+#include "../CoreHandler/CoreHandler.hpp"
 #include "ServerContext.hpp"
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -132,8 +132,8 @@ void SocketInterface::handleClient(int clientSocket)
     const ServerContext& serverContext = _config->getServerContext(hostPort.second, hostPort.first);
 
     // responseの生成
-    ApplicationServer appServer;
-    std::string response = appServer.processRequest(buffer, serverContext);
+    CoreHandler coreHandler;
+    std::string response =coreHandler.processRequest(buffer, serverContext);
  
     write(clientSocket, response.c_str(), response.length()); // レスポンスの送信
     close(clientSocket); // ソケットのクローズ

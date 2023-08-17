@@ -1,16 +1,16 @@
-#ifndef APPLICATION_SERVER_HPP
-#define APPLICATION_SERVER_HPP
+#ifndef COREHANDLER_HPP
+#define COREHANDLER_HPP
 
 #include "ServerContext.hpp"
 #include <string>
 
 //大脳クラス
-class ApplicationServer
+class CoreHandler
 {
 public:
-    ApplicationServer();
+    CoreHandler();
     std::string processRequest(const std::string& request, const ServerContext& server_context);
-    ~ApplicationServer();
+    ~CoreHandler();
 };
 
 #endif

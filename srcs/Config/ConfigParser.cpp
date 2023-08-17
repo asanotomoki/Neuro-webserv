@@ -39,8 +39,6 @@ void ConfigParser::setDirectiveType(const std::string& directive)
 		_directive_type = ALIAS;
 	else if (directive == "index")
 		_directive_type = INDEX;
-	else if (directive == "error_page")
-		_directive_type = ERROR_PAGE;
 	else
 		_directive_type = UNKNOWN;
 }
@@ -58,8 +56,7 @@ bool ConfigParser::isInServerContext()
 
 bool ConfigParser::isInLocationContext()
 {
-	return  _directive_type == ALIAS || _directive_type == INDEX
-			|| _directive_type == ERROR_PAGE;
+	return  _directive_type == ALIAS || _directive_type == INDEX;
 }
 
 bool ConfigParser::isAllowedDirective()
@@ -211,8 +208,6 @@ const LocationContext ConfigParser::setLocationContext()
 		setDirectiveType(_one_line[0]);
 		if (!isAllowedDirective())
 			throw ConfigError(NOT_ALLOWED_DIRECTIVE, _one_line[0], _filepath, _line_number + 1);
-		else if (_directive_type == ERROR_PAGE)
-			location_context.addDirective(_one_line[1], _one_line[2], _filepath, _line_number + 1);
 		else
 			location_context.addDirective(_one_line[0], _one_line[1], _filepath, _line_number + 1);
 	}

@@ -67,7 +67,7 @@ void Config::addDirective(const std::string& directive, const std::string& value
 {
     // check if directive is not duplicated
     if (_directives.find(directive) != _directives.end())
-        throw ConfigError(DUPRICATE_DIRECTIVE, directive, filepath, line_number);
+        throw ConfigError(DUPLICATE_DIRECTIVE, directive, filepath, line_number);
 
     _directives.insert(std::make_pair(directive, value));
 }

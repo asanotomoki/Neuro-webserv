@@ -11,7 +11,7 @@ std::string DataProcessor::processPostData(const std::string& postData, const Se
     int index = 1;
     std::string filePath;
     do {
-        filePath = "./post/post_file_" + std::to_string(index) + ".txt";
+        filePath = "./docs/upload/uploaded_file_" + std::to_string(index) + ".txt";
         index++;
     } while (std::ifstream(filePath)); // 既存ファイルがある場合、インデックスを増やす
 

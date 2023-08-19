@@ -112,7 +112,7 @@ std::pair<std::string, std::string> SocketInterface::parseHostAndPortFromRequest
 
 void SocketInterface::handleClient(int clientSocket)
 {
-    char buffer[1024];
+    char buffer[1024]; //magic number to be fixed
     ssize_t bytesRead = read(clientSocket, buffer, sizeof(buffer) - 1);
     
     if (bytesRead < 0) {
@@ -122,7 +122,6 @@ void SocketInterface::handleClient(int clientSocket)
 
     buffer[bytesRead] = '\0';
     std::cout << "Received request:\n" << buffer << std::endl;
-    std::cout << "///////////////////////////" << std::endl; 
     std::string request(buffer);
 
     // ホストとポートの解析
@@ -133,9 +132,8 @@ void SocketInterface::handleClient(int clientSocket)
 
     // responseの生成
     CoreHandler coreHandler;
-    std::string response =coreHandler.processRequest(buffer, serverContext);
+    std::string response = coreHandler.processRequest(buffer, serverContext);
  
     write(clientSocket, response.c_str(), response.length()); // レスポンスの送信
     close(clientSocket); // ソケットのクローズ
 }
-

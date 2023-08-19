@@ -2,6 +2,7 @@
 #define STATIC_FILE_READER_HPP
 
 #include "ServerContext.hpp"
+#include "RequestParser.hpp"
 #include <string>
 #include <vector>
 
@@ -9,7 +10,8 @@
 class StaticFileReader {
 public:
     StaticFileReader();
-    std::string readFile(const std::string& path, const ServerContext& server_context);
+    std::string readFile(const std::string& path, const ServerContext& server_context,
+                        const HttpRequest& request);
     ~StaticFileReader();
 };
 

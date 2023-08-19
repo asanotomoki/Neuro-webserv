@@ -3,6 +3,7 @@
 #include "StaticFileReader.hpp"
 #include "DataProcessor.hpp"
 #include <iostream>
+#include <algorithm>
 
 CoreHandler::CoreHandler() {
     // 必要に応じて初期化処理をここに記述
@@ -18,7 +19,7 @@ std::string CoreHandler::processRequest(const std::string& request, const Server
         // 静的ファイルを提供する場合
         StaticFileReader fileReader;
         std::string filePath = httpRequest.url;
-        std::string fileContent = fileReader.readFile(filePath, server_context);
+        std::string fileContent = fileReader.readFile(filePath, server_context, httpRequest);
 
         if (fileContent.empty()) {
             // ファイルが見つからなかった場合

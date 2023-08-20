@@ -10,8 +10,8 @@
 class StaticFileReader {
 public:
     StaticFileReader();
-    std::string readFile(const std::string& path, const ServerContext& server_context,
-                        const HttpRequest& request);
+    std::string readFile(const std::string& requestPath, const std::string& method,
+                         const ServerContext& serverContext);
     ~StaticFileReader();
 };
 

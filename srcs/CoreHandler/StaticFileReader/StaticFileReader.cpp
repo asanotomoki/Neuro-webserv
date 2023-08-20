@@ -6,15 +6,13 @@
 StaticFileReader::StaticFileReader() {
 }
 
-std::string StaticFileReader::readFile(const std::string& requestPath, const ServerContext& serverContext
-                                       , const HttpRequest& request) {
+std::string StaticFileReader::readFile(const std::string& requestPath, const std::string& method,
+                                       const ServerContext& serverContext) {
     if (requestPath == "/favicon.ico") {
         std::cerr << "DEBUG MSG: favicon.ico request, ignoring\n";
         return {};
     }
-    
-    std::cout << "DEBUG MSG:: requestPath: " << requestPath << "\n";
-    
+
     // リクエストパスから適切なLocationContextを取得
     LocationContext locationContext;
     if (requestPath == "404.html")
@@ -23,7 +21,7 @@ std::string StaticFileReader::readFile(const std::string& requestPath, const Ser
         locationContext = serverContext.get405LocationContext();
     else {
         locationContext = serverContext.getLocationContext(requestPath);
-        if (!locationContext.isAllowedMethod(request.method))
+        if (!locationContext.isAllowedMethod(method))
             locationContext = serverContext.get405LocationContext();
     }
 

@@ -13,18 +13,12 @@ std::string CoreHandler::processRequest(const std::string& request, const Server
     // リクエストを解析
     RequestParser parser;
     HttpRequest httpRequest = parser.parse(request, server_context);
+    std::cout << "DEBUG MSG: filePath: " << httpRequest.url << "\n";
 
     if (httpRequest.method == "GET") {
-        std::cout << "DEBUG MSG: GET" << std::endl;
         // 静的ファイルを提供する場合
         StaticFileReader fileReader;
-        std::string filePath = httpRequest.url;
-        std::string fileContent = fileReader.readFile(filePath, server_context, httpRequest);
-
-        if (fileContent.empty()) {
-            // ファイルが見つからなかった場合
-            return "HTTP/1.1 404 Not Found\r\n\r\n";
-        }
+        std::string fileContent = fileReader.readFile(httpRequest.url, httpRequest.method, server_context);
 
         std::string response = "HTTP/1.1 200 OK\r\n";
         response += "Content-Type: text/html\r\n"; // もしHTMLファイルであれば
@@ -35,10 +29,14 @@ std::string CoreHandler::processRequest(const std::string& request, const Server
         std::cout << "DEBUG MSG: GET SUCCESS\n";
         return response; // レスポンスを返す
     }
-    // POSTメソッドの処理
     else if (httpRequest.method == "POST") {
-        std::cout << "DEBUG MSG: POST" << std::endl;
-        
+
+        LocationContext location_context = server_context.getLocationContext("/upload");
+        if (location_context.isAllowedMethod("POST") == false) {
+            std::cout << "DEBUG MSG: POST METHOD NOT ALLOWED\n";
+            return "HTTP/1.1 405 Method Not Allowed\r\n\r\n";
+        }
+
         if (httpRequest.body.empty()) {
             std::cerr << "ERROR: Empty body.\n";
             return "HTTP/1.1 400 Bad Request\r\n\r\n"; // クライアントにエラーレスポンスを返す
@@ -46,7 +44,7 @@ std::string CoreHandler::processRequest(const std::string& request, const Server
         
         // データ処理クラスを使用してPOSTデータを処理
         DataProcessor dataProcessor;
-        std::string result = dataProcessor.processPostData(httpRequest.body, server_context);
+        std::string result = dataProcessor.processPostData(httpRequest.body);
 
         // レスポンスの生成
         std::string response = "HTTP/1.1 200 OK\r\n";
@@ -60,14 +58,8 @@ std::string CoreHandler::processRequest(const std::string& request, const Server
         return response; // レスポンスを返す
     }
     else if (httpRequest.method == "DELETE") {
-        std::cout << "DEBUG MSG: DELETE" << std::endl;
-
-        // 削除するファイルのパスを特定
-        std::string filePath = httpRequest.url;
-        std::cout << "DEBUG MSG: filePath: " << filePath << "\n";
-
         // ファイルを削除
-        if (std::remove(("." + filePath).c_str()) != 0) {
+        if (std::remove(("." + httpRequest.url).c_str()) != 0) {
             std::perror("ERROR: File delete failed");
             std::cerr << "ERROR: File not found or delete failed.\n";
             return "HTTP/1.1 404 Not Found\r\n\r\n"; // エラーレスポンス

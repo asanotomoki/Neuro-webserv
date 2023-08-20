@@ -7,7 +7,7 @@
 //
 class DataProcessor {
 	public:
-    	std::string processPostData(const std::string& postData, const ServerContext& server_context);
+    	std::string processPostData(const std::string& postData);
 };
 
 #endif

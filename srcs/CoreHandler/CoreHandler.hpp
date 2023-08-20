@@ -4,6 +4,12 @@
 #include "ServerContext.hpp"
 #include <string>
 
+struct ProcessResult {
+    std::string status;
+    std::string message;
+    int statusCode;
+};
+
 //大脳クラス
 class CoreHandler
 {

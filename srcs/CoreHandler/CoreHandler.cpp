@@ -27,35 +27,37 @@ std::string CoreHandler::processRequest(const std::string& request, const Server
         response += fileContent;
 
         std::cout << "DEBUG MSG: GET SUCCESS\n";
-        return response; // レスポンスを返す
+        return response;
     }
     else if (httpRequest.method == "POST") {
 
         LocationContext location_context = server_context.getLocationContext("/upload");
-        if (location_context.isAllowedMethod("POST") == false) {
-            std::cout << "DEBUG MSG: POST METHOD NOT ALLOWED\n";
-            return "HTTP/1.1 405 Method Not Allowed\r\n\r\n";
-        }
-
-        if (httpRequest.body.empty()) {
-            std::cerr << "ERROR: Empty body.\n";
-            return "HTTP/1.1 400 Bad Request\r\n\r\n"; // クライアントにエラーレスポンスを返す
-        }
-        
-        // データ処理クラスを使用してPOSTデータを処理
         DataProcessor dataProcessor;
-        std::string result = dataProcessor.processPostData(httpRequest.body);
+        ProcessResult result = dataProcessor.processPostData(httpRequest.body, location_context);
+
+        if (result.statusCode == 405){
+            StaticFileReader fileReader;
+            std::string fileContent = fileReader.readFile("405.html", "GET", server_context);
+
+            std::string response = "HTTP/1.1 200 OK\r\n";
+            // response += "Content-Type: text/html\r\n";
+            // std::string response = "Content-Length: " + std::to_string(fileContent.size()) + "\r\n";
+            response += "\r\n";
+            response += fileContent;
+
+            return response;
+        }
 
         // レスポンスの生成
         std::string response = "HTTP/1.1 200 OK\r\n";
         response += "Content-Type: Web/json\r\n"; // もしJSONレスポンスであれば
-        response += "Content-Length: " + std::to_string(result.size()) + "\r\n";
+        response += "Content-Length: " + std::to_string(result.message.size()) + "\r\n";
         response += "\r\n";
-        response += result;
+        response += result.message;
 
         std::cout << "DEBUG MSG: POST SUCCESS\n";
         std::cout << "DEBUG MSG:: response: " << response << "\n";
-        return response; // レスポンスを返す
+        return response;
     }
     else if (httpRequest.method == "DELETE") {
         // ファイルを削除

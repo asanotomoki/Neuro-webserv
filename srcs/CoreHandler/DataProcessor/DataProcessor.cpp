@@ -1,7 +1,11 @@
 #include "DataProcessor.hpp"
 #include <fstream>
 
-std::string DataProcessor::processPostData(const std::string& postData) {
+ProcessResult DataProcessor::processPostData(const std::string& postData, const LocationContext& locationContext) {
+    
+    if (locationContext.isAllowedMethod("POST") == false) {
+        return { "error", "Method not allowed.", 405 };
+    }
     // ファイルデータの部分を解析
     size_t fileDataStart = postData.find("\r\n") + 1;
     size_t fileDataEnd = postData.find("\r\n", fileDataStart);
@@ -18,11 +22,11 @@ std::string DataProcessor::processPostData(const std::string& postData) {
     // 指定のディレクトリにファイルを保存
     std::ofstream file(filePath, std::ios::binary);
     if (!file) {
-        return "{\"status\": \"error\", \"message\": \"Failed to create file.\"}";
+        return { "error", "Failed to create file.", 500 };
     }
 
     file.write(fileData.c_str(), fileData.size());
     file.close();
 
-    return "{\"status\": \"success\", \"message\": \"File uploaded successfully.\", \"path\": \"" + filePath + "\"}";
+    return { "success", "File uploaded successfully.", 200 };
 }

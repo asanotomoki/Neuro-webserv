@@ -33,12 +33,16 @@ void ConfigParser::setDirectiveType(const std::string& directive)
 		_directive_type = SERVER_NAME;
 	else if (directive == "client_max_body_size")
 		_directive_type = MAX_BODY_SIZE;
+	else if (directive == "error_page")
+		_directive_type = ERROR_PAGE;
 	else if (directive == "location")
 		_directive_type = LOCATION;
 	else if (directive == "alias")
 		_directive_type = ALIAS;
-	else if (directive == "index")
-		_directive_type = INDEX;
+	else if (directive == "name")
+		_directive_type = NAME;
+	else if (directive == "limit_except")
+		_directive_type = LIMIT_EXCEPT;
 	else
 		_directive_type = UNKNOWN;
 }
@@ -51,12 +55,14 @@ bool ConfigParser::isInHttpContext()
 bool ConfigParser::isInServerContext()
 {
 	return _directive_type == LISTEN || _directive_type == SERVER_NAME
-			|| _directive_type == MAX_BODY_SIZE || _directive_type == LOCATION;
+		|| _directive_type == MAX_BODY_SIZE || _directive_type == ERROR_PAGE
+		|| _directive_type == LOCATION;
 }
 
 bool ConfigParser::isInLocationContext()
 {
-	return  _directive_type == ALIAS || _directive_type == INDEX;
+	return  _directive_type == ALIAS || _directive_type == NAME
+		|| _directive_type == LIMIT_EXCEPT;
 }
 
 bool ConfigParser::isAllowedDirective()
@@ -169,12 +175,14 @@ const ServerContext ConfigParser::setServerContext()
 		if (_one_line[0] == "}")
 			break ;
 		setDirectiveType(_one_line[0]);
-		if (!isAllowedDirective())
+		if (!isAllowedDirective()) {
+			std::cout << "DEBUG MSG" << std::endl;
 			throw ConfigError(NOT_ALLOWED_DIRECTIVE, _one_line[0], _filepath, _line_number + 1);
+		}
 		else if (_directive_type == LOCATION)
 		{
 			LocationContext location_context = setLocationContext();
-			server_context.addLocationBlock(location_context);
+			server_context.addLocationContext(location_context);
 		}
 		else
 		{
@@ -185,6 +193,9 @@ const ServerContext ConfigParser::setServerContext()
 				server_context.setServerName(_one_line[1]);
 			else if (_directive_type == MAX_BODY_SIZE)
 				server_context.setMaxBodySize(_one_line[1]);
+			else if (_directive_type == ERROR_PAGE){
+				server_context.setErrorPage(_one_line[1], _one_line[2]);
+			}
 		}
 	}
 	return server_context;
@@ -208,6 +219,11 @@ const LocationContext ConfigParser::setLocationContext()
 		setDirectiveType(_one_line[0]);
 		if (!isAllowedDirective())
 			throw ConfigError(NOT_ALLOWED_DIRECTIVE, _one_line[0], _filepath, _line_number + 1);
+		else if (_directive_type == LIMIT_EXCEPT){
+			for (size_t i = 1; i < _one_line.size(); ++i) {
+        		location_context.addAllowedMethod(_one_line[i]);
+    		}
+		}
 		else
 			location_context.addDirective(_one_line[0], _one_line[1], _filepath, _line_number + 1);
 	}

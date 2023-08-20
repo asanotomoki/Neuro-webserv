@@ -5,10 +5,16 @@
 
 ServerContext::ServerContext():
 	_listen(),
-	_server_name()
+	_server_name(),
+	_max_body_size(),
+	_error_pages(),
+	_locations(),
+	_directives()
 {
-	_errorLocationContext.addDirective("alias", "./docs/error_page/");
-	_errorLocationContext.addDirective("index", "404.html");
+	_404LocationContext.addDirective("alias", "./docs/error_page/");
+	_404LocationContext.addDirective("name", "404.html");
+	_405LocationContext.addDirective("alias", "./docs/error_page/");
+	_405LocationContext.addDirective("name", "405.html");
 }
 
 ServerContext::~ServerContext()
@@ -30,6 +36,11 @@ void ServerContext::setMaxBodySize(const std::string& max_body_size)
 	_max_body_size = max_body_size;
 }
 
+void ServerContext::setErrorPage(std::string status_code, const std::string& filename)
+{
+	_error_pages.insert(std::make_pair(status_code, filename));
+}
+
 const std::string& ServerContext::getListen() const
 {
 	return _listen;
@@ -45,7 +56,15 @@ const std::string& ServerContext::getMaxBodySize() const
 	return _max_body_size;
 }
 
-void ServerContext::addLocationBlock(const LocationContext& location)
+const std::string& ServerContext::getErrorPage(std::string status_code) const
+{
+	std::map<std::string, std::string>::const_iterator it = _error_pages.find(status_code);
+	// if (it == _error_pages.end())
+	// 	return _404LocationContext.getDirective("alias") + _404LocationContext.getDirective("index");
+	return it->second;
+}
+
+void ServerContext::addLocationContext(const LocationContext& location)
 {
 	_locations.push_back(location);
 }
@@ -54,9 +73,13 @@ void ServerContext::addDirectives(const std::string& directive, const std::strin
 	const std::string& filepath, int line_number)
 {
 	// check if directive is not duplicated
-	if (_directives.find(directive) != _directives.end())
-		throw ConfigError(DUPRICATE_DIRECTIVE, directive, filepath, line_number);
-
+	if (_directives.find(directive) != _directives.end()) {
+		if (directive == "error_page") {
+			_directives.insert(std::make_pair(directive, value));
+			return ;
+		}
+		throw ConfigError(DUPLICATE_DIRECTIVE, directive, filepath, line_number);
+	}
 	_directives.insert(std::make_pair(directive, value));
 }
 
@@ -90,7 +113,7 @@ const LocationContext& ServerContext::getLocationContext(const std::string& path
 	}
 	if (!isMatched)
 	{
-		return _errorLocationContext;
+		return _404LocationContext;
 	}
 	return *matched;
 }
@@ -103,4 +126,14 @@ std::string::size_type ServerContext::getMaxPrefixLength(const std::string& str1
 		++i;
 	}
 	return i;
+}
+
+const LocationContext& ServerContext::get404LocationContext() const
+{
+	return _404LocationContext;
+}
+
+const LocationContext& ServerContext::get405LocationContext() const
+{
+	return _405LocationContext;
 }

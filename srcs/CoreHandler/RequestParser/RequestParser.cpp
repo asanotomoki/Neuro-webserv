@@ -35,8 +35,9 @@ HttpRequest RequestParser::parse(const std::string& request, const ServerContext
     std::cout << "DEBUG MSG:: contentLength: " << contentLength << std::endl;
     // ボディを解析 (Content-Lengthが指定されていれば)
     if (contentLength > 0) {
-        if (contentLength > std::stoi(serverContext.getMaxBodySize())) {
-            contentLength = std::stoi(serverContext.getMaxBodySize());
+        int maxBodySize = std::stoi(serverContext.getMaxBodySize());
+        if (contentLength > maxBodySize) {
+            contentLength = maxBodySize;
         }
         char* buffer = new char[contentLength];
         requestStream.read(buffer, contentLength);

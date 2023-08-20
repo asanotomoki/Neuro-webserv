@@ -6,41 +6,36 @@
 StaticFileReader::StaticFileReader() {
 }
 
-std::string StaticFileReader::readFile(const std::string& requestPath, const ServerContext& serverContext) {
+std::string StaticFileReader::readFile(const std::string& requestPath, const std::string& method,
+                                       const ServerContext& serverContext) {
     if (requestPath == "/favicon.ico") {
         std::cerr << "DEBUG MSG: favicon.ico request, ignoring\n";
         return {};
     }
-    
+
     // リクエストパスから適切なLocationContextを取得
-    const LocationContext& locationContext = serverContext.getLocationContext(requestPath);
+    LocationContext locationContext;
+    if (requestPath == "404.html")
+        locationContext = serverContext.get404LocationContext();
+    else if (requestPath == "405.html")
+        locationContext = serverContext.get405LocationContext();
+    else {
+        locationContext = serverContext.getLocationContext(requestPath);
+        if (!locationContext.isAllowedMethod(method))
+            locationContext = serverContext.get405LocationContext();
+    }
 
     // "alias" ディレクティブの値を取得
     std::string alias = locationContext.getDirective("alias");
 
     std::cout << "DEBUG MSG:: alias: " << alias << "\n";
 
-    // リクエストパスから、aliasディレクティブで指定された部分を取り除く
-    // std::string modifiedRequestPath = requestPath.substr(requestPath.find_first_of('/', 1));
+    std::string filename = locationContext.getDirective("name");
 
-    std::cout << "DEBUG MSG:: requestPath: " << requestPath << "\n";
-
-    std::string modifiedRequestPath = locationContext.getDirective("index");
-    // if (requestPath == "/") {
-    //     modifiedRequestPath = "/index.html"; // 既定のインデックスファイルへのパス
-    // } else {
-    //     size_t pos = requestPath.find_first_of('/', 0);
-    //     // error handling
-    //     if (pos == std::string::npos) {
-    //         std::cerr << "ERROR: invalid request path: " << requestPath << "\n";
-    //         return {};
-    //     }
-    //     modifiedRequestPath = requestPath.substr(pos);
-    // }
-    std::cout << "DEBUG MSG:: modifiedRequestPath: " << modifiedRequestPath << "\n";
+    std::cout << "DEBUG MSG:: filename: " << filename << "\n";
 
     // aliasで指定されたパスと組み合わせて、完全なファイルパスを作成
-    std::string filePath = alias + modifiedRequestPath;
+    std::string filePath = alias + filename;
 
     std::cout << "DEBUG MSG:: filePath: " << filePath << "\n";
 

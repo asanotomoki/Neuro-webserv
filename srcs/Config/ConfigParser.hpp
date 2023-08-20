@@ -24,9 +24,11 @@ class ConfigParser
         LISTEN,
         SERVER_NAME,
         MAX_BODY_SIZE,
+        ERROR_PAGE,
         LOCATION,
         ALIAS,
-        INDEX,
+        NAME,
+        LIMIT_EXCEPT,
         UNKNOWN
     };
 
@@ -54,7 +56,7 @@ class ConfigParser
         std::vector<std::string> _one_line;
         ContextType _context_type;
         DirectiveType _directive_type;
-		bool isFile(const char *path);
+		bool isFile(const char* path);
 };
 
 #endif

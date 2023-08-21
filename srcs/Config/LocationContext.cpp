@@ -3,7 +3,7 @@
 #include <stdexcept>
 
 LocationContext::LocationContext():
-	_allowed_methods(),
+	_allowedMethods(),
 	_directives()
 {
 }
@@ -24,7 +24,7 @@ void LocationContext::addDirective(const std::string& directive, const std::stri
 
 void LocationContext::addAllowedMethod(const std::string& method)
 {
-	_allowed_methods.insert(method);
+	_allowedMethods.insert(method);
 }
 
 const std::string& LocationContext::getDirective(const std::string& directive) const
@@ -37,7 +37,7 @@ const std::string& LocationContext::getDirective(const std::string& directive) c
 
 bool LocationContext::isAllowedMethod(const std::string& method) const
 {
-	if (_allowed_methods.empty())
+	if (_allowedMethods.empty())
 		return true;
-	return _allowed_methods.find(method) != _allowed_methods.end();
+	return _allowedMethods.find(method) != _allowedMethods.end();
 }

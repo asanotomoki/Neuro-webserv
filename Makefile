@@ -28,6 +28,6 @@ clean:
 	rm -rf $(OBJECTS_DIR)
 
 fclean:
-	rm -rf $(OBJECTS_DIR) $(NAME) ./post/*
+	rm -rf $(OBJECTS_DIR) $(NAME)
 
 re: fclean all

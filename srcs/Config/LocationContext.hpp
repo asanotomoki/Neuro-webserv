@@ -17,7 +17,7 @@ class LocationContext
 		bool isAllowedMethod(const std::string& method) const;
 		
 	private:
-		std::set<std::string> _allowed_methods;
+		std::set<std::string> _allowedMethods;
 		std::map<std::string, std::string> _directives;
 
 };

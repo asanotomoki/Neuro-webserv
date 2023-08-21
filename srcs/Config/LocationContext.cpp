@@ -13,11 +13,11 @@ LocationContext::~LocationContext()
 }
 
 void LocationContext::addDirective(const std::string& directive, const std::string& value,
-	const std::string& filepath, int line_number)
+	const std::string& filepath, int lineNumber)
 {
 	// check if directive is not duplicated
 	if (_directives.find(directive) != _directives.end()) {
-		throw ConfigError(DUPLICATE_DIRECTIVE, directive, filepath, line_number);
+		throw ConfigError(DUPLICATE_DIRECTIVE, directive, filepath, lineNumber);
 	}
 	_directives.insert(std::make_pair(directive, value));
 }

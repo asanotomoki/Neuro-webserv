@@ -150,8 +150,8 @@ void ConfigParser::parseLines()
 			throw ConfigError(NOT_ALLOWED_DIRECTIVE, _oneLine[0], _filepath, _lineNumber + 1);
 		}
 		else if (_directiveType == SERVER){
-			ServerContext server_context = setServerContext();
-			_config.addServerContext(server_context);
+			ServerContext serverContext = setServerContext();
+			_config.addServerContext(serverContext);
 		}
 		else
 		{

@@ -162,7 +162,7 @@ void ConfigParser::parseLines()
 
 const ServerContext ConfigParser::setServerContext()
 {
-	ServerContext server_context = ServerContext();
+	ServerContext serverContext = ServerContext();
 
 	_lineNumber++;
 	for ( ; _lineNumber < _lines.size(); _lineNumber++)
@@ -182,30 +182,30 @@ const ServerContext ConfigParser::setServerContext()
 		else if (_directiveType == LOCATION)
 		{
 			LocationContext location_context = setLocationContext();
-			server_context.addLocationContext(location_context);
+			serverContext.addLocationContext(location_context);
 		}
 		else
 		{
-			server_context.addDirectives(_oneLine[0], _oneLine[1], _filepath, _lineNumber + 1);
+			serverContext.addDirectives(_oneLine[0], _oneLine[1], _filepath, _lineNumber + 1);
 			if (_directiveType == LISTEN)
-				server_context.setListen(_oneLine[1]);
+				serverContext.setListen(_oneLine[1]);
 			else if (_directiveType == SERVER_NAME)
-				server_context.setServerName(_oneLine[1]);
+				serverContext.setServerName(_oneLine[1]);
 			else if (_directiveType == MAX_BODY_SIZE)
-				server_context.setMaxBodySize(_oneLine[1]);
+				serverContext.setMaxBodySize(_oneLine[1]);
 			else if (_directiveType == ERROR_PAGE){
-				server_context.setErrorPage(_oneLine[1], _oneLine[2]);
+				serverContext.setErrorPage(_oneLine[1], _oneLine[2]);
 			}
 		}
 	}
-	return server_context;
+	return serverContext;
 }
 
 const LocationContext ConfigParser::setLocationContext()
 {
-	LocationContext location_context = LocationContext();
+	LocationContext locationContext = LocationContext();
 
-	location_context.addDirective("path", _oneLine[1], _filepath, _lineNumber + 1);
+	locationContext.addDirective("path", _oneLine[1], _filepath, _lineNumber + 1);
 	_lineNumber++;
 	for ( ; _lineNumber < _lines.size(); _lineNumber++)
 	{
@@ -221,13 +221,13 @@ const LocationContext ConfigParser::setLocationContext()
 			throw ConfigError(NOT_ALLOWED_DIRECTIVE, _oneLine[0], _filepath, _lineNumber + 1);
 		else if (_directiveType == LIMIT_EXCEPT){
 			for (size_t i = 1; i < _oneLine.size(); ++i) {
-        		location_context.addAllowedMethod(_oneLine[i]);
+        		locationContext.addAllowedMethod(_oneLine[i]);
     		}
 		}
 		else
-			location_context.addDirective(_oneLine[0], _oneLine[1], _filepath, _lineNumber + 1);
+			locationContext.addDirective(_oneLine[0], _oneLine[1], _filepath, _lineNumber + 1);
 	}
-	return location_context;
+	return locationContext;
 }
 
 bool ConfigParser::isFile(const char *path)

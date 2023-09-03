@@ -26,8 +26,8 @@ class ConfigError : public std::exception
 
 	private:
 		std::string itostr(int num);
-		std::string _error_message;
-		std::string _file_info;
+		std::string _errorMessage;
+		std::string _fileInfo;
 };
 
 #endif

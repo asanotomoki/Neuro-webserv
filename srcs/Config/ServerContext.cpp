@@ -5,9 +5,9 @@
 
 ServerContext::ServerContext():
 	_listen(),
-	_server_name(),
-	_max_body_size(),
-	_error_pages(),
+	_serverName(),
+	_maxBodySize(),
+	_errorPages(),
 	_locations(),
 	_directives()
 {
@@ -28,17 +28,17 @@ void ServerContext::setListen(const std::string& listen)
 
 void ServerContext::setServerName(const std::string& server_name)
 {
-	_server_name = server_name;
+	_serverName = server_name;
 }
 
 void ServerContext::setMaxBodySize(const std::string& max_body_size)
 {
-	_max_body_size = max_body_size;
+	_maxBodySize = max_body_size;
 }
 
 void ServerContext::setErrorPage(std::string status_code, const std::string& filename)
 {
-	_error_pages.insert(std::make_pair(status_code, filename));
+	_errorPages.insert(std::make_pair(status_code, filename));
 }
 
 const std::string& ServerContext::getListen() const
@@ -48,18 +48,18 @@ const std::string& ServerContext::getListen() const
 
 const std::string& ServerContext::getServerName() const
 {
-	return _server_name;
+	return _serverName;
 }
 
 const std::string& ServerContext::getMaxBodySize() const
 {
-	return _max_body_size;
+	return _maxBodySize;
 }
 
 const std::string& ServerContext::getErrorPage(std::string status_code) const
 {
-	std::map<std::string, std::string>::const_iterator it = _error_pages.find(status_code);
-	// if (it == _error_pages.end())
+	std::map<std::string, std::string>::const_iterator it = _errorPages.find(status_code);
+	// if (it == _errorPages.end())
 	// 	return _404LocationContext.getDirective("alias") + _404LocationContext.getDirective("index");
 	return it->second;
 }
@@ -97,9 +97,7 @@ const LocationContext& ServerContext::getLocationContext(const std::string& path
 	std::string::size_type max = 0;
 	for (std::vector<LocationContext>::const_iterator it = locations.begin(); it != locations.end(); ++it)
 	{
-		// ロケーションパスを取得
 		std::string locationPath = it->getDirective("path");
-		// 前方一致の最大の長さを取得する
 		std::string::size_type currentMatch = getMaxPrefixLength(path, locationPath);
 		if (currentMatch != std::string::npos && currentMatch == locationPath.size() && currentMatch == path.size())
 		{

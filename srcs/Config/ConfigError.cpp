@@ -4,8 +4,8 @@
 
 ConfigError::ConfigError(const ErrorType error_type, const std::string& error_word,
 						const std::string& filepath, int line_number):
-	_error_message("Config Error: "), 
-	_file_info(" in " + filepath + ": " + itostr(line_number))
+	_errorMessage("Config Error: "), 
+	_fileInfo(" in " + filepath + ": " + itostr(line_number))
 {
 	setErrorMessage(error_type, error_word);
 }
@@ -26,19 +26,19 @@ void ConfigError::setErrorMessage(const ErrorType error_type, const std::string&
 	switch (error_type)
 	{
 		case NEED_SERVER_CONTEXT:
-			_error_message += "need server context" + _file_info;
+			_errorMessage += "need server context" + _fileInfo;
 			break;
 		case DUPLICATE_DIRECTIVE:
-			_error_message += "duplicate \"" + error_word + "\" directive" + _file_info;
+			_errorMessage += "duplicate \"" + error_word + "\" directive" + _fileInfo;
 			break;
 		case NOT_ALLOWED_DIRECTIVE:
-			_error_message += "\"" + error_word + "\" directive is not allowed here" + _file_info;
+			_errorMessage += "\"" + error_word + "\" directive is not allowed here" + _fileInfo;
 			break;
 		case UNKOWN_DIRECTIVE:
-			_error_message += "unknown directive \"" + error_word + "\"" + _file_info;
+			_errorMessage += "unknown directive \"" + error_word + "\"" + _fileInfo;
 			break;
 		case SYSTEM_ERROR:
-			_error_message += "system call error \"" + error_word + ": " + strerror(errno) + "\"" + _file_info;
+			_errorMessage += "system call error \"" + error_word + ": " + strerror(errno) + "\"" + _fileInfo;
 			break;
 		default:
 			break;
@@ -47,7 +47,7 @@ void ConfigError::setErrorMessage(const ErrorType error_type, const std::string&
 
 const char* ConfigError::what() const throw()
 {
-	return _error_message.c_str();
+	return _errorMessage.c_str();
 }
 
 std::string ConfigError::itostr(int num)

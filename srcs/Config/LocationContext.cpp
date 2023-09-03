@@ -3,7 +3,7 @@
 #include <stdexcept>
 
 LocationContext::LocationContext():
-	_allowed_methods(),
+	_allowedMethods(),
 	_directives()
 {
 }
@@ -13,18 +13,18 @@ LocationContext::~LocationContext()
 }
 
 void LocationContext::addDirective(const std::string& directive, const std::string& value,
-	const std::string& filepath, int line_number)
+	const std::string& filepath, int lineNumber)
 {
 	// check if directive is not duplicated
 	if (_directives.find(directive) != _directives.end()) {
-		throw ConfigError(DUPLICATE_DIRECTIVE, directive, filepath, line_number);
+		throw ConfigError(DUPLICATE_DIRECTIVE, directive, filepath, lineNumber);
 	}
 	_directives.insert(std::make_pair(directive, value));
 }
 
 void LocationContext::addAllowedMethod(const std::string& method)
 {
-	_allowed_methods.insert(method);
+	_allowedMethods.insert(method);
 }
 
 const std::string& LocationContext::getDirective(const std::string& directive) const
@@ -37,7 +37,7 @@ const std::string& LocationContext::getDirective(const std::string& directive) c
 
 bool LocationContext::isAllowedMethod(const std::string& method) const
 {
-	if (_allowed_methods.empty())
+	if (_allowedMethods.empty())
 		return true;
-	return _allowed_methods.find(method) != _allowed_methods.end();
+	return _allowedMethods.find(method) != _allowedMethods.end();
 }

@@ -31,9 +31,9 @@ std::string CoreHandler::processRequest(const std::string& request, const Server
     }
     else if (httpRequest.method == "POST") {
 
-        LocationContext location_context = server_context.getLocationContext("/upload");
+        LocationContext locationContext = server_context.getLocationContext("/upload");
         DataProcessor dataProcessor;
-        ProcessResult result = dataProcessor.processPostData(httpRequest.body, location_context);
+        ProcessResult result = dataProcessor.processPostData(httpRequest.body, locationContext);
 
         if (result.statusCode == 405){
             StaticFileReader fileReader;
@@ -60,9 +60,21 @@ std::string CoreHandler::processRequest(const std::string& request, const Server
         return response;
     }
     else if (httpRequest.method == "DELETE") {
-        // ファイルを削除
+        
+        LocationContext locationContext = server_context.getLocationContext("/upload");
+        if (locationContext.isAllowedMethod("DELETE") == false) {
+            StaticFileReader fileReader;
+            std::string fileContent = fileReader.readFile("405.html", "GET", server_context);
+
+            std::string response = "HTTP/1.1 200 OK\r\n";
+            response += "Content-Type: text/html\r\n";
+            response += "Content-Length: " + std::to_string(fileContent.size()) + "\r\n";
+            response += "\r\n";
+            response += fileContent;
+
+            return response;
+        }
         if (std::remove(("." + httpRequest.url).c_str()) != 0) {
-            std::perror("ERROR: File delete failed");
             std::cerr << "ERROR: File not found or delete failed.\n";
             return "HTTP/1.1 404 Not Found\r\n\r\n"; // エラーレスポンス
         }

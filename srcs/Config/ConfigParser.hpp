@@ -50,12 +50,12 @@ class ConfigParser
 
     private:
         Config& _config;
-        size_t _line_number;
+        size_t _lineNumber;
         std::string _filepath;
         std::vector<std::vector<std::string> > _lines;
-        std::vector<std::string> _one_line;
-        ContextType _context_type;
-        DirectiveType _directive_type;
+        std::vector<std::string> _oneLine;
+        ContextType _contextType;
+        DirectiveType _directiveType;
 		bool isFile(const char* path);
 };
 

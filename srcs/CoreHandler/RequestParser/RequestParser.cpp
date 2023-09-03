@@ -2,13 +2,13 @@
 #include <sstream>
 #include <iostream>
 
-HttpRequest RequestParser::parse(const std::string& request, const ServerContext &serverContext) {
+HttpRequest RequestParser::parse(const std::string& request, const ServerContext& serverContext) {
     HttpRequest httpRequest;
     std::istringstream requestStream(request);
 
     // メソッドとURLを解析
     requestStream >> httpRequest.method >> httpRequest.url;
-
+ 
     // ヘッダーを解析
     std::string headerLine;
     int contentLength = 0; // Content-Lengthを保存する変数

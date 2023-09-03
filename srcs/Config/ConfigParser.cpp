@@ -10,7 +10,7 @@
 
 ConfigParser::ConfigParser(Config& config):
 	_config(config),
-	_line_number(0)
+	_lineNumber(0)
 {
 }
 
@@ -20,58 +20,58 @@ ConfigParser::~ConfigParser()
 
 void ConfigParser::setContextType(ContextType context)
 {
-	_context_type = context;
+	_contextType = context;
 }
 
 void ConfigParser::setDirectiveType(const std::string& directive)
 {
 	if (directive == "server")
-		_directive_type = SERVER;
+		_directiveType = SERVER;
 	else if (directive == "listen")
-		_directive_type = LISTEN;
+		_directiveType = LISTEN;
 	else if (directive == "server_name")
-		_directive_type = SERVER_NAME;
+		_directiveType = SERVER_NAME;
 	else if (directive == "client_max_body_size")
-		_directive_type = MAX_BODY_SIZE;
+		_directiveType = MAX_BODY_SIZE;
 	else if (directive == "error_page")
-		_directive_type = ERROR_PAGE;
+		_directiveType = ERROR_PAGE;
 	else if (directive == "location")
-		_directive_type = LOCATION;
+		_directiveType = LOCATION;
 	else if (directive == "alias")
-		_directive_type = ALIAS;
+		_directiveType = ALIAS;
 	else if (directive == "name")
-		_directive_type = NAME;
+		_directiveType = NAME;
 	else if (directive == "limit_except")
-		_directive_type = LIMIT_EXCEPT;
+		_directiveType = LIMIT_EXCEPT;
 	else
-		_directive_type = UNKNOWN;
+		_directiveType = UNKNOWN;
 }
 
 bool ConfigParser::isInHttpContext()
 {
-	return _directive_type == SERVER;
+	return _directiveType == SERVER;
 }
 
 bool ConfigParser::isInServerContext()
 {
-	return _directive_type == LISTEN || _directive_type == SERVER_NAME
-		|| _directive_type == MAX_BODY_SIZE || _directive_type == ERROR_PAGE
-		|| _directive_type == LOCATION;
+	return _directiveType == LISTEN || _directiveType == SERVER_NAME
+		|| _directiveType == MAX_BODY_SIZE || _directiveType == ERROR_PAGE
+		|| _directiveType == LOCATION;
 }
 
 bool ConfigParser::isInLocationContext()
 {
-	return  _directive_type == ALIAS || _directive_type == NAME
-		|| _directive_type == LIMIT_EXCEPT;
+	return  _directiveType == ALIAS || _directiveType == NAME
+		|| _directiveType == LIMIT_EXCEPT;
 }
 
 bool ConfigParser::isAllowedDirective()
 {
-	if (_context_type == HTTP_CONTEXT)
+	if (_contextType == HTTP_CONTEXT)
 		return isInHttpContext();
-	else if (_context_type == SERVER_CONTEXT)
+	else if (_contextType == SERVER_CONTEXT)
 		return isInServerContext();
-	else if (_context_type == LOCATION_CONTEXT)
+	else if (_contextType == LOCATION_CONTEXT)
 		return isInLocationContext();
 	return false;
 }
@@ -135,99 +135,99 @@ std::vector<std::string> ConfigParser::splitLine(const std::string& line)
 
 void ConfigParser::parseLines()
 {
-	for ( ; _line_number < _lines.size(); _line_number++)
+	for ( ; _lineNumber < _lines.size(); _lineNumber++)
 	{
 		setContextType(HTTP_CONTEXT);
-		_one_line.clear();
-		_one_line = _lines[_line_number];
-		if (_one_line.empty() || _one_line[0] == "#")
+		_oneLine.clear();
+		_oneLine = _lines[_lineNumber];
+		if (_oneLine.empty() || _oneLine[0] == "#")
 			continue ;
-		if (_one_line[0] == "}")
+		if (_oneLine[0] == "}")
 			break ;
-		setDirectiveType(_one_line[0]);
+		setDirectiveType(_oneLine[0]);
 		if (!isAllowedDirective())
 		{
-			throw ConfigError(NOT_ALLOWED_DIRECTIVE, _one_line[0], _filepath, _line_number + 1);
+			throw ConfigError(NOT_ALLOWED_DIRECTIVE, _oneLine[0], _filepath, _lineNumber + 1);
 		}
-		else if (_directive_type == SERVER){
-			ServerContext server_context = setServerContext();
-			_config.addServerContext(server_context);
+		else if (_directiveType == SERVER){
+			ServerContext serverContext = setServerContext();
+			_config.addServerContext(serverContext);
 		}
 		else
 		{
-			throw ConfigError(NEED_SERVER_CONTEXT, _one_line[0], _filepath, _line_number + 1);
+			throw ConfigError(NEED_SERVER_CONTEXT, _oneLine[0], _filepath, _lineNumber + 1);
 		}
 	}
 }
 
 const ServerContext ConfigParser::setServerContext()
 {
-	ServerContext server_context = ServerContext();
+	ServerContext serverContext = ServerContext();
 
-	_line_number++;
-	for ( ; _line_number < _lines.size(); _line_number++)
+	_lineNumber++;
+	for ( ; _lineNumber < _lines.size(); _lineNumber++)
 	{
 		setContextType(SERVER_CONTEXT);
-		_one_line.clear();
-		_one_line = _lines[_line_number];
-		if (_one_line.empty() || _one_line[0] == "#")
+		_oneLine.clear();
+		_oneLine = _lines[_lineNumber];
+		if (_oneLine.empty() || _oneLine[0] == "#")
 			continue ;
-		if (_one_line[0] == "}")
+		if (_oneLine[0] == "}")
 			break ;
-		setDirectiveType(_one_line[0]);
+		setDirectiveType(_oneLine[0]);
 		if (!isAllowedDirective()) {
 			std::cout << "DEBUG MSG" << std::endl;
-			throw ConfigError(NOT_ALLOWED_DIRECTIVE, _one_line[0], _filepath, _line_number + 1);
+			throw ConfigError(NOT_ALLOWED_DIRECTIVE, _oneLine[0], _filepath, _lineNumber + 1);
 		}
-		else if (_directive_type == LOCATION)
+		else if (_directiveType == LOCATION)
 		{
 			LocationContext location_context = setLocationContext();
-			server_context.addLocationContext(location_context);
+			serverContext.addLocationContext(location_context);
 		}
 		else
 		{
-			server_context.addDirectives(_one_line[0], _one_line[1], _filepath, _line_number + 1);
-			if (_directive_type == LISTEN)
-				server_context.setListen(_one_line[1]);
-			else if (_directive_type == SERVER_NAME)
-				server_context.setServerName(_one_line[1]);
-			else if (_directive_type == MAX_BODY_SIZE)
-				server_context.setMaxBodySize(_one_line[1]);
-			else if (_directive_type == ERROR_PAGE){
-				server_context.setErrorPage(_one_line[1], _one_line[2]);
+			serverContext.addDirectives(_oneLine[0], _oneLine[1], _filepath, _lineNumber + 1);
+			if (_directiveType == LISTEN)
+				serverContext.setListen(_oneLine[1]);
+			else if (_directiveType == SERVER_NAME)
+				serverContext.setServerName(_oneLine[1]);
+			else if (_directiveType == MAX_BODY_SIZE)
+				serverContext.setMaxBodySize(_oneLine[1]);
+			else if (_directiveType == ERROR_PAGE){
+				serverContext.setErrorPage(_oneLine[1], _oneLine[2]);
 			}
 		}
 	}
-	return server_context;
+	return serverContext;
 }
 
 const LocationContext ConfigParser::setLocationContext()
 {
-	LocationContext location_context = LocationContext();
+	LocationContext locationContext = LocationContext();
 
-	location_context.addDirective("path", _one_line[1], _filepath, _line_number + 1);
-	_line_number++;
-	for ( ; _line_number < _lines.size(); _line_number++)
+	locationContext.addDirective("path", _oneLine[1], _filepath, _lineNumber + 1);
+	_lineNumber++;
+	for ( ; _lineNumber < _lines.size(); _lineNumber++)
 	{
 		setContextType(LOCATION_CONTEXT);
-		_one_line.clear();
-		_one_line = _lines[_line_number];
-		if (_one_line.empty() || _one_line[0] == "#")
+		_oneLine.clear();
+		_oneLine = _lines[_lineNumber];
+		if (_oneLine.empty() || _oneLine[0] == "#")
 			continue ;
-		if (_one_line[0] == "}")
+		if (_oneLine[0] == "}")
 			break ;
-		setDirectiveType(_one_line[0]);
+		setDirectiveType(_oneLine[0]);
 		if (!isAllowedDirective())
-			throw ConfigError(NOT_ALLOWED_DIRECTIVE, _one_line[0], _filepath, _line_number + 1);
-		else if (_directive_type == LIMIT_EXCEPT){
-			for (size_t i = 1; i < _one_line.size(); ++i) {
-        		location_context.addAllowedMethod(_one_line[i]);
+			throw ConfigError(NOT_ALLOWED_DIRECTIVE, _oneLine[0], _filepath, _lineNumber + 1);
+		else if (_directiveType == LIMIT_EXCEPT){
+			for (size_t i = 1; i < _oneLine.size(); ++i) {
+        		locationContext.addAllowedMethod(_oneLine[i]);
     		}
 		}
 		else
-			location_context.addDirective(_one_line[0], _one_line[1], _filepath, _line_number + 1);
+			locationContext.addDirective(_oneLine[0], _oneLine[1], _filepath, _lineNumber + 1);
 	}
-	return location_context;
+	return locationContext;
 }
 
 bool ConfigParser::isFile(const char *path)

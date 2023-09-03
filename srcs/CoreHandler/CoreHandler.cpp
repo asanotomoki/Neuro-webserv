@@ -87,7 +87,17 @@ std::string CoreHandler::processRequest(const std::string& request, const Server
         return "HTTP/1.1 204 No Content\r\n\r\n"; // 成功のレスポンス
     }
     // 未実装のメソッドの場合
-    return "HTTP/1.1 501 Not Implemented\r\n\r\n"; // 未実装のメソッド
+    StaticFileReader fileReader;
+    std::string fileContent = fileReader.readFile("501.html", "GET", server_context);
+
+    std::string response = "HTTP/1.1 501 Not Implemented\r\n";
+    // response += "Content-Type: text/html\r\n";
+    // response += "Content-Length: " + std::to_string(fileContent.size()) + "\r\n";
+    response += "\r\n";
+    response += fileContent;
+
+    std::cout << "DEBUG MSG: NOT IMPLEMENTED\n";
+    return response;
 }
 
 CoreHandler::~CoreHandler() {

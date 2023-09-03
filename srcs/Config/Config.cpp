@@ -95,8 +95,10 @@ const ServerContext& Config::getServerContext(const std::string& port, const std
     }
     catch (std::out_of_range& e)
     {
-        // 一致するポート番号がない場合は上位に投げる
-        throw std::runtime_error("port not found!");
+        std::cerr << "Caught runtime_error: " << e.what() << '\n';
+        // // 一致するポート番号がない場合は上位に投げる
+        // throw std::runtime_error("port not found!");
     }
+    // return
 }
 

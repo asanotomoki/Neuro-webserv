@@ -19,6 +19,8 @@ std::string StaticFileReader::readFile(const std::string& requestPath, const std
         locationContext = serverContext.get404LocationContext();
     else if (requestPath == "405.html")
         locationContext = serverContext.get405LocationContext();
+    else if (requestPath == "501.html")
+        locationContext = serverContext.get501LocationContext();
     else {
         locationContext = serverContext.getLocationContext(requestPath);
         if (!locationContext.isAllowedMethod(method))

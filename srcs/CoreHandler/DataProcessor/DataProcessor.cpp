@@ -2,10 +2,7 @@
 #include <fstream>
 
 ProcessResult DataProcessor::processPostData(const std::string& postData, const LocationContext& locationContext) {
-    
-    // if (locationContext.isAllowedMethod("POST") == false) {
-    //     return { "error", "Method not allowed.", 405 };
-    // }
+
     // ファイルデータの部分を解析
     size_t fileDataStart = postData.find("\r\n") + 1;
     size_t fileDataEnd = postData.find("\r\n", fileDataStart);

@@ -18,7 +18,7 @@ class ServerContext
         const std::string& getListen() const;
         const std::string& getServerName() const;
         const std::string& getMaxBodySize() const;
-        const std::vector<std::string>& getAllowedMethods() const;
+        //const std::vector<std::string>& getAllowedMethods() const;
         const std::string& getErrorPage(std::string status_code) const; 
 		void addLocationContext(const LocationContext& location);
         void addDirectives(const std::string& directive, const std::string& value,
@@ -27,6 +27,7 @@ class ServerContext
 		const LocationContext& getLocationContext(const std::string& path) const;
         const LocationContext& get404LocationContext() const;
         const LocationContext& get405LocationContext() const;
+        const LocationContext& get501LocationContext() const;
 
     private:
         std::string _listen;
@@ -40,7 +41,7 @@ class ServerContext
         // error location context
         LocationContext _404LocationContext;
         LocationContext _405LocationContext;
-
+        LocationContext _501LocationContext;
 };
 
 #endif

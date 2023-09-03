@@ -15,6 +15,8 @@ ServerContext::ServerContext():
 	_404LocationContext.addDirective("name", "404.html");
 	_405LocationContext.addDirective("alias", "./docs/error_page/");
 	_405LocationContext.addDirective("name", "405.html");
+	_501LocationContext.addDirective("alias", "./docs/error_page/");
+	_501LocationContext.addDirective("name", "501.html");
 }
 
 ServerContext::~ServerContext()
@@ -134,4 +136,9 @@ const LocationContext& ServerContext::get404LocationContext() const
 const LocationContext& ServerContext::get405LocationContext() const
 {
 	return _405LocationContext;
+}
+
+const LocationContext& ServerContext::get501LocationContext() const
+{
+	return _501LocationContext;
 }

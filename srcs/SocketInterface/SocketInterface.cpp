@@ -135,5 +135,5 @@ void SocketInterface::handleClient(int clientSocket)
     std::string response = coreHandler.processRequest(buffer, serverContext);
  
     write(clientSocket, response.c_str(), response.length()); // レスポンスの送信
-    close(clientSocket); // ソケットのクローズ
+    close(clientSocket);
 }

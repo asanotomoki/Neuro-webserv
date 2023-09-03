@@ -10,8 +10,21 @@
             fetch('http://localhost:2000/docs/upload/uploaded_file_1.txt', {
                 method: 'DELETE',
             })
-            .then(response => response.json())
-            .then(data => console.log(data))
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                } else {
+                    return response.text();
+                }
+            })
+            .then(data =>  {
+                if (typeof data === 'string') {
+                    // レスポンスがHTML（エラーページ）の場合、その内容でページを上書きします。
+                    document.documentElement.innerHTML = data;
+                } else {
+                    console.log(data);  // JSONデータをそのまま出力
+                }
+            })
             .catch(error => console.error('An error occurred:', error));
         }
     </script>

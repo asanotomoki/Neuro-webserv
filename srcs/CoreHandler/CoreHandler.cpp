@@ -32,21 +32,24 @@ std::string CoreHandler::processRequest(const std::string& request, const Server
     else if (httpRequest.method == "POST") {
 
         LocationContext locationContext = server_context.getLocationContext("/upload");
-        DataProcessor dataProcessor;
-        ProcessResult result = dataProcessor.processPostData(httpRequest.body, locationContext);
 
-        if (result.statusCode == 405){
+        if (locationContext.isAllowedMethod("POST") == false) {
             StaticFileReader fileReader;
             std::string fileContent = fileReader.readFile("405.html", "GET", server_context);
 
-            std::string response = "HTTP/1.1 200 OK\r\n";
+            std::string response = "HTTP/1.1 405 Method Not Allowed\r\n";
             // response += "Content-Type: text/html\r\n";
-            // std::string response = "Content-Length: " + std::to_string(fileContent.size()) + "\r\n";
+            // response += "Content-Length: " + std::to_string(fileContent.size()) + "\r\n";
             response += "\r\n";
             response += fileContent;
 
+            std::cout << "DEBUG MSG: POST FAILED\n";
             return response;
         }
+
+        DataProcessor dataProcessor;
+        ProcessResult result = dataProcessor.processPostData(httpRequest.body, locationContext);
+        // エラーハンドリングを追加する必要がある
 
         // レスポンスの生成
         std::string response = "HTTP/1.1 200 OK\r\n";
@@ -66,12 +69,13 @@ std::string CoreHandler::processRequest(const std::string& request, const Server
             StaticFileReader fileReader;
             std::string fileContent = fileReader.readFile("405.html", "GET", server_context);
 
-            std::string response = "HTTP/1.1 200 OK\r\n";
-            response += "Content-Type: text/html\r\n";
-            response += "Content-Length: " + std::to_string(fileContent.size()) + "\r\n";
+            std::string response = "HTTP/1.1 405 Method Not Allowed\r\n";
+            // response += "Content-Type: text/html\r\n";
+            // response += "Content-Length: " + std::to_string(fileContent.size()) + "\r\n";
             response += "\r\n";
             response += fileContent;
 
+            std::cout << "DEBUG MSG: DELETE FAILED\n";
             return response;
         }
         if (std::remove(("." + httpRequest.url).c_str()) != 0) {

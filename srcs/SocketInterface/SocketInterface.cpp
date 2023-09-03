@@ -99,17 +99,17 @@ void SocketInterface::acceptConnection()
 std::pair<std::string, std::string> SocketInterface::parseHostAndPortFromRequest(const std::string& request) {
     std::string hostHeader = "Host: ";
     size_t start = request.find(hostHeader);
-    if (start == std::string::npos) return {"", ""}; // Host header not found
+    if (start == std::string::npos) return std::make_pair("", ""); // Host header not found
     start += hostHeader.length();
     size_t end = request.find("\r\n", start);
-    if (end == std::string::npos) return {"", ""}; // Malformed request
+    if (end == std::string::npos) std::make_pair("", ""); // Malformed request
 
     std::string hostPortStr = request.substr(start, end - start);
     size_t colonPos = hostPortStr.find(':');
     if (colonPos != std::string::npos) {
-        return {hostPortStr.substr(0, colonPos), hostPortStr.substr(colonPos + 1)};
+        return std::make_pair(hostPortStr.substr(0, colonPos), hostPortStr.substr(colonPos + 1));
     } else {
-        return {hostPortStr, ""}; // No port specified
+        return std::make_pair(hostPortStr, ""); // No port specified
     }
 }
 

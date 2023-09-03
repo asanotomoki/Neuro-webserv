@@ -10,7 +10,7 @@ std::string StaticFileReader::readFile(const std::string& requestPath, const std
                                        const ServerContext& serverContext) {
     if (requestPath == "/favicon.ico") {
         std::cerr << "DEBUG MSG: favicon.ico request, ignoring\n";
-        return {};
+        return std::string();
     }
 
     // リクエストパスから適切なLocationContextを取得
@@ -44,7 +44,7 @@ std::string StaticFileReader::readFile(const std::string& requestPath, const std
     // may be unnecessary
     if (!file) {
         std::cerr << "ERROR: File not found: " << filePath << "\n"; // エラーメッセージをログに出力
-        return {}; // 空の文字列を返して処理を継続
+        std::string(); // 空の文字列を返して処理を継続
     }
 
     std::cout << "DEBUG MSG: success readFile\n";

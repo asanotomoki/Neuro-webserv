@@ -4,7 +4,8 @@
 ProcessResult DataProcessor::processPostData(const std::string& postData, const LocationContext& locationContext) {
     
     if (locationContext.isAllowedMethod("POST") == false) {
-        return { "error", "Method not allowed.", 405 };
+        ProcessResult result = ProcessResult("error", "Method not allowed.", 405);
+        return result;
     }
     // ファイルデータの部分を解析
     size_t fileDataStart = postData.find("\r\n") + 1;
@@ -22,11 +23,13 @@ ProcessResult DataProcessor::processPostData(const std::string& postData, const 
     // 指定のディレクトリにファイルを保存
     std::ofstream file(filePath, std::ios::binary);
     if (!file) {
-        return { "error", "Failed to create file.", 500 };
+        ProcessResult result = ProcessResult("error", "Failed to create file.", 500);
+        return result;
     }
 
     file.write(fileData.c_str(), fileData.size());
     file.close();
 
-    return { "success", "File uploaded successfully.", 200 };
+    ProcessResult result = ProcessResult("success", "File uploaded successfully.", 200);
+    return result;
 }

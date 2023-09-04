@@ -80,7 +80,17 @@ std::string CoreHandler::processRequest(const std::string& request, const Server
         }
         if (std::remove(("." + httpRequest.url).c_str()) != 0) {
             std::cerr << "ERROR: File not found or delete failed.\n";
-            return "HTTP/1.1 404 Not Found\r\n\r\n"; // エラーレスポンス
+            StaticFileReader fileReader;
+            std::string fileContent = fileReader.readFile("404.html", "GET", server_context);
+
+            std::string response = "HTTP/1.1 404 Not Found\r\n";
+            // response += "Content-Type: text/html\r\n";
+            // response += "Content-Length: " + std::to_string(fileContent.size()) + "\r\n";
+            response += "\r\n";
+            response += fileContent;
+
+            std::cout << "DEBUG MSG: DELETE FAILED\n";
+            return response;
         }
 
         std::cout << "DEBUG MSG: DELETE SUCCESS\n";

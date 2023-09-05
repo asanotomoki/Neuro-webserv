@@ -87,8 +87,10 @@ const ServerContext& Config::getServerContext(const std::string& port, const std
         // server_nameがhostヘッダーと一致する場合、そのserverブロックを返す
         for (std::vector<ServerContext>::const_iterator it = serverContexts.begin(); it != serverContexts.end(); ++it)
         {
-            if (it->getServerName() == host)
+            if (it->getServerName() == host) {
+                std::cout << "server_name: " << it->getServerName() << std::endl;
                 return *it;
+            }
         }
         // server_nameがhostヘッダーと一致しない場合、最初のserverブロックを返す
         return serverContexts.at(0);

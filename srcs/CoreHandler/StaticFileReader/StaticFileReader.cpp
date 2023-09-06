@@ -6,10 +6,19 @@
 StaticFileReader::StaticFileReader() {
 }
 
+std::string StaticFileReader::readErrorFile(const std::string& filePath) {
+    std::ifstream file(filePath, std::ios::binary);
+    if (!file) {
+        return "404.html not found"; // ここでは空文字列を返していますが、エラーを示す特別な値や例外を返すことも考えられます。
+    }
+    return std::string(std::istreambuf_iterator<char>(file),
+                       std::istreambuf_iterator<char>());
+}
+
 std::string StaticFileReader::readFile(const std::string& requestPath, const std::string& method,
                                        const ServerContext& serverContext) {
     if (requestPath == "/favicon.ico") {
-        std::cerr << "DEBUG MSG: favicon.ico request, ignoring\n";
+        std::cout << "DEBUG MSG: favicon.ico request, ignoring\n";
         return {};
     }
 
@@ -43,10 +52,13 @@ std::string StaticFileReader::readFile(const std::string& requestPath, const std
 
     // ファイルをバイナリモードで読み込み
     std::ifstream file(filePath, std::ios::binary);
-    // may be unnecessary
     if (!file) {
         std::cerr << "ERROR: File not found: " << filePath << "\n"; // エラーメッセージをログに出力
-        return {}; // 空の文字列を返して処理を継続
+        locationContext = serverContext.get404LocationContext();
+        alias = locationContext.getDirective("alias");
+        filename = locationContext.getDirective("name");
+        filePath = alias + filename;
+        return readErrorFile(filePath);
     }
 
     std::cout << "DEBUG MSG: success readFile\n";

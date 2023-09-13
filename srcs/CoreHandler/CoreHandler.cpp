@@ -20,8 +20,10 @@ std::string successResponse(std::string fileContent, std::string contentType)
     return response;
 }
 
-std::string errorResponse(int statusCode, std::string message, std::string fileContent)
+std::string errorResponse(int statusCode, std::string message, std::string filePath, const ServerContext &server_context)
 {
+    StaticFileReader fileReader;
+    std::string fileContent = fileReader.readFile(filePath, "GET", server_context);
     std::string response = "HTTP/1.1 " + std::to_string(statusCode) + " " + message + "\r\n";
     // response += "Content-Type: text/html\r\n";
     // response += "Content-Length: " + std::to_string(fileContent.size()) + "\r\n";
@@ -32,12 +34,7 @@ std::string errorResponse(int statusCode, std::string message, std::string fileC
 
 std::string methodNotAllowedResponse(const ServerContext &server_context)
 {
-    StaticFileReader fileReader;
-    std::string fileContent = fileReader.readFile("405.html", "GET", server_context); // TODO FIX!! 405.html は動的に変更できるようにする
-
-    // ERROR レスポンスの生成
-    std::string response = errorResponse(405, "Method Not Allowed", fileContent);
-    return response;
+    return errorResponse(405, "Method Not Allowed", "405.html", server_context);
 }
 
 std::string getMethod(std::string filePath, const ServerContext &server_context)
@@ -84,14 +81,9 @@ std::string deleteMethod(std::string url, const ServerContext &server_context)
     if (std::remove(("." + url).c_str()) != 0)
     {
         std::cerr << "ERROR: File not found or delete failed.\n";
-        StaticFileReader fileReader;
-        std::string fileContent = fileReader.readFile("404.html", "GET", server_context);
-
-        // ERROR レスポンスの生成
-        std::string response = errorResponse(404, "Not Found", fileContent);
-
         std::cout << "DEBUG MSG: DELETE FAILED\n";
-        return response;
+
+        return errorResponse(404, "Not Found", "404.html", server_context);
     }
 
     std::cout << "DEBUG MSG: DELETE SUCCESS\n";
@@ -115,17 +107,12 @@ std::string CoreHandler::processRequest(const std::string &request, const Server
     }
     else if (httpRequest.method == "DELETE")
     {
-        return deleteMethod(httpRequest.url , server_context);
+        return deleteMethod(httpRequest.url, server_context);
     }
     // 未実装のメソッドの場合
-    StaticFileReader fileReader;
-    std::string fileContent = fileReader.readFile("501.html", "GET", server_context);
-
-    // ERROR レスポンスの生成
-    std::string response = errorResponse(501, "Not Implemented", fileContent);
-
     std::cout << "DEBUG MSG: NOT IMPLEMENTED\n";
-    return response;
+    // ERROR レスポンスの生成
+    return errorResponse(501, "Not Implemented", "501.html", server_context);
 }
 
 CoreHandler::~CoreHandler()

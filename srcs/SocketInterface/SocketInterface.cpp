@@ -7,7 +7,7 @@
 #include <cstring>
 #include <iostream>
 
-SocketInterface::SocketInterface(Config *config)
+SocketInterface::SocketInterface(Config* config)
     : _config(config)
 {
     _numPorts = _config->getPorts().size();
@@ -22,17 +22,17 @@ SocketInterface::~SocketInterface()
     delete[] _pollfds;
 }
 
-void SocketInterface::createSockets(const std::vector<std::string> &ports)
+void SocketInterface::createSockets(const std::vector<std::string>& ports)
 {
-    for (const auto &port : ports)
+    for (const auto& port : ports)
     {
         int sockfd = socket(AF_INET, SOCK_STREAM, 0);
         sockaddr_in addr;
         addr.sin_family = AF_INET;
         addr.sin_port = htons(std::stoi(port));
         addr.sin_addr.s_addr = INADDR_ANY;
-
-        bind(sockfd, (struct sockaddr *)&addr, sizeof(addr));
+        
+        bind(sockfd, (struct sockaddr*)&addr, sizeof(addr));
         ::listen(sockfd, 5); // Allow up to 5 pending connections
 
         _sockets.push_back(sockfd);
@@ -53,7 +53,7 @@ void SocketInterface::listen()
 {
     while (true)
     {
-        int ret = poll(_pollfds, _numPorts, -1); // not timeout
+        int ret = poll(_pollfds, _numPorts, -1);
         if (ret > 0)
         {
             for (int i = 0; i < _numPorts; i++)
@@ -73,69 +73,61 @@ void SocketInterface::listen()
 
 void SocketInterface::acceptConnection(int fd)
 {
-    struct sockaddr_in clientAddr;
-    socklen_t clientAddrLen = sizeof(clientAddr);
-    int clientFd = accept(fd, (struct sockaddr *)&clientAddr, &clientAddrLen);
+            struct sockaddr_in clientAddr;
+            socklen_t clientAddrLen = sizeof(clientAddr);
+            int clientFd = accept(fd, (struct sockaddr*)&clientAddr, &clientAddrLen);
 
-    if (clientFd >= 0)
-    {
-        handleClient(clientFd);
-    }
-    else
-    {
-        std::cerr << "accept() returned " << clientFd << std::endl;
-    }
+            if (clientFd >= 0)
+            {
+                handleClient(clientFd);
+            }
+            else
+            {
+                std::cerr << "accept() returned " << clientFd << std::endl;
+            }
 }
 
-std::pair<std::string, std::string> SocketInterface::parseHostAndPortFromRequest(const std::string &request)
-{
+std::pair<std::string, std::string> SocketInterface::parseHostAndPortFromRequest(const std::string& request) {
     std::string hostHeader = "Host: ";
     size_t start = request.find(hostHeader);
-    if (start == std::string::npos)
-        return {"", ""}; // Host header not found
+    if (start == std::string::npos) return {"", ""}; // Host header not found
     start += hostHeader.length();
     size_t end = request.find("\r\n", start);
-    if (end == std::string::npos)
-        return {"", ""}; // Malformed request
+    if (end == std::string::npos) return {"", ""}; // Malformed request
 
     std::string hostPortStr = request.substr(start, end - start);
     size_t colonPos = hostPortStr.find(':');
-    if (colonPos != std::string::npos)
-    {
+    if (colonPos != std::string::npos) {
         return {hostPortStr.substr(0, colonPos), hostPortStr.substr(colonPos + 1)};
-    }
-    else
-    {
+    } else {
         return {hostPortStr, ""}; // No port specified
     }
 }
 
 void SocketInterface::handleClient(int clientSocket)
 {
-    char buffer[1024]; // TODO FIX!! magic number to be fixed
+    char buffer[1024]; //magic number to be fixed
     ssize_t bytesRead = read(clientSocket, buffer, sizeof(buffer) - 1);
-
-    if (bytesRead < 0)
-    {
+    
+    if (bytesRead < 0) {
         std::cerr << "read() returned " << bytesRead << std::endl;
         return;
     }
 
     buffer[bytesRead] = '\0';
-    std::cout << "Received request:\n"
-              << buffer << std::endl;
+    std::cout << "Received request:\n" << buffer << std::endl;
     std::string request(buffer);
 
     // ホストとポートの解析
     std::pair<std::string, std::string> hostPort = parseHostAndPortFromRequest(request);
 
     // ここで、ホストとポートを使用して、適切なServerContextを取得
-    const ServerContext &serverContext = _config->getServerContext(hostPort.second, hostPort.first);
+    const ServerContext& serverContext = _config->getServerContext(hostPort.second, hostPort.first);
 
     // responseの生成
     CoreHandler coreHandler;
     std::string response = coreHandler.processRequest(buffer, serverContext);
-
+ 
     write(clientSocket, response.c_str(), response.length()); // レスポンスの送信
     close(clientSocket);
 }

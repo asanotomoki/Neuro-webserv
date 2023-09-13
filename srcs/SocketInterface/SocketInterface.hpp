@@ -14,7 +14,7 @@ public:
     ~SocketInterface();
 
     void listen();
-    void acceptConnection();
+    void acceptConnection(int fd);
     void handleClient(int clientSocket);
 
 private:

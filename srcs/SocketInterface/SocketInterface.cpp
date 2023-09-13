@@ -53,14 +53,14 @@ void SocketInterface::listen()
 {
     while (true)
     {
-        int ret = poll(_pollfds, _numPorts, -1);
+        int ret = poll(_pollfds, _numPorts, -1); // not timeout
         if (ret > 0)
         {
             for (int i = 0; i < _numPorts; i++)
             {
                 if (_pollfds[i].revents & POLLIN)
                 {
-                    acceptConnection();
+                    acceptConnection(_pollfds[i].fd);
                 }
             }
         }
@@ -71,15 +71,15 @@ void SocketInterface::listen()
     }
 }
 
-void SocketInterface::acceptConnection()
+void SocketInterface::acceptConnection(int fd)
 {
-    for (int i = 0; i < _numPorts; i++)
-    {
-        if (_pollfds[i].revents & POLLIN)
-        {
+    //for (int i = 0; i < _numPorts; i++)
+    //{
+    //    if (_pollfds[i].revents & POLLIN) // 二重定義 for, if引数で受け取ればいらない？
+    //    {
             struct sockaddr_in clientAddr;
             socklen_t clientAddrLen = sizeof(clientAddr);
-            int clientFd = accept(_pollfds[i].fd, (struct sockaddr*)&clientAddr, &clientAddrLen);
+            int clientFd = accept(fd, (struct sockaddr*)&clientAddr, &clientAddrLen);
 
             if (clientFd >= 0)
             {
@@ -89,8 +89,8 @@ void SocketInterface::acceptConnection()
             {
                 std::cerr << "accept() returned " << clientFd << std::endl;
             }
-        }
-    }
+    //    }
+    //}
 }
 
 std::pair<std::string, std::string> SocketInterface::parseHostAndPortFromRequest(const std::string& request) {
@@ -112,7 +112,7 @@ std::pair<std::string, std::string> SocketInterface::parseHostAndPortFromRequest
 
 void SocketInterface::handleClient(int clientSocket)
 {
-    char buffer[1024]; //magic number to be fixed
+    char buffer[1024]; //TODO FIX!! magic number to be fixed
     ssize_t bytesRead = read(clientSocket, buffer, sizeof(buffer) - 1);
     
     if (bytesRead < 0) {

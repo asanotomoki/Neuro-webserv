@@ -9,6 +9,24 @@ CoreHandler::CoreHandler() {
     // 必要に応じて初期化処理をここに記述
 }
 
+std::string successResponse(std::string fileContent, std::string contentType) {
+    std::string response = "HTTP/1.1 200 OK\r\n";
+    response += "Content-Type: " + contentType + "\r\n";
+    response += "Content-Length: " + std::to_string(fileContent.size()) + "\r\n";
+    response += "\r\n";
+    response += fileContent;
+    return response;
+}
+
+std::string errorResponse(int statusCode, std::string message, std::string fileContent) {
+    std::string response = "HTTP/1.1 " + std::to_string(statusCode) + " " + message + "\r\n";
+    // response += "Content-Type: text/html\r\n";
+    // response += "Content-Length: " + std::to_string(fileContent.size()) + "\r\n";
+    response += "\r\n";
+    response += fileContent;
+    return response;
+}
+
 std::string CoreHandler::processRequest(const std::string& request, const ServerContext& server_context) {
     // リクエストを解析
     RequestParser parser;
@@ -20,43 +38,31 @@ std::string CoreHandler::processRequest(const std::string& request, const Server
         StaticFileReader fileReader;
         std::string fileContent = fileReader.readFile(httpRequest.url, httpRequest.method, server_context);
 
-        std::string response = "HTTP/1.1 200 OK\r\n";
-        response += "Content-Type: text/html\r\n"; // もしHTMLファイルであれば
-        response += "Content-Length: " + std::to_string(fileContent.size()) + "\r\n";
-        response += "\r\n";
-        response += fileContent;
+        std::string response = successResponse(fileContent, "text/html");
 
         std::cout << "DEBUG MSG: GET SUCCESS\n";
         return response;
     }
     else if (httpRequest.method == "POST") {
 
-        LocationContext locationContext = server_context.getLocationContext("/upload");
+        LocationContext locationContext = server_context.getLocationContext("/upload"); // TODO FIX!! /upload is magic number
 
         if (locationContext.isAllowedMethod("POST") == false) {
             StaticFileReader fileReader;
-            std::string fileContent = fileReader.readFile("405.html", "GET", server_context);
+            std::string fileContent = fileReader.readFile("405.html", "GET", server_context);// TODO FIX!! 405.html は動的に変更できるようにする
 
-            std::string response = "HTTP/1.1 405 Method Not Allowed\r\n";
-            // response += "Content-Type: text/html\r\n";
-            // response += "Content-Length: " + std::to_string(fileContent.size()) + "\r\n";
-            response += "\r\n";
-            response += fileContent;
-
+            // ERROR レスポンスの生成
+            std::string response = errorResponse(405, "Method Not Allowed", fileContent);
             std::cout << "DEBUG MSG: POST FAILED\n";
             return response;
         }
 
         DataProcessor dataProcessor;
         ProcessResult result = dataProcessor.processPostData(httpRequest.body, locationContext);
-        // エラーハンドリングを追加する必要がある
+        // TODO FIX!! エラーハンドリングを追加する必要がある
 
         // レスポンスの生成
-        std::string response = "HTTP/1.1 200 OK\r\n";
-        response += "Content-Type: Web/json\r\n"; // もしJSONレスポンスであれば
-        response += "Content-Length: " + std::to_string(result.message.size()) + "\r\n";
-        response += "\r\n";
-        response += result.message;
+        std::string response = successResponse(result.message, "text/html");
 
         std::cout << "DEBUG MSG: POST SUCCESS\n";
         std::cout << "DEBUG MSG:: response: " << response << "\n";
@@ -69,9 +75,9 @@ std::string CoreHandler::processRequest(const std::string& request, const Server
             StaticFileReader fileReader;
             std::string fileContent = fileReader.readFile("405.html", "GET", server_context);
 
-            std::string response = "HTTP/1.1 405 Method Not Allowed\r\n";
-            // response += "Content-Type: text/html\r\n";
-            // response += "Content-Length: " + std::to_string(fileContent.size()) + "\r\n";
+            // ERROR レスポンスの生成
+            std::string response = errorResponse(405, "Method Not Allowed", fileContent);
+
             response += "\r\n";
             response += fileContent;
 
@@ -83,11 +89,8 @@ std::string CoreHandler::processRequest(const std::string& request, const Server
             StaticFileReader fileReader;
             std::string fileContent = fileReader.readFile("404.html", "GET", server_context);
 
-            std::string response = "HTTP/1.1 404 Not Found\r\n";
-            // response += "Content-Type: text/html\r\n";
-            // response += "Content-Length: " + std::to_string(fileContent.size()) + "\r\n";
-            response += "\r\n";
-            response += fileContent;
+            // ERROR レスポンスの生成
+            std::string response = errorResponse(404, "Not Found", fileContent);
 
             std::cout << "DEBUG MSG: DELETE FAILED\n";
             return response;
@@ -100,11 +103,8 @@ std::string CoreHandler::processRequest(const std::string& request, const Server
     StaticFileReader fileReader;
     std::string fileContent = fileReader.readFile("501.html", "GET", server_context);
 
-    std::string response = "HTTP/1.1 501 Not Implemented\r\n";
-    // response += "Content-Type: text/html\r\n";
-    // response += "Content-Length: " + std::to_string(fileContent.size()) + "\r\n";
-    response += "\r\n";
-    response += fileContent;
+    // ERROR レスポンスの生成
+    std::string response = errorResponse(501, "Not Implemented", fileContent);
 
     std::cout << "DEBUG MSG: NOT IMPLEMENTED\n";
     return response;

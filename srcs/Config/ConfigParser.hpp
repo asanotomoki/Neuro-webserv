@@ -27,7 +27,7 @@ class ConfigParser
         ERROR_PAGE,
         LOCATION,
         ALIAS,
-        NAME,
+        INDEX,
         LIMIT_EXCEPT,
         UNKNOWN
     };

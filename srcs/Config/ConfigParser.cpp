@@ -39,8 +39,8 @@ void ConfigParser::setDirectiveType(const std::string& directive)
 		_directiveType = LOCATION;
 	else if (directive == "alias")
 		_directiveType = ALIAS;
-	else if (directive == "name")
-		_directiveType = NAME;
+	else if (directive == "index")
+		_directiveType = INDEX;
 	else if (directive == "limit_except")
 		_directiveType = LIMIT_EXCEPT;
 	else
@@ -61,7 +61,7 @@ bool ConfigParser::isInServerContext()
 
 bool ConfigParser::isInLocationContext()
 {
-	return  _directiveType == ALIAS || _directiveType == NAME
+	return  _directiveType == ALIAS || _directiveType == INDEX
 		|| _directiveType == LIMIT_EXCEPT;
 }
 

@@ -8,7 +8,11 @@ HttpRequest RequestParser::parse(const std::string& request, const ServerContext
 
     // メソッドとURLを解析
     requestStream >> httpRequest.method >> httpRequest.url;
- 
+    // urlが"/"で終わっている場合は、"/"削除
+    if (httpRequest.url.back() == '/') {
+        httpRequest.url.pop_back();
+    }
+
     // ヘッダーを解析
     std::string headerLine;
     int contentLength = 0; // Content-Lengthを保存する変数

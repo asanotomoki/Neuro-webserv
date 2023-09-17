@@ -37,6 +37,9 @@ void ConfigError::setErrorMessage(const ErrorType error_type, const std::string&
 		case UNKOWN_DIRECTIVE:
 			_errorMessage += "unknown directive \"" + error_word + "\"" + _fileInfo;
 			break;
+		case INVALID_PATH:
+			_errorMessage += "invalid path \"" + error_word + "\"" + _fileInfo;
+			break;
 		case SYSTEM_ERROR:
 			_errorMessage += "system call error \"" + error_word + ": " + strerror(errno) + "\"" + _fileInfo;
 			break;

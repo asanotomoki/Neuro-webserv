@@ -23,15 +23,27 @@ std::string StaticFileReader::readFile(const std::string& requestPath, const std
     }
 
     std::string directory, filename;
+
     // requestPathをディレクトリとファイルに分割
-    size_t lastSlash = requestPath.find_last_of("/");
-    if (lastSlash != std::string::npos) {
-        directory = requestPath.substr(0, lastSlash + 1);
-        filename = requestPath.substr(lastSlash + 1);
-    } else {
-        directory = "/";
-        filename = requestPath;
+    size_t lastSlash = requestPath.find_last_of("/", requestPath.length() - 2); // 末尾の"/"を無視しない
+
+    // 先頭から末尾の'/'までをディレクトリとする
+    directory = requestPath.substr(0, lastSlash + 1);
+
+    // lastSlash以降、末尾の'/'の手前までをファイル名とする
+    filename = requestPath.substr(lastSlash + 1, requestPath.length() - lastSlash - 2); // 末尾の"/"を除く
+
+    // ディレクトリが"/"の場合、ディレクトリ名としてfilenameを設定し、filenameを空にする
+    if (directory == "/") {
+        directory += filename;
+        filename = "";
     }
+
+    // filenameが空でない場合、directoryの末尾に'/'を追加
+    if (filename.empty() && directory.back() != '/') {
+        directory += "/";
+    }
+
     std::cout << "DEBUG MSG 0 :: directory: " << directory << ", filename: " << filename << "\n";
 
     // リクエストパスから適切なLocationContextを取得

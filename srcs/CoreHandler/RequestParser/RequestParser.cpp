@@ -8,9 +8,9 @@ HttpRequest RequestParser::parse(const std::string& request, const ServerContext
 
     // メソッドとURLを解析
     requestStream >> httpRequest.method >> httpRequest.url;
-    // urlが"/"で終わっている場合は、"/"削除
-    if (httpRequest.url.back() == '/') {
-        httpRequest.url.pop_back();
+    // urlが"/"で終わっていない場合は、"/"を付け足す
+    if (httpRequest.url[httpRequest.url.size() - 1] != '/') {
+        httpRequest.url += '/';
     }
 
     // ヘッダーを解析

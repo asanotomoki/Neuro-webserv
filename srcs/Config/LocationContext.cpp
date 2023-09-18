@@ -17,8 +17,8 @@ void LocationContext::addDirective(const std::string& directive, const std::stri
 	const std::string& filepath, int lineNumber)
 {
 	if (directive == "path") {
-		// パスが"/dir1"のように"/"で終わっている場合は例外を投げる
-		if (value[value.size() - 1] == '/' && value.size() != 1) {
+		// パスが"/dir1"のように"/"で終わっていない場合は例外を投げる
+		if (value[value.size() - 1] != '/') {
 			throw ConfigError(INVALID_PATH, value, filepath, lineNumber);
 		}
 		// パスに"/dir1/dir2/"のようにディレクトリが複数含まれる場合は例外を投げる

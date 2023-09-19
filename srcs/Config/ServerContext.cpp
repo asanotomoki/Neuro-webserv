@@ -127,6 +127,11 @@ const LocationContext& ServerContext::getLocationContext(const std::string& path
 	return *matched;
 }
 
+const CGIContext& ServerContext::getCGIContext() const
+{
+	return _cgi;
+}
+
 std::string::size_type ServerContext::getMaxPrefixLength(const std::string& str1, const std::string& str2) const
 {
 	std::string::size_type i = 0;

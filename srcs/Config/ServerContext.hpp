@@ -28,6 +28,7 @@ class ServerContext
                             const std::string& filepath, int line_number);
 		const std::vector<LocationContext>& getLocations() const;
 		const LocationContext& getLocationContext(const std::string& path) const;
+        const CGIContext& getCGIContext() const;
         const LocationContext& get404LocationContext() const;
         const LocationContext& get405LocationContext() const;
         const LocationContext& get501LocationContext() const;

@@ -15,6 +15,8 @@ class LocationContext
 		void addAllowedMethod(const std::string& method);
 		const std::string& getDirective(const std::string& directive) const;
 		bool isAllowedMethod(const std::string& method) const;
+		bool getIsCgi() const;
+		std::map<std::string, std::string> getDirectives() const;
 		
 	private:
 		std::set<std::string> _allowedMethods;

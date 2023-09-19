@@ -28,10 +28,10 @@ std::string getLocationPath (std::string url)
 
     // 第二のスラッシュが見つかったら、その位置までのパスを返す
     if (second_slash_pos != std::string::npos && second_slash_pos < end_pos) {
-        return url.substr(start_pos, second_slash_pos - start_pos);
+        return url.substr(start_pos, second_slash_pos - start_pos) + "/";
     } else {
         // そうでなければ、クエリ文字列の開始位置または文字列の終端までのパスを返す
-        return url.substr(start_pos, end_pos - start_pos);
+        return url.substr(start_pos, end_pos - start_pos) + "/";
     }
 }
 
@@ -49,17 +49,12 @@ std::string errorResponse(int statusCode, std::string message, const ServerConte
 {
     StaticFileReader fileReader;
     std::string fileContent = fileReader.readErrorFile(statusCode, server_context);
-    std::string response = "HTTP/1.1 " + std::to_string(statusCode) + " " + message + "\r\n";
-    // response += "Content-Type: text/html\r\n";
-    // response += "Content-Length: " + std::to_string(fileContent.size()) + "\r\n";
+    std::string response = "HTTP/1.1 " + std::to_string(statusCode) + " " + message + "\r\n"; 
+    response += "Content-Type: text/html\r\n";
+    response += "Content-Length: " + std::to_string(fileContent.size()) + "\r\n";
     response += "\r\n";
     response += fileContent;
     return response;
-}
-
-std::string methodNotAllowedResponse(const ServerContext &server_context)
-{
-    return errorResponse(405, "Method Not Allowed", server_context);
 }
 
 std::string getMethod(std::string filePath, const ServerContext &server_context)
@@ -76,12 +71,13 @@ std::string getMethod(std::string filePath, const ServerContext &server_context)
 
 std::string postMethod(std::string body, const ServerContext &server_context, std::string path)
 {
-    LocationContext locationContext = server_context.getLocationContext(getLocationPath(path)); // TODO FIX!! /upload is magic number
+    std::string filePath = getLocationPath(path);
+    LocationContext locationContext = server_context.getLocationContext(getLocationPath(path));
 
     if (locationContext.isAllowedMethod("POST") == false)
     {
         std::cout << "DEBUG MSG: POST FAILED\n";
-        return methodNotAllowedResponse(server_context);
+        return errorResponse(405, "Method Not Allowed", server_context);
     }
     DataProcessor dataProcessor;
     ProcessResult result = dataProcessor.processPostData(body, locationContext);
@@ -101,7 +97,7 @@ std::string deleteMethod(std::string url, const ServerContext &server_context)
     if (locationContext.isAllowedMethod("DELETE") == false)
     {
         std::cout << "DEBUG MSG: DELETE FAILED\n";
-        return methodNotAllowedResponse(server_context);
+        return errorResponse(405, "Method Not Allowed", server_context);
     }
     if (std::remove(("./docs/upload" + url).c_str()) != 0)
     {
@@ -153,8 +149,16 @@ bool CoreHandler::isCgi(const std::string &request, const ServerContext &server_
     //        return true;
     //    }
     //}
-    //LocationContext locationContext = ;
-    return false;
+    // /upload
+    LocationContext locationContext = server_context.getLocationContext(getLocationPath(path));
+    bool res = locationContext.getIsCgi();
+    if (res) {
+        std::cout << "DEBUG MSG: isCgi: " << "true" << "\n";
+    } else {
+        std::cout << "DEBUG MSG: isCgi: " << "false" << "\n";
+    }
+
+    return res;
 }
 
 std::string CoreHandler::processRequest(const std::string &request, const ServerContext &server_context)
@@ -162,11 +166,9 @@ std::string CoreHandler::processRequest(const std::string &request, const Server
     // リクエストを解析
     RequestParser parser;
     HttpRequest httpRequest = parser.parse(request, server_context);
-    std::cout << "DEBUG MSG: filePath: " << httpRequest.url << "\n";
-
-    std::cout << "DEBUG MSG: path: " << getLocationPath(httpRequest.url) << "\n";
     if (isCgi(request, server_context, httpRequest.url))
     {
+        std::cout << "DEBUG MSG: path: " << "IS CGI" << "\n";
         return CgiMethod(httpRequest, server_context);
     }
     else if (httpRequest.method == "GET")

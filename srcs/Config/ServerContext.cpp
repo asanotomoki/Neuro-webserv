@@ -42,10 +42,13 @@ void ServerContext::setErrorPages()
 {
 	_404LocationContext.addDirective("alias", "./docs/error_page/");
 	_404LocationContext.addDirective("index", getErrorPage("404"));
+	_404LocationContext.addAllowedMethod("GET");
 	_405LocationContext.addDirective("alias", "./docs/error_page/");
 	_405LocationContext.addDirective("index", getErrorPage("405"));
+	_405LocationContext.addAllowedMethod("GET");
 	_501LocationContext.addDirective("alias", "./docs/error_page/");
 	_501LocationContext.addDirective("index", getErrorPage("501"));	
+	_501LocationContext.addAllowedMethod("GET");
 }
 
 void ServerContext::setErrorPage(std::string status_code, const std::string& filename)

@@ -15,11 +15,13 @@ class ServerContext
         void setListen(const std::string& listen);
         void setServerName(const std::string& server_name);
         void setMaxBodySize(const std::string& max_body_size);
+        void setIsCgi(bool is_cgi);
         void setErrorPages();
         void setErrorPage(std::string status_code, const std::string& filename);
         const std::string& getListen() const;
         const std::string& getServerName() const;
         const std::string& getMaxBodySize() const;
+        bool getIsCgi() const;
         //const std::vector<std::string>& getAllowedMethods() const;
         const std::string& getErrorPage(std::string status_code) const; 
 		void addLocationContext(const LocationContext& location);
@@ -37,12 +39,12 @@ class ServerContext
         std::string _listen;
         std::string _serverName;
         std::string _maxBodySize;
+        bool _is_Cgi;
         std::map<std::string, std::string> _errorPages;
 		std::vector<LocationContext> _locations;
         CGIContext _cgi;
         std::map<std::string, std::string> _directives;
         std::string::size_type getMaxPrefixLength(const std::string& str1, const std::string& str2) const;
-        
         // error location context
         LocationContext _404LocationContext;
         LocationContext _405LocationContext;

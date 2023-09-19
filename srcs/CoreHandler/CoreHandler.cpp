@@ -10,6 +10,31 @@ CoreHandler::CoreHandler()
     // 必要に応じて初期化処理をここに記述
 }
 
+std::string getLocationPath (std::string url)
+{
+    // パスの開始位置を探す
+    size_t start_pos = url.find_first_of('/');
+
+    // クエリ文字列の開始位置または文字列の終端を探す
+    size_t end_pos = url.find_first_of("?#", start_pos);
+
+    // もしクエリ文字列またはフラグメント識別子が見つからなかったら、文字列の終端を使用する
+    if (end_pos == std::string::npos) {
+        end_pos = url.length();
+    }
+
+    // スラッシュの後の第二のスラッシュの位置を探す
+    size_t second_slash_pos = url.find_first_of('/', start_pos + 1);
+
+    // 第二のスラッシュが見つかったら、その位置までのパスを返す
+    if (second_slash_pos != std::string::npos && second_slash_pos < end_pos) {
+        return url.substr(start_pos, second_slash_pos - start_pos);
+    } else {
+        // そうでなければ、クエリ文字列の開始位置または文字列の終端までのパスを返す
+        return url.substr(start_pos, end_pos - start_pos);
+    }
+}
+
 std::string successResponse(std::string fileContent, std::string contentType)
 {
     std::string response = "HTTP/1.1 200 OK\r\n";
@@ -49,9 +74,9 @@ std::string getMethod(std::string filePath, const ServerContext &server_context)
     return response;
 }
 
-std::string postMethod(std::string body, const ServerContext &server_context)
+std::string postMethod(std::string body, const ServerContext &server_context, std::string path)
 {
-    LocationContext locationContext = server_context.getLocationContext("/upload"); // TODO FIX!! /upload is magic number
+    LocationContext locationContext = server_context.getLocationContext(getLocationPath(path)); // TODO FIX!! /upload is magic number
 
     if (locationContext.isAllowedMethod("POST") == false)
     {
@@ -72,13 +97,13 @@ std::string postMethod(std::string body, const ServerContext &server_context)
 
 std::string deleteMethod(std::string url, const ServerContext &server_context)
 {
-    LocationContext locationContext = server_context.getLocationContext("/upload");
+    LocationContext locationContext = server_context.getLocationContext(getLocationPath(url));
     if (locationContext.isAllowedMethod("DELETE") == false)
     {
         std::cout << "DEBUG MSG: DELETE FAILED\n";
         return methodNotAllowedResponse(server_context);
     }
-    if (std::remove(("." + url).c_str()) != 0)
+    if (std::remove(("./docs/upload" + url).c_str()) != 0)
     {
         std::cerr << "ERROR: File not found or delete failed.\n";
         std::cout << "DEBUG MSG: DELETE FAILED\n";
@@ -116,9 +141,19 @@ std::string CgiMethod(HttpRequest &req, const ServerContext &server_context)
     return cgi.CgiHandler();
 }
 
-bool CoreHandler::isCgi(const std::string &request, const ServerContext &server_context)
+bool CoreHandler::isCgi(const std::string &request, const ServerContext &server_context, const std::string path)
 {
-    //LocationContext locationContext = server_context.getLocationContext();
+    //bool isCgi = server_context.getIsCgi();
+    //if (isCgi == true)
+    //{
+    //    CGIContext cgiContext = server_context.getCGIContext();
+    //    std::string extension = cgiContext.getDirective("extension");
+    //    if (path.find(extension) != std::string::npos)
+    //    {
+    //        return true;
+    //    }
+    //}
+    //LocationContext locationContext = ;
     return false;
 }
 
@@ -129,7 +164,8 @@ std::string CoreHandler::processRequest(const std::string &request, const Server
     HttpRequest httpRequest = parser.parse(request, server_context);
     std::cout << "DEBUG MSG: filePath: " << httpRequest.url << "\n";
 
-    if (isCgi(request, server_context))
+    std::cout << "DEBUG MSG: path: " << getLocationPath(httpRequest.url) << "\n";
+    if (isCgi(request, server_context, httpRequest.url))
     {
         return CgiMethod(httpRequest, server_context);
     }
@@ -139,7 +175,7 @@ std::string CoreHandler::processRequest(const std::string &request, const Server
     }
     else if (httpRequest.method == "POST")
     {
-        return postMethod(httpRequest.body, server_context);
+        return postMethod(httpRequest.body, server_context, httpRequest.url);
     }
     else if (httpRequest.method == "DELETE")
     {

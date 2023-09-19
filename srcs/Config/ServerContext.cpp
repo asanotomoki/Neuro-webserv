@@ -9,7 +9,8 @@ ServerContext::ServerContext():
 	_maxBodySize(),
 	_errorPages(),
 	_locations(),
-	_directives()
+	_directives(),
+	_is_Cgi(false)
 {
 }
 
@@ -30,6 +31,11 @@ void ServerContext::setServerName(const std::string& server_name)
 void ServerContext::setMaxBodySize(const std::string& max_body_size)
 {
 	_maxBodySize = max_body_size;
+}
+
+void ServerContext::setIsCgi(bool is_cgi)
+{
+	_is_Cgi = is_cgi;
 }
 
 void ServerContext::setErrorPages()
@@ -62,6 +68,11 @@ const std::string& ServerContext::getMaxBodySize() const
 	return _maxBodySize;
 }
 
+bool ServerContext::getIsCgi() const
+{
+	return _is_Cgi;
+}
+
 const std::string& ServerContext::getErrorPage(std::string status_code) const
 {
 	std::map<std::string, std::string>::const_iterator it = _errorPages.find(status_code);
@@ -78,6 +89,7 @@ void ServerContext::addLocationContext(const LocationContext& location)
 void ServerContext::addCGIContext(const CGIContext& cgi)
 {
 	_cgi = cgi;
+	setIsCgi(true);
 }
 
 void ServerContext::addDirectives(const std::string& directive, const std::string& value,

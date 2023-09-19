@@ -45,10 +45,17 @@ std::string StaticFileReader::readFile(std::string& requestPath, const std::stri
     size_t lastSlash = requestPath.find_last_of("/", len - 2); // 末尾の"/"を無視しない
 
     // 先頭から末尾の'/'までをディレクトリとする
-    directory = requestPath.substr(0, lastSlash + 1);
+    // directory = requestPath.substr(0, lastSlash + 1);
+
+    // 先頭から次の'/'までをディレクトリとする
+    size_t nextSlash = requestPath.find_first_of("/", 1);
+    directory = requestPath.substr(0, nextSlash + 1);
 
     // lastSlash以降、末尾の'/'の手前までをファイル名とする
-    filename = requestPath.substr(lastSlash + 1, len - lastSlash - 2); // 末尾の"/"を除く
+    // filename = requestPath.substr(lastSlash + 1, len - lastSlash - 2); // 末尾の"/"を除く
+
+    // nextSlash以降、末尾の'/'の手前までをファイル名とする
+    filename = requestPath.substr(nextSlash + 1, len - nextSlash - 2); // 末尾の"/"を除く
 
     // ディレクトリが"/"の場合、ディレクトリ名としてfilenameを設定し、filenameを空にする
     if (directory == "/") {

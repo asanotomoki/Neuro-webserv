@@ -99,6 +99,10 @@ std::string deleteMethod(std::string url, const ServerContext &server_context)
         std::cout << "DEBUG MSG: DELETE FAILED\n";
         return errorResponse(405, "Method Not Allowed", server_context);
     }
+    // urlからファイルパスを生成
+    // url = /form/delete/uploaded.txt -> url = /uploaded.txt
+    // url = /form/delete/uploaded.txt?hoge=fuga -> url = /uploaded.txt
+    url = url.substr(url.find_last_of("/"));
     if (std::remove(("./docs/upload" + url).c_str()) != 0)
     {
         std::cerr << "ERROR: File not found or delete failed.\n";

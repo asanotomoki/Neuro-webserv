@@ -2,6 +2,7 @@
 #define SERVERCONTEXT_HPP
 
 #include "LocationContext.hpp"
+#include "CGIContext.hpp"
 #include <map>
 #include <string>
 #include <vector>
@@ -21,6 +22,7 @@ class ServerContext
         //const std::vector<std::string>& getAllowedMethods() const;
         const std::string& getErrorPage(std::string status_code) const; 
 		void addLocationContext(const LocationContext& location);
+        void addCGIContext(const CGIContext& cgi);
         void addDirectives(const std::string& directive, const std::string& value,
                             const std::string& filepath, int line_number);
 		const std::vector<LocationContext>& getLocations() const;
@@ -35,6 +37,7 @@ class ServerContext
         std::string _maxBodySize;
         std::map<std::string, std::string> _errorPages;
 		std::vector<LocationContext> _locations;
+        CGIContext _cgi;
         std::map<std::string, std::string> _directives;
         std::string::size_type getMaxPrefixLength(const std::string& str1, const std::string& str2) const;
         

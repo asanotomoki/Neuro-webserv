@@ -19,7 +19,6 @@ class LocationContext
 	private:
 		std::set<std::string> _allowedMethods;
 		std::map<std::string, std::string> _directives;
-
 };
 
 #endif

@@ -1,6 +1,7 @@
 #include "ConfigParser.hpp"
 #include "ServerContext.hpp"
 #include "LocationContext.hpp"
+#include "CGIContext.hpp"
 #include "ConfigError.hpp"
 #include <fstream>
 #include <vector>
@@ -37,12 +38,18 @@ void ConfigParser::setDirectiveType(const std::string& directive)
 		_directiveType = ERROR_PAGE;
 	else if (directive == "location")
 		_directiveType = LOCATION;
+	else if (directive == "cgi")
+		_directiveType = CGI;
 	else if (directive == "alias")
 		_directiveType = ALIAS;
-	else if (directive == "name")
-		_directiveType = NAME;
+	else if (directive == "index")
+		_directiveType = INDEX;
 	else if (directive == "limit_except")
 		_directiveType = LIMIT_EXCEPT;
+	else if (directive == "command")
+		_directiveType = COMMAND;
+	else if (directive == "cgi_on")
+		_directiveType = CGI_ON;
 	else
 		_directiveType = UNKNOWN;
 }
@@ -56,13 +63,20 @@ bool ConfigParser::isInServerContext()
 {
 	return _directiveType == LISTEN || _directiveType == SERVER_NAME
 		|| _directiveType == MAX_BODY_SIZE || _directiveType == ERROR_PAGE
-		|| _directiveType == LOCATION;
+		|| _directiveType == LOCATION || _directiveType == CGI;
 }
 
 bool ConfigParser::isInLocationContext()
 {
-	return  _directiveType == ALIAS || _directiveType == NAME
-		|| _directiveType == LIMIT_EXCEPT;
+	return  _directiveType == ALIAS || _directiveType == INDEX
+		|| _directiveType == LIMIT_EXCEPT || _directiveType == COMMAND
+		|| _directiveType == CGI_ON;
+}
+
+bool ConfigParser::isInCgiContext()
+{
+	return _directiveType == ALIAS || _directiveType == INDEX
+		|| _directiveType == LIMIT_EXCEPT || _directiveType == COMMAND;
 }
 
 bool ConfigParser::isAllowedDirective()
@@ -73,6 +87,8 @@ bool ConfigParser::isAllowedDirective()
 		return isInServerContext();
 	else if (_contextType == LOCATION_CONTEXT)
 		return isInLocationContext();
+	else if (_contextType == CGI_CONTEXT)
+		return ;
 	return false;
 }
 
@@ -179,13 +195,15 @@ const ServerContext ConfigParser::setServerContext()
 			std::cout << "DEBUG MSG" << std::endl;
 			throw ConfigError(NOT_ALLOWED_DIRECTIVE, _oneLine[0], _filepath, _lineNumber + 1);
 		}
-		else if (_directiveType == LOCATION)
-		{
-			LocationContext location_context = setLocationContext();
-			serverContext.addLocationContext(location_context);
+		else if (_directiveType == LOCATION) {
+			LocationContext locationContext = setLocationContext();
+			serverContext.addLocationContext(locationContext);
 		}
-		else
-		{
+		else if (_directiveType == CGI) {
+			CGIContext cgiContext = setCGIContext();
+			serverContext.addCGIContext(cgiContext);
+		}
+		else {
 			serverContext.addDirectives(_oneLine[0], _oneLine[1], _filepath, _lineNumber + 1);
 			if (_directiveType == LISTEN)
 				serverContext.setListen(_oneLine[1]);
@@ -228,6 +246,36 @@ const LocationContext ConfigParser::setLocationContext()
 			locationContext.addDirective(_oneLine[0], _oneLine[1], _filepath, _lineNumber + 1);
 	}
 	return locationContext;
+}
+
+const CGIContext ConfigParser::setCGIContext()
+{
+	CGIContext cgiContext = CGIContext();
+
+	cgiContext.addDirective("extension", _oneLine[1], _filepath, _lineNumber + 1);
+	_lineNumber++;
+	for ( ; _lineNumber < _lines.size(); _lineNumber++)
+	{
+		setContextType(CGI_CONTEXT);
+		_oneLine.clear();
+		_oneLine = _lines[_lineNumber];
+		if (_oneLine.empty() || _oneLine[0] == "#")
+			continue ;
+		if (_oneLine[0] == "}")
+			break ;
+		setDirectiveType(_oneLine[0]);
+		if (!isAllowedDirective())
+			throw ConfigError(NOT_ALLOWED_DIRECTIVE, _oneLine[0], _filepath, _lineNumber + 1);
+		//　必要があれば追加
+		// else if (_directiveType == LIMIT_EXCEPT){
+		// 	for (size_t i = 1; i < _oneLine.size(); ++i) {
+        // 		CGIContext.addAllowedMethod(_oneLine[i]);
+    	// 	}
+		// }
+		else
+			cgiContext.addDirective(_oneLine[0], _oneLine[1], _filepath, _lineNumber + 1);
+	}
+	return cgiContext;
 }
 
 bool ConfigParser::isFile(const char *path)

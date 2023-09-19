@@ -8,7 +8,11 @@ HttpRequest RequestParser::parse(const std::string& request, const ServerContext
 
     // メソッドとURLを解析
     requestStream >> httpRequest.method >> httpRequest.url;
- 
+    // urlが"/"で終わっていない場合は、"/"を付け足す
+    if (httpRequest.url[httpRequest.url.size() - 1] != '/') {
+        httpRequest.url += '/';
+    }
+
     // ヘッダーを解析
     std::string headerLine;
     int contentLength = 0; // Content-Lengthを保存する変数

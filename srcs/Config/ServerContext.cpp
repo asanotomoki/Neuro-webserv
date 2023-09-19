@@ -12,11 +12,11 @@ ServerContext::ServerContext():
 	_directives()
 {
 	_404LocationContext.addDirective("alias", "./docs/error_page/");
-	_404LocationContext.addDirective("name", "404.html");
+	_404LocationContext.addDirective("index", "404.html");
 	_405LocationContext.addDirective("alias", "./docs/error_page/");
-	_405LocationContext.addDirective("name", "405.html");
+	_405LocationContext.addDirective("index", "405.html");
 	_501LocationContext.addDirective("alias", "./docs/error_page/");
-	_501LocationContext.addDirective("name", "501.html");
+	_501LocationContext.addDirective("index", "501.html");
 }
 
 ServerContext::~ServerContext()
@@ -69,6 +69,11 @@ const std::string& ServerContext::getErrorPage(std::string status_code) const
 void ServerContext::addLocationContext(const LocationContext& location)
 {
 	_locations.push_back(location);
+}
+
+void ServerContext::addCGIContext(const CGIContext& cgi)
+{
+	_cgi = cgi;
 }
 
 void ServerContext::addDirectives(const std::string& directive, const std::string& value,

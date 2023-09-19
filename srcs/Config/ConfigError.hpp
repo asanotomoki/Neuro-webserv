@@ -10,6 +10,7 @@ enum ErrorType
 	DUPLICATE_DIRECTIVE,
 	NOT_ALLOWED_DIRECTIVE,
 	UNKOWN_DIRECTIVE,
+	INVALID_PATH,
 	SYSTEM_ERROR
 };
 
@@ -18,10 +19,10 @@ class ConfigError : public std::exception
 	public:
 		ConfigError(const ErrorType error_type, const std::string& error_word);
 		ConfigError(const ErrorType error_type, const std::string& error_word,
-					const std::string& filepath, int line_number);
+					const std::string& filepath, int lineNumber);
 		//ConfigError(const ErrorType error_type, const std::string &error_word);
 		~ConfigError() throw();
-		void setErrorMessage(const ErrorType error_type, const std::string& error_word);
+		void setErrorMessage(const ErrorType errorType, const std::string& errorWord);
 		const char* what() const throw();
 
 	private:

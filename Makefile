@@ -32,3 +32,8 @@ fclean:
 	rm -rf $(OBJECTS_DIR) $(NAME)
 
 re: fclean all
+
+git :
+	git add .
+	git commit -m "auto commit"
+	git push

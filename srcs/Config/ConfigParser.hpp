@@ -15,7 +15,8 @@ class ConfigParser
     {
         HTTP_CONTEXT,
         SERVER_CONTEXT,
-        LOCATION_CONTEXT
+        LOCATION_CONTEXT,
+        CGI_CONTEXT
     };
 
     enum DirectiveType
@@ -26,9 +27,12 @@ class ConfigParser
         MAX_BODY_SIZE,
         ERROR_PAGE,
         LOCATION,
+        CGI,
         ALIAS,
-        NAME,
+        INDEX,
         LIMIT_EXCEPT,
+        COMMAND,
+        CGI_ON,
         UNKNOWN
     };
 
@@ -41,12 +45,14 @@ class ConfigParser
         void parseLines();
         const ServerContext setServerContext();
         const LocationContext setLocationContext();
+        const CGIContext setCGIContext();
         void setContextType(ContextType context);
         void setDirectiveType(const std::string& directive);
         bool isAllowedDirective();
         bool isInHttpContext();
         bool isInServerContext();
         bool isInLocationContext();
+        bool isInCgiContext();
 
     private:
         Config& _config;

@@ -12,7 +12,7 @@ public:
     StaticFileReader();
     std::string readFile(const std::string& requestPath, const std::string& method,
                          const ServerContext& serverContext);
-    std::string readErrorFile(const std::string& filepath);
+    std::string readErrorFile(const int status, const ServerContext& serverContext);
     ~StaticFileReader();
 };
 

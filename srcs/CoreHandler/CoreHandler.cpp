@@ -90,6 +90,38 @@ std::string deleteMethod(std::string url, const ServerContext &server_context)
     return "HTTP/1.1 204 No Content\r\n\r\n"; // 成功のレスポンス
 }
 
+std::string getPath(std::string url, const ServerContext &server_context)
+{
+    std::string path = url;
+    if (path.find("?") != std::string::npos)
+    {
+        path = path.substr(0, path.find("?"));
+    }
+    return path;
+}
+
+std::string getExecutablePath(const ServerContext &server_context)
+{
+    std::string res = "";
+    return res;
+}
+
+std::string CgiMethod(HttpRequest &req, const ServerContext &server_context)
+{
+    // Get Cgi Path, executable file path
+    std::string executablePath = getExecutablePath(server_context);
+    std::cout << "DEBUG MSG: executablePath: " << executablePath << "\n";
+    std::string path = getPath(req.url, server_context);
+    Cgi cgi(req, executablePath, path);
+    return cgi.CgiHandler();
+}
+
+bool CoreHandler::isCgi(const std::string &request, const ServerContext &server_context)
+{
+    // TODO FIX!! CGIの実装
+    return false;
+}
+
 std::string CoreHandler::processRequest(const std::string &request, const ServerContext &server_context)
 {
     // リクエストを解析
@@ -97,7 +129,11 @@ std::string CoreHandler::processRequest(const std::string &request, const Server
     HttpRequest httpRequest = parser.parse(request, server_context);
     std::cout << "DEBUG MSG: filePath: " << httpRequest.url << "\n";
 
-    if (httpRequest.method == "GET")
+    if (isCgi(request, server_context))
+    {
+        return CgiMethod(httpRequest, server_context);
+    }
+    else if (httpRequest.method == "GET")
     {
         return getMethod(httpRequest.url, server_context);
     }

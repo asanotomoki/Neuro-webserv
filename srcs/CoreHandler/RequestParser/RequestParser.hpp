@@ -10,8 +10,6 @@ struct HttpRequest {
     std::string url;
     std::map<std::string, std::string> headers;
     std::string body;
-    bool cgi_exec;
-    std::string cgi_path;
 };
 
 //大脳における感覚情報の解析と処理

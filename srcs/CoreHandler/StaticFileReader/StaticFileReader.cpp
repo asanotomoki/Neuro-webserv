@@ -81,8 +81,8 @@ std::string StaticFileReader::readFile(std::string& requestPath, const std::stri
 
     std::cout << "DEBUG MSG 1 :: alias: " << alias << "\n";
 
-    // ファイル名に"."が含まれていない場合は、indexディレクティブの値を使用
-    if (filename.find(".") == std::string::npos) {
+    // ファイル名が空の場合、"index" ディレクティブの値を取得
+    if (filename.empty()) {
         filename = locationContext.getDirective("index");
     }
 

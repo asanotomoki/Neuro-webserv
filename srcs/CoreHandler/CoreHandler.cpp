@@ -76,7 +76,7 @@ std::string getMethod(std::string filePath, const ServerContext &server_context)
 
 std::string postMethod(std::string body, const ServerContext &server_context, std::string path)
 {
-    LocationContext locationContext = server_context.getLocationContext(getLocationPath(path)); // TODO FIX!! /upload is magic number
+    LocationContext locationContext = server_context.getLocationContext(getLocationPath(path));
 
     if (locationContext.isAllowedMethod("POST") == false)
     {

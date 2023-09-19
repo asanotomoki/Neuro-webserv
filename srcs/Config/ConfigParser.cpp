@@ -243,8 +243,10 @@ const LocationContext ConfigParser::setLocationContext()
         		locationContext.addAllowedMethod(_oneLine[i]);
     		}
 		}
-		else
+		else {
 			locationContext.addDirective(_oneLine[0], _oneLine[1], _filepath, _lineNumber + 1);
+			std::cout << "DEBUG MSG: " << locationContext.getDirective(_oneLine[0]) << std::endl;
+		}
 	}
 	return locationContext;
 }

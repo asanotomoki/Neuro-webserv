@@ -7,6 +7,7 @@ LDFLAGS =
 SOURCES = srcs/main.cpp srcs/Config/Config.cpp srcs/SocketInterface/SocketInterface.cpp \
 			srcs/CoreHandler/CoreHandler.cpp \
 			srcs/Config/ConfigError.cpp srcs/Config/ConfigParser.cpp \
+			srcs/Config/CGIContext.cpp \
 			srcs/Config/LocationContext.cpp srcs/Config/ServerContext.cpp \
 			srcs/CoreHandler/RequestParser/RequestParser.cpp \
 			srcs/CoreHandler/StaticFileReader/StaticFileReader.cpp \

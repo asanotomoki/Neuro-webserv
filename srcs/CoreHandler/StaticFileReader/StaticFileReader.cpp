@@ -28,16 +28,19 @@ std::string StaticFileReader::readErrorFile(const int status, const ServerContex
                        std::istreambuf_iterator<char>());
 }
 
-std::string StaticFileReader::readFile(const std::string& requestPath, const std::string& method,
+std::string StaticFileReader::readFile(std::string& requestPath, const std::string& method,
                                        const ServerContext& serverContext) {
-    if (requestPath == "/favicon.ico/") {
+    if (requestPath == "/favicon.ico") {
         std::cout << "WARNING : favicon.ico request, ignoring\n";
         return {};
     }
 
+    // requestPathが"/"で終わっていない場合に、"/"を追加
+    if (requestPath[requestPath.size() - 1] != '/') {
+        requestPath += '/';
+    }
     std::string directory, filename;
     size_t len = requestPath.length();
-
     // requestPathをディレクトリとファイルに分割
     size_t lastSlash = requestPath.find_last_of("/", len - 2); // 末尾の"/"を無視しない
 

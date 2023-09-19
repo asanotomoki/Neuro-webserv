@@ -2,6 +2,8 @@
 #define COREHANDLER_HPP
 
 #include "ServerContext.hpp"
+#include "RequestParser.hpp"
+#include "Cgi.hpp"
 #include <string>
 
 struct ProcessResult {
@@ -13,7 +15,9 @@ struct ProcessResult {
 //大脳クラス
 class CoreHandler
 {
-public:
+    private: 
+        bool isCgi(const std::string& request, const ServerContext& server_context);
+    public:
     CoreHandler();
     std::string processRequest(const std::string& request, const ServerContext& server_context);
     ~CoreHandler();

@@ -295,4 +295,3 @@ bool ConfigParser::isFile(const char *path)
 	}
 	return false;
 }
-

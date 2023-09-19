@@ -71,6 +71,11 @@ void ServerContext::addLocationContext(const LocationContext& location)
 	_locations.push_back(location);
 }
 
+void ServerContext::addCGIContext(const CGIContext& cgi)
+{
+	_cgi = cgi;
+}
+
 void ServerContext::addDirectives(const std::string& directive, const std::string& value,
 	const std::string& filepath, int line_number)
 {

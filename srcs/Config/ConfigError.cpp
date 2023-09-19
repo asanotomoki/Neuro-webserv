@@ -2,17 +2,17 @@
 #include <errno.h>
 #include <cstring>
 
-ConfigError::ConfigError(const ErrorType error_type, const std::string& error_word,
-						const std::string& filepath, int line_number):
+ConfigError::ConfigError(const ErrorType errorType, const std::string& errorWord,
+						const std::string& filepath, int lineNumber):
 	_errorMessage("Config Error: "), 
-	_fileInfo(" in " + filepath + ": " + itostr(line_number))
+	_fileInfo(" in " + filepath + ": " + itostr(lineNumber))
 {
-	setErrorMessage(error_type, error_word);
+	setErrorMessage(errorType, errorWord);
 }
 
-ConfigError::ConfigError(const ErrorType error_type, const std::string& error_word)
+ConfigError::ConfigError(const ErrorType errorType, const std::string& errorWord)
 {
-	setErrorMessage(error_type, error_word);
+	setErrorMessage(errorType, errorWord);
 }
 
 
@@ -21,27 +21,27 @@ ConfigError::~ConfigError() throw()
 {
 }
 
-void ConfigError::setErrorMessage(const ErrorType error_type, const std::string& error_word)
+void ConfigError::setErrorMessage(const ErrorType errorType, const std::string& errorWord)
 {
-	switch (error_type)
+	switch (errorType)
 	{
 		case NEED_SERVER_CONTEXT:
 			_errorMessage += "need server context" + _fileInfo;
 			break;
 		case DUPLICATE_DIRECTIVE:
-			_errorMessage += "duplicate \"" + error_word + "\" directive" + _fileInfo;
+			_errorMessage += "duplicate \"" + errorWord + "\" directive" + _fileInfo;
 			break;
 		case NOT_ALLOWED_DIRECTIVE:
-			_errorMessage += "\"" + error_word + "\" directive is not allowed here" + _fileInfo;
+			_errorMessage += "\"" + errorWord + "\" directive is not allowed here" + _fileInfo;
 			break;
 		case UNKOWN_DIRECTIVE:
-			_errorMessage += "unknown directive \"" + error_word + "\"" + _fileInfo;
+			_errorMessage += "unknown directive \"" + errorWord + "\"" + _fileInfo;
 			break;
 		case INVALID_PATH:
-			_errorMessage += "invalid path \"" + error_word + "\"" + _fileInfo;
+			_errorMessage += "invalid path \"" + errorWord + "\"" + _fileInfo;
 			break;
 		case SYSTEM_ERROR:
-			_errorMessage += "system call error \"" + error_word + ": " + strerror(errno) + "\"" + _fileInfo;
+			_errorMessage += "system call error \"" + errorWord + ": " + strerror(errno) + "\"" + _fileInfo;
 			break;
 		default:
 			break;

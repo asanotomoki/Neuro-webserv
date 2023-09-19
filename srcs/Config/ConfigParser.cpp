@@ -88,7 +88,7 @@ bool ConfigParser::isAllowedDirective()
 	else if (_contextType == LOCATION_CONTEXT)
 		return isInLocationContext();
 	else if (_contextType == CGI_CONTEXT)
-		return ;
+		return isInCgiContext();
 	return false;
 }
 

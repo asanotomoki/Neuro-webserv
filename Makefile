@@ -11,7 +11,7 @@ SOURCES = srcs/main.cpp srcs/Config/Config.cpp srcs/SocketInterface/SocketInterf
 			srcs/CoreHandler/RequestParser/RequestParser.cpp \
 			srcs/CoreHandler/StaticFileReader/StaticFileReader.cpp \
 			srcs/CoreHandler/DataProcessor/DataProcessor.cpp \
-			srcs/CoreHandler/Cgi/Cgi.cpp \
+			srcs/CoreHandler/Cgi/Cgi.cpp
 OBJECTS_DIR = objs
 OBJECTS = $(addprefix $(OBJECTS_DIR)/, $(SOURCES:.cpp=.o))
 NAME = webserv

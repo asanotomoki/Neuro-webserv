@@ -11,12 +11,6 @@ ServerContext::ServerContext():
 	_locations(),
 	_directives()
 {
-	_404LocationContext.addDirective("alias", "./docs/error_page/");
-	_404LocationContext.addDirective("index", "404.html");
-	_405LocationContext.addDirective("alias", "./docs/error_page/");
-	_405LocationContext.addDirective("index", "405.html");
-	_501LocationContext.addDirective("alias", "./docs/error_page/");
-	_501LocationContext.addDirective("index", "501.html");
 }
 
 ServerContext::~ServerContext()
@@ -36,6 +30,16 @@ void ServerContext::setServerName(const std::string& server_name)
 void ServerContext::setMaxBodySize(const std::string& max_body_size)
 {
 	_maxBodySize = max_body_size;
+}
+
+void ServerContext::setErrorPages()
+{
+	_404LocationContext.addDirective("alias", "./docs/error_page/");
+	_404LocationContext.addDirective("index", getErrorPage("404"));
+	_405LocationContext.addDirective("alias", "./docs/error_page/");
+	_405LocationContext.addDirective("index", getErrorPage("405"));
+	_501LocationContext.addDirective("alias", "./docs/error_page/");
+	_501LocationContext.addDirective("index", getErrorPage("501"));	
 }
 
 void ServerContext::setErrorPage(std::string status_code, const std::string& filename)

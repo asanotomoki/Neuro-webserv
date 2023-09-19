@@ -15,6 +15,7 @@ class ServerContext
         void setListen(const std::string& listen);
         void setServerName(const std::string& server_name);
         void setMaxBodySize(const std::string& max_body_size);
+        void setErrorPages();
         void setErrorPage(std::string status_code, const std::string& filename);
         const std::string& getListen() const;
         const std::string& getServerName() const;

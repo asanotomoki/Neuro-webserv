@@ -42,7 +42,8 @@ std::string StaticFileReader::readFile(std::string& requestPath, const std::stri
     std::string directory, filename;
     size_t len = requestPath.length();
     // requestPathをディレクトリとファイルに分割
-    size_t lastSlash = requestPath.find_last_of("/", len - 2); // 末尾の"/"を無視しない
+    
+    // size_t lastSlash = requestPath.find_last_of("/", len - 2); // 末尾の"/"を無視しない
 
     // 先頭から末尾の'/'までをディレクトリとする
     // directory = requestPath.substr(0, lastSlash + 1);

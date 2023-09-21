@@ -33,6 +33,7 @@ class ConfigParser
         LIMIT_EXCEPT,
         COMMAND,
         CGI_ON,
+        RETURN,
         UNKNOWN
     };
 

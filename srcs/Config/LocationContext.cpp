@@ -44,7 +44,7 @@ const std::string& LocationContext::getDirective(const std::string& directive) c
 {
 	std::map<std::string, std::string>::const_iterator it = _directives.find(directive);
 	if (it == _directives.end())
-		throw std::runtime_error("directive not found");
+		throw std::runtime_error("directive not found: " + directive);
 	return it->second;
 }
 
@@ -70,4 +70,9 @@ bool LocationContext::getIsCgi() const
 std::map<std::string, std::string> LocationContext::getDirectives() const
 {
 	return _directives;
+}
+
+bool LocationContext::hasDirective(const std::string& directive)
+{
+	return _directives.find(directive) != _directives.end();
 }

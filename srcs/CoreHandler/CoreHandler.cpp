@@ -45,10 +45,10 @@ std::string successResponse(std::string fileContent, std::string contentType)
     return response;
 }
 
-std::string errorResponse(int statusCode, std::string message, const ServerContext &server_context)
+std::string errorResponse(int statusCode, std::string message, const ServerContext &serverContext)
 {
     StaticFileReader fileReader;
-    std::string fileContent = fileReader.readErrorFile(statusCode, server_context);
+    std::string fileContent = fileReader.readErrorFile(statusCode, serverContext);
     std::string response = "HTTP/1.1 " + std::to_string(statusCode) + " " + message + "\r\n"; 
     response += "Content-Type: text/html\r\n";
     response += "Content-Length: " + std::to_string(fileContent.size()) + "\r\n";
@@ -57,11 +57,11 @@ std::string errorResponse(int statusCode, std::string message, const ServerConte
     return response;
 }
 
-std::string getMethod(std::string filePath, const ServerContext &server_context)
+std::string getMethod(std::string filePath, const ServerContext &serverContext)
 {
     // 静的ファイルを提供する場合
     StaticFileReader fileReader;
-    std::string fileContent = fileReader.readFile(filePath, "GET", server_context);
+    std::string fileContent = fileReader.readFile(filePath, "GET", serverContext);
 
     std::string response = successResponse(fileContent, "text/html");
 
@@ -69,15 +69,15 @@ std::string getMethod(std::string filePath, const ServerContext &server_context)
     return response;
 }
 
-std::string postMethod(std::string body, const ServerContext &server_context, std::string path)
+std::string postMethod(std::string body, const ServerContext &serverContext, std::string path)
 {
     std::string filePath = getLocationPath(path);
-    LocationContext locationContext = server_context.getLocationContext(getLocationPath(path));
+    LocationContext locationContext = serverContext.getLocationContext(getLocationPath(path));
 
     if (locationContext.isAllowedMethod("POST") == false)
     {
         std::cout << "DEBUG MSG: POST FAILED\n";
-        return errorResponse(405, "Method Not Allowed", server_context);
+        return errorResponse(405, "Method Not Allowed", serverContext);
     }
     DataProcessor dataProcessor;
     ProcessResult result = dataProcessor.processPostData(body, locationContext);
@@ -91,13 +91,13 @@ std::string postMethod(std::string body, const ServerContext &server_context, st
     return response;
 }
 
-std::string deleteMethod(std::string url, const ServerContext &server_context)
+std::string deleteMethod(std::string url, const ServerContext &serverContext)
 {
-    LocationContext locationContext = server_context.getLocationContext(getLocationPath(url));
+    LocationContext locationContext = serverContext.getLocationContext(getLocationPath(url));
     if (locationContext.isAllowedMethod("DELETE") == false)
     {
         std::cout << "DEBUG MSG: DELETE FAILED\n";
-        return errorResponse(405, "Method Not Allowed", server_context);
+        return errorResponse(405, "Method Not Allowed", serverContext);
     }
     // urlからファイルパスを生成
     // url = /form/delete/uploaded.txt -> url = /uploaded.txt
@@ -108,14 +108,14 @@ std::string deleteMethod(std::string url, const ServerContext &server_context)
         std::cerr << "ERROR: File not found or delete failed.\n";
         std::cout << "DEBUG MSG: DELETE FAILED\n";
 
-        return errorResponse(404, "Not Found", server_context);
+        return errorResponse(404, "Not Found", serverContext);
     }
 
     std::cout << "DEBUG MSG: DELETE SUCCESS\n";
     return "HTTP/1.1 204 No Content\r\n\r\n"; // 成功のレスポンス
 }
 
-std::string getPath(std::string url, const ServerContext &server_context)
+std::string getPath(std::string url, const ServerContext &serverContext)
 {
     std::string path = url;
     if (path.find("?") != std::string::npos)
@@ -125,28 +125,28 @@ std::string getPath(std::string url, const ServerContext &server_context)
     return path;
 }
 
-std::string getExecutablePath(const ServerContext &server_context)
+std::string getExecutablePath(const ServerContext &serverContext)
 {
     std::string res = "";
     return res;
 }
 
-std::string CgiMethod(HttpRequest &req, const ServerContext &server_context)
+std::string CgiMethod(HttpRequest &req, const ServerContext &serverContext)
 {
     // Get Cgi Path, executable file path
-    std::string executablePath = getExecutablePath(server_context);
+    std::string executablePath = getExecutablePath(serverContext);
     std::cout << "DEBUG MSG: executablePath: " << executablePath << "\n";
-    std::string path = getPath(req.url, server_context);
+    std::string path = getPath(req.url, serverContext);
     Cgi cgi(req, executablePath, path);
     return cgi.CgiHandler();
 }
 
-bool CoreHandler::isCgi(const std::string &request, const ServerContext &server_context, const std::string path)
+bool CoreHandler::isCgi(const std::string &request, const ServerContext &serverContext, const std::string path)
 {
-    //bool isCgi = server_context.getIsCgi();
+    //bool isCgi = serverContext.getIsCgi();
     //if (isCgi == true)
     //{
-    //    CGIContext cgiContext = server_context.getCGIContext();
+    //    CGIContext cgiContext = serverContext.getCGIContext();
     //    std::string extension = cgiContext.getDirective("extension");
     //    if (path.find(extension) != std::string::npos)
     //    {
@@ -154,7 +154,7 @@ bool CoreHandler::isCgi(const std::string &request, const ServerContext &server_
     //    }
     //}
     // /upload
-    LocationContext locationContext = server_context.getLocationContext(getLocationPath(path));
+    LocationContext locationContext = serverContext.getLocationContext(getLocationPath(path));
     bool res = locationContext.getIsCgi();
     if (res) {
         std::cout << "DEBUG MSG: isCgi: " << "true" << "\n";
@@ -165,32 +165,45 @@ bool CoreHandler::isCgi(const std::string &request, const ServerContext &server_
     return res;
 }
 
-std::string CoreHandler::processRequest(const std::string &request, const ServerContext &server_context)
+std::string CoreHandler::processRequest(const std::string &request, const ServerContext &serverContext)
 {
     // リクエストを解析
     RequestParser parser;
-    HttpRequest httpRequest = parser.parse(request, server_context);
-    if (isCgi(request, server_context, httpRequest.url))
+    HttpRequest httpRequest = parser.parse(request, serverContext);
+    // requestPathが"/"で終わっていない場合に、"/"を追加
+    if (httpRequest.url[httpRequest.url.size() - 1] != '/') {
+        httpRequest.url += '/';
+    }
+    std::cout << "DEBUG MSG:: httpRequest.url: " << httpRequest.url << "\n";
+    size_t nextSlash = httpRequest.url.find_first_of("/", 1);
+    std::string directoryPath = httpRequest.url.substr(0, nextSlash + 1);
+    std::cout << "DEBUG MSG: directoryPath: " << directoryPath << "\n";
+    // directoryPathからLocationContextを取得
+    std::string returnPath = serverContext.getReturnPath(directoryPath);
+    std::cout << "DEBUG MSG: returnPath: " << returnPath << "\n";
+    if (!returnPath.empty()) {
+        httpRequest.url = returnPath;
+    }
+
+    if (isCgi(request, serverContext, httpRequest.url))
     {
         std::cout << "DEBUG MSG: path: " << "IS CGI" << "\n";
-        return CgiMethod(httpRequest, server_context);
+        return CgiMethod(httpRequest, serverContext);
     }
     else if (httpRequest.method == "GET")
     {
-        return getMethod(httpRequest.url, server_context);
+        return getMethod(httpRequest.url, serverContext);
     }
     else if (httpRequest.method == "POST")
     {
-        return postMethod(httpRequest.body, server_context, httpRequest.url);
+        return postMethod(httpRequest.body, serverContext, httpRequest.url);
     }
     else if (httpRequest.method == "DELETE")
     {
-        return deleteMethod(httpRequest.url, server_context);
+        return deleteMethod(httpRequest.url, serverContext);
     }
-    // 未実装のメソッドの場合
     std::cout << "DEBUG MSG: NOT IMPLEMENTED\n";
-    // ERROR レスポンスの生成
-    return errorResponse(501, "Not Implemented", server_context);
+    return errorResponse(501, "Not Implemented", serverContext);
 }
 
 CoreHandler::~CoreHandler()

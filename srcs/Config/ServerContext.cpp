@@ -171,3 +171,14 @@ const LocationContext& ServerContext::get501LocationContext() const
 {
 	return _501LocationContext;
 }
+
+// returnディレクティブの値を取得する関数
+const std::string& ServerContext::getReturnPath(const std::string& path) const
+{
+    LocationContext locationContext = getLocationContext(path);
+    if (locationContext.hasDirective("return"))
+    {
+        return locationContext.getDirective("return");
+    }
+    return "";
+}

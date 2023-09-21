@@ -50,6 +50,8 @@ void ConfigParser::setDirectiveType(const std::string& directive)
 		_directiveType = COMMAND;
 	else if (directive == "cgi_on")
 		_directiveType = CGI_ON;
+	else if (directive == "return")
+		_directiveType = RETURN;
 	else
 		_directiveType = UNKNOWN;
 }
@@ -70,7 +72,7 @@ bool ConfigParser::isInLocationContext()
 {
 	return  _directiveType == ALIAS || _directiveType == INDEX
 		|| _directiveType == LIMIT_EXCEPT || _directiveType == COMMAND
-		|| _directiveType == CGI_ON;
+		|| _directiveType == CGI_ON || _directiveType == RETURN;
 }
 
 bool ConfigParser::isInCgiContext()
@@ -162,17 +164,13 @@ void ConfigParser::parseLines()
 			break ;
 		setDirectiveType(_oneLine[0]);
 		if (!isAllowedDirective())
-		{
 			throw ConfigError(NOT_ALLOWED_DIRECTIVE, _oneLine[0], _filepath, _lineNumber + 1);
-		}
 		else if (_directiveType == SERVER){
 			ServerContext serverContext = setServerContext();
 			_config.addServerContext(serverContext);
 		}
 		else
-		{
 			throw ConfigError(NEED_SERVER_CONTEXT, _oneLine[0], _filepath, _lineNumber + 1);
-		}
 	}
 }
 
@@ -211,9 +209,8 @@ const ServerContext ConfigParser::setServerContext()
 				serverContext.setServerName(_oneLine[1]);
 			else if (_directiveType == MAX_BODY_SIZE)
 				serverContext.setMaxBodySize(_oneLine[1]);
-			else if (_directiveType == ERROR_PAGE){
+			else if (_directiveType == ERROR_PAGE)
 				serverContext.setErrorPage(_oneLine[1], _oneLine[2]);
-			}
 		}
 	}
 	serverContext.setErrorPages();
@@ -226,8 +223,7 @@ const LocationContext ConfigParser::setLocationContext()
 
 	locationContext.addDirective("path", _oneLine[1], _filepath, _lineNumber + 1);
 	_lineNumber++;
-	for ( ; _lineNumber < _lines.size(); _lineNumber++)
-	{
+	for ( ; _lineNumber < _lines.size(); _lineNumber++) {
 		setContextType(LOCATION_CONTEXT);
 		_oneLine.clear();
 		_oneLine = _lines[_lineNumber];
@@ -238,7 +234,7 @@ const LocationContext ConfigParser::setLocationContext()
 		setDirectiveType(_oneLine[0]);
 		if (!isAllowedDirective())
 			throw ConfigError(NOT_ALLOWED_DIRECTIVE, _oneLine[0], _filepath, _lineNumber + 1);
-		else if (_directiveType == LIMIT_EXCEPT){
+		else if (_directiveType == LIMIT_EXCEPT) {
 			for (size_t i = 1; i < _oneLine.size(); ++i) {
         		locationContext.addAllowedMethod(_oneLine[i]);
     		}
@@ -255,8 +251,7 @@ const CGIContext ConfigParser::setCGIContext()
 
 	cgiContext.addDirective("extension", _oneLine[1], _filepath, _lineNumber + 1);
 	_lineNumber++;
-	for ( ; _lineNumber < _lines.size(); _lineNumber++)
-	{
+	for ( ; _lineNumber < _lines.size(); _lineNumber++) {
 		setContextType(CGI_CONTEXT);
 		_oneLine.clear();
 		_oneLine = _lines[_lineNumber];
@@ -283,13 +278,10 @@ bool ConfigParser::isFile(const char *path)
 {
 	struct stat st;
 
-	if (stat(path, &st) == 0)
-	{
+	if (stat(path, &st) == 0) {
 		// パスがファイルであるか
 		if (S_ISREG(st.st_mode))
-		{
 			return true;
-		}
 	}
 	return false;
 }

@@ -189,10 +189,8 @@ const ServerContext ConfigParser::setServerContext()
 		if (_oneLine[0] == "}")
 			break ;
 		setDirectiveType(_oneLine[0]);
-		if (!isAllowedDirective()) {
-			std::cout << "DEBUG MSG" << std::endl;
+		if (!isAllowedDirective())
 			throw ConfigError(NOT_ALLOWED_DIRECTIVE, _oneLine[0], _filepath, _lineNumber + 1);
-		}
 		else if (_directiveType == LOCATION) {
 			LocationContext locationContext = setLocationContext();
 			serverContext.addLocationContext(locationContext);

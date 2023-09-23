@@ -44,7 +44,7 @@ const std::string& LocationContext::getDirective(const std::string& directive) c
 {
 	std::map<std::string, std::string>::const_iterator it = _directives.find(directive);
 	if (it == _directives.end())
-		throw std::runtime_error("directive not found: " + directive);
+		throw std::runtime_error("getDirective :: directive not found: " + directive);
 	return it->second;
 }
 
@@ -57,9 +57,9 @@ bool LocationContext::isAllowedMethod(const std::string& method) const
 
 bool LocationContext::getIsCgi() const
 {
-	std::cout << "DEBUG MSG :: GET IS CGI"  << '\n';
+	std::cout << "getIsCgi :: GET IS CGI"  << '\n';
 	for(const auto& pair : _directives) {
-        std::cout << "DEBUG MSG :: " << pair.first << ": " << pair.second << '\n';
+        std::cout << "getIsCgi :: " << pair.first << ": " << pair.second << '\n';
     }
 	std::map<std::string, std::string>::const_iterator it = _directives.find("cgi_on");
 	if (it == _directives.end())

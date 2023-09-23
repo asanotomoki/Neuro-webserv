@@ -1,7 +1,7 @@
 #include "DataProcessor.hpp"
 #include <fstream>
 
-ProcessResult DataProcessor::processPostData(const std::string& postData, const LocationContext& locationContext) {
+ProcessResult DataProcessor::processPostData(const std::string& postData) {
 
     // ファイルデータの部分を解析
     size_t fileDataStart = postData.find("\r\n") + 1;

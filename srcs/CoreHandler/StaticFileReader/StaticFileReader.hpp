@@ -2,6 +2,7 @@
 #define STATIC_FILE_READER_HPP
 
 #include "ServerContext.hpp"
+#include "LocationContext.hpp"
 #include "RequestParser.hpp"
 #include <string>
 #include <vector>
@@ -10,9 +11,9 @@
 class StaticFileReader {
 public:
     StaticFileReader();
-    std::string readFile(std::string& requestPath, const std::string& method,
-                         const ServerContext& serverContext);
-    std::string readErrorFile(const int status, const ServerContext& serverContext);
+    std::string readFile(std::string filename, LocationContext locationContext,
+                        const ServerContext &serverContext);
+    std::string readErrorFile(const LocationContext& locationContext);
     ~StaticFileReader();
 };
 

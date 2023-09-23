@@ -8,9 +8,6 @@ HttpRequest RequestParser::parse(const std::string& request, const ServerContext
 
     // メソッドとURLを解析
     requestStream >> httpRequest.method >> httpRequest.url;
-
-    
-
     // ヘッダーを解析
     std::string headerLine;
     int contentLength = 0; // Content-Lengthを保存する変数
@@ -34,7 +31,7 @@ HttpRequest RequestParser::parse(const std::string& request, const ServerContext
             contentLength = std::stoi(value);
         }
     }
-    std::cout << "DEBUG MSG:: contentLength: " << contentLength << std::endl;
+    std::cout << "processRequest :: contentLength: " << contentLength << std::endl;
     // ボディを解析 (Content-Lengthが指定されていれば)
     if (contentLength > 0) {
         int maxBodySize = std::stoi(serverContext.getMaxBodySize());
@@ -44,7 +41,7 @@ HttpRequest RequestParser::parse(const std::string& request, const ServerContext
         char* buffer = new char[contentLength];
         requestStream.read(buffer, contentLength);
         httpRequest.body = std::string(buffer, contentLength);
-        std::cout << "DEBUG MSG:: body: " << httpRequest.body << std::endl;
+        std::cout << "processRequest :: body: " << httpRequest.body << std::endl;
         delete[] buffer;
     }
 

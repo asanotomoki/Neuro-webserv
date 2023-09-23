@@ -2,12 +2,12 @@
 #include "RequestParser.hpp"
 #include "StaticFileReader.hpp"
 #include "DataProcessor.hpp"
+#include "LocationContext.hpp"
 #include <iostream>
 #include <algorithm>
 
 CoreHandler::CoreHandler()
 {
-    // 必要に応じて初期化処理をここに記述
 }
 
 std::string getLocationPath (std::string url)
@@ -45,10 +45,10 @@ std::string successResponse(std::string fileContent, std::string contentType)
     return response;
 }
 
-std::string errorResponse(int statusCode, std::string message, const ServerContext &serverContext)
+std::string errorResponse(int statusCode, std::string message, const LocationContext& locationContext)
 {
     StaticFileReader fileReader;
-    std::string fileContent = fileReader.readErrorFile(statusCode, serverContext);
+    std::string fileContent = fileReader.readErrorFile(locationContext);
     std::string response = "HTTP/1.1 " + std::to_string(statusCode) + " " + message + "\r\n"; 
     response += "Content-Type: text/html\r\n";
     response += "Content-Length: " + std::to_string(fileContent.size()) + "\r\n";
@@ -57,61 +57,44 @@ std::string errorResponse(int statusCode, std::string message, const ServerConte
     return response;
 }
 
-std::string getMethod(std::string filePath, const ServerContext &serverContext)
+std::string getMethod(const std::string& filename, const LocationContext& locationContext,
+                        const ServerContext& serverContext)
 {
     // 静的ファイルを提供する場合
     StaticFileReader fileReader;
-    std::string fileContent = fileReader.readFile(filePath, "GET", serverContext);
-
+    std::string fileContent = fileReader.readFile(filename, locationContext,
+                                                        serverContext);
     std::string response = successResponse(fileContent, "text/html");
 
-    std::cout << "DEBUG MSG: GET SUCCESS\n";
+    std::cout << "getMethod :: GET SUCCESS\n";
     return response;
 }
 
-std::string postMethod(std::string body, const ServerContext &serverContext, std::string path)
+std::string postMethod(std::string body)
 {
-    std::string filePath = getLocationPath(path);
-    LocationContext locationContext = serverContext.getLocationContext(getLocationPath(path));
-
-    if (locationContext.isAllowedMethod("POST") == false)
-    {
-        std::cout << "DEBUG MSG: POST FAILED\n";
-        return errorResponse(405, "Method Not Allowed", serverContext);
-    }
     DataProcessor dataProcessor;
-    ProcessResult result = dataProcessor.processPostData(body, locationContext);
+    ProcessResult result = dataProcessor.processPostData(body);
     // TODO FIX!! エラーハンドリングを追加する必要がある
 
     // レスポンスの生成
     std::string response = successResponse(result.message, "text/html");
 
-    std::cout << "DEBUG MSG: POST SUCCESS\n";
-    std::cout << "DEBUG MSG:: response: " << response << "\n";
+    std::cout << "postMethod :: POST SUCCESS\n";
+    std::cout << "postMethod :: response: " << response << "\n";
     return response;
 }
 
-std::string deleteMethod(std::string url, const ServerContext &serverContext)
+std::string deleteMethod(const std::string& filename, const ServerContext& serverContext)
 {
-    LocationContext locationContext = serverContext.getLocationContext(getLocationPath(url));
-    if (locationContext.isAllowedMethod("DELETE") == false)
+    if (std::remove(("./docs/upload" + filename).c_str()) != 0)
     {
-        std::cout << "DEBUG MSG: DELETE FAILED\n";
-        return errorResponse(405, "Method Not Allowed", serverContext);
-    }
-    // urlからファイルパスを生成
-    // url = /form/delete/uploaded.txt -> url = /uploaded.txt
-    // url = /form/delete/uploaded.txt?hoge=fuga -> url = /uploaded.txt
-    url = url.substr(url.find_last_of("/"));
-    if (std::remove(("./docs/upload" + url).c_str()) != 0)
-    {
-        std::cerr << "ERROR: File not found or delete failed.\n";
-        std::cout << "DEBUG MSG: DELETE FAILED\n";
-
-        return errorResponse(404, "Not Found", serverContext);
+        std::cerr << "deleteMethod :: ERROR: File not found or delete failed.\n";
+        std::cout << "deleteMethod :: DELETE FAILED\n";
+        LocationContext locationContext = serverContext.get404LocationContext();
+        return errorResponse(404, "Not Found", locationContext);
     }
 
-    std::cout << "DEBUG MSG: DELETE SUCCESS\n";
+    std::cout << "deleteMethod :: DELETE SUCCESS\n";
     return "HTTP/1.1 204 No Content\r\n\r\n"; // 成功のレスポンス
 }
 
@@ -135,7 +118,7 @@ std::string CgiMethod(HttpRequest &req, const ServerContext &serverContext)
 {
     // Get Cgi Path, executable file path
     std::string executablePath = getExecutablePath(serverContext);
-    std::cout << "DEBUG MSG: executablePath: " << executablePath << "\n";
+    std::cout << "CgiMethod :: executablePath: " << executablePath << "\n";
     std::string path = getPath(req.url, serverContext);
     Cgi cgi(req, executablePath, path);
     return cgi.CgiHandler();
@@ -157,9 +140,9 @@ bool CoreHandler::isCgi(const std::string &request, const ServerContext &serverC
     LocationContext locationContext = serverContext.getLocationContext(getLocationPath(path));
     bool res = locationContext.getIsCgi();
     if (res) {
-        std::cout << "DEBUG MSG: isCgi: " << "true" << "\n";
+        std::cout << "isCgi :: true" << "\n";
     } else {
-        std::cout << "DEBUG MSG: isCgi: " << "false" << "\n";
+        std::cout << "isCgi :: false" << "\n";
     }
 
     return res;
@@ -170,43 +153,86 @@ std::string CoreHandler::processRequest(const std::string &request, const Server
     // リクエストを解析
     RequestParser parser;
     HttpRequest httpRequest = parser.parse(request, serverContext);
+
+    if (httpRequest.url == "/favicon.ico") {
+        std::cout << "WARNING: favicon.ico request, ignoring\n";
+        return {};
+    }
+    // directoryname, filenameを取得
+    // locationContextも取得。
     // requestPathが"/"で終わっていない場合に、"/"を追加
     if (httpRequest.url[httpRequest.url.size() - 1] != '/') {
         httpRequest.url += '/';
     }
-    std::cout << "DEBUG MSG:: httpRequest.url: " << httpRequest.url << "\n";
+    std::string directory, file;
+    // httpRequest.urlをディレクトリとファイルに分割
+    // 先頭から次の'/'までをディレクトリとする
     size_t nextSlash = httpRequest.url.find_first_of("/", 1);
-    std::string directoryPath = httpRequest.url.substr(0, nextSlash + 1);
-    std::cout << "DEBUG MSG: directoryPath: " << directoryPath << "\n";
-    // directoryPathからLocationContextを取得
-    std::string returnPath = serverContext.getReturnPath(directoryPath);
-    std::cout << "DEBUG MSG: returnPath: " << returnPath << "\n";
-    if (!returnPath.empty()) {
-        httpRequest.url = returnPath;
+    directory = httpRequest.url.substr(0, nextSlash + 1);
+    // nextSlash以降、末尾の'/'の手前までをファイル名とする
+    file = httpRequest.url.substr(nextSlash + 1, httpRequest.url.length() - nextSlash - 2); // 末尾の"/"を除く
+    // ディレクトリが"/"の場合、ディレクトリ名としてfileを設定し、fileを空にする
+    if (directory == "/") {
+        directory += file;
+        file = "";
     }
+    // fileが空でない場合、directoryの末尾に'/'を追加
+    if (file.empty() && directory.back() != '/') {
+        directory += "/";
+    }
+    std::cout << "processRequest :: directory: " << directory << ", file: " << file << "\n";
 
+    
+    // directoryからLocationContextを取得
+    std::string redirectPath = serverContext.getReturnPath(directory);
+    std::cout << "processRequest :: redirectPath: " << redirectPath << "\n";
+    LocationContext locationContext;
+    if (!redirectPath.empty()) {
+        locationContext = serverContext.getLocationContext(redirectPath);
+    }
+    else {
+        locationContext = serverContext.getLocationContext(directory);
+    }
     if (isCgi(request, serverContext, httpRequest.url))
     {
-        std::cout << "DEBUG MSG: path: " << "IS CGI" << "\n";
+        std::cout << "processRequest :: path: " << "IS CGI" << "\n";
         return CgiMethod(httpRequest, serverContext);
     }
     else if (httpRequest.method == "GET")
     {
-        return getMethod(httpRequest.url, serverContext);
+        if (!locationContext.isAllowedMethod("GET"))
+        {
+            std::cout << "processRequest :: GET FAILED\n";
+            locationContext = serverContext.get405LocationContext();
+            return errorResponse(405, "Method Not Allowed", locationContext);
+        }
+        return getMethod(file, locationContext, serverContext);
     }
     else if (httpRequest.method == "POST")
     {
-        return postMethod(httpRequest.body, serverContext, httpRequest.url);
+        if (!locationContext.isAllowedMethod("POST"))
+        {
+            std::cout << "processRequest :: POST FAILED\n";
+            locationContext = serverContext.get405LocationContext();
+            return errorResponse(405, "Method Not Allowed", locationContext);
+        }
+        return postMethod(httpRequest.body);
     }
     else if (httpRequest.method == "DELETE")
     {
-        return deleteMethod(httpRequest.url, serverContext);
+        if (!locationContext.isAllowedMethod("DELETE"))
+        {
+            std::cout << "processRequest :: DELETE FAILED\n";
+            locationContext = serverContext.get405LocationContext();
+            return errorResponse(405, "Method Not Allowed", locationContext);
+        }
+        return deleteMethod(file, serverContext);
     }
-    std::cout << "DEBUG MSG: NOT IMPLEMENTED\n";
-    return errorResponse(501, "Not Implemented", serverContext);
+    std::cout << "processRequest :: NOT IMPLEMENTED\n";
+    locationContext = serverContext.get501LocationContext();
+    return errorResponse(501, "Not Implemented", locationContext);
 }
 
 CoreHandler::~CoreHandler()
 {
-    // 必要に応じてクリーンアップ処理をここに記述
 }

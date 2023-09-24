@@ -34,6 +34,7 @@ class ConfigParser
         COMMAND,
         CGI_ON,
         RETURN,
+        AUTOINDEX,
         UNKNOWN
     };
 

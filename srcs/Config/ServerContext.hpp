@@ -31,8 +31,10 @@ class ServerContext
 		const std::vector<LocationContext>& getLocations() const;
 		const LocationContext& getLocationContext(const std::string& path) const;
         const CGIContext& getCGIContext() const;
+        const LocationContext& get403LocationContext() const;
         const LocationContext& get404LocationContext() const;
         const LocationContext& get405LocationContext() const;
+        const LocationContext& get500LocationContext() const;
         const LocationContext& get501LocationContext() const; 
         const std::string& getReturnPath(const std::string& path) const;
 
@@ -47,8 +49,10 @@ class ServerContext
         std::map<std::string, std::string> _directives;
         std::string::size_type getMaxPrefixLength(const std::string& str1, const std::string& str2) const;
         // error location context
+        LocationContext _403LocationContext; 
         LocationContext _404LocationContext;
         LocationContext _405LocationContext;
+        LocationContext _500LocationContext;
         LocationContext _501LocationContext;
 };
 

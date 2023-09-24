@@ -5,6 +5,7 @@
 #include "LocationContext.hpp"
 #include <iostream>
 #include <algorithm>
+#include <filesystem>
 
 CoreHandler::CoreHandler()
 {
@@ -98,6 +99,7 @@ std::string deleteMethod(const std::string& filename, const ServerContext& serve
     return "HTTP/1.1 204 No Content\r\n\r\n"; // 成功のレスポンス
 }
 
+
 std::string CgiBlockMethod(HttpRequest &req, const ServerContext &serverContext, std::string file)
 {
     CGIContext cgiContext = serverContext.getCGIContext();
@@ -165,6 +167,14 @@ bool CoreHandler::isCgi(const std::string &request, const ServerContext &serverC
     return res;
 }
 
+bool isDirectory(const std::string& path) {
+    return std::__fs::filesystem::is_directory(path);
+}
+
+bool isFile(const std::string& path) {
+    return std::__fs::filesystem::is_regular_file(path);
+}
+
 std::string CoreHandler::processRequest(const std::string &request, const ServerContext &serverContext)
 {
     // リクエストを解析
@@ -176,8 +186,7 @@ std::string CoreHandler::processRequest(const std::string &request, const Server
         return {};
     }
     // directoryname, filenameを取得
-    // locationContextも取得。
-    // requestPathが"/"で終わっていない場合に、"/"を追加
+    // httpRequest.urlが"/"で終わっていない場合に、"/"を追加
     if (httpRequest.url[httpRequest.url.size() - 1] != '/') {
         httpRequest.url += '/';
     }
@@ -186,30 +195,45 @@ std::string CoreHandler::processRequest(const std::string &request, const Server
     // 先頭から次の'/'までをディレクトリとする
     size_t nextSlash = httpRequest.url.find_first_of("/", 1);
     directory = httpRequest.url.substr(0, nextSlash + 1);
+    std::cout << "processRequest :: directory: " << directory << "\n";
     // nextSlash以降、末尾の'/'の手前までをファイル名とする
     file = httpRequest.url.substr(nextSlash + 1, httpRequest.url.length() - nextSlash - 2); // 末尾の"/"を除く
     // ディレクトリが"/"の場合、ディレクトリ名としてfileを設定し、fileを空にする
-    if (directory == "/") {
-        directory += file;
-        file = "";
-    }
-    // fileが空でない場合、directoryの末尾に'/'を追加
-    if (file.empty() && directory.back() != '/') {
-        directory += "/";
-    }
-    std::cout << "processRequest :: directory: " << directory << ", file: " << file << "\n";
-
-    
-    // directoryからLocationContextを取得
+    // if (directory == "/") {
+    //     directory += file;
+    //     file = "";
+    // }
+    // directoryの末尾に'/'を追加
+    // if (directory.back() != '/') {
+    //     directory += "/";
+    // }
     std::string redirectPath = serverContext.getReturnPath(directory);
     std::cout << "processRequest :: redirectPath: " << redirectPath << "\n";
     LocationContext locationContext;
-    if (!redirectPath.empty()) {
-        locationContext = serverContext.getLocationContext(redirectPath);
+    if (!redirectPath.empty())
+        directory = redirectPath;
+    std::string fullPath = "./docs" + directory + file;
+    if (fullPath.back() == '/') {
+        fullPath.pop_back();
     }
-    else {
-        locationContext = serverContext.getLocationContext(directory);
+    std::cout << "processRequest :: fullPath: " << fullPath << "\n";
+    // httpRequest.urlに'/'が２つ以下しか含まれない場合に以下の処理を行う
+    if (std::count(httpRequest.url.begin(), httpRequest.url.end(), '/') <= 2) {
+        if (isDirectory(fullPath)) {
+            if (directory.back() != '/')
+                directory += "/";
+        } else if (isFile(fullPath)) {
+            file = directory.substr(1, directory.size() - 2);
+            directory = "/";
+        } else {
+            std::cout << "processRequest :: NOT FOUND\n";
+            LocationContext locationContext = serverContext.get404LocationContext();
+            return errorResponse(404, "Not Found", locationContext);
+        }
     }
+    std::cout << "processRequest :: directory: " << directory << ", file: " << file << "\n";
+    // directoryからLocationContextを取得
+    locationContext = serverContext.getLocationContext(directory);
     if (isCgiBlock(serverContext, httpRequest.url))
     {
         std::string res = CgiBlockMethod(httpRequest, serverContext, file);
@@ -260,3 +284,4 @@ std::string CoreHandler::processRequest(const std::string &request, const Server
 CoreHandler::~CoreHandler()
 {
 }
+

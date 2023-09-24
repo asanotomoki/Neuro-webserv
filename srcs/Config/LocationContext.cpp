@@ -57,10 +57,9 @@ bool LocationContext::isAllowedMethod(const std::string& method) const
 
 bool LocationContext::getIsCgi() const
 {
-	std::cout << "getIsCgi :: GET IS CGI"  << '\n';
-	for(const auto& pair : _directives) {
-        std::cout << "getIsCgi :: " << pair.first << ": " << pair.second << '\n';
-    }
+	// for(const auto& pair : _directives) {
+    //     std::cout << "getIsCgi :: " << pair.first << ": " << pair.second << '\n';
+    // }
 	std::map<std::string, std::string>::const_iterator it = _directives.find("cgi_on");
 	if (it == _directives.end())
 		return false;

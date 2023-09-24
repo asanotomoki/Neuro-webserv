@@ -7,6 +7,14 @@
 #include "RequestParser.hpp"
 #include "ServerContext.hpp"
 
+// CGIの実行結果を格納する構造体
+// status: OK or NG
+// message: CGIの実行結果
+// statusCode: CGIの実行結果のステータスコード
+struct CgiResponse {
+	std::string message;
+	int status;
+};
 //CGIクラス
 class Cgi
 {
@@ -26,7 +34,7 @@ class Cgi
 		Cgi(HttpRequest &request, std::string executable, std::string path);
     	~Cgi();
 		
-		std::string CgiHandler();
+		CgiResponse CgiHandler();
 		
 		// env
 		const std::map<std::string, std::string>& getEnv() const;

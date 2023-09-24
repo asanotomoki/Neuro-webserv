@@ -34,6 +34,7 @@ class ServerContext
         const LocationContext& get403LocationContext() const;
         const LocationContext& get404LocationContext() const;
         const LocationContext& get405LocationContext() const;
+        const LocationContext& get500LocationContext() const;
         const LocationContext& get501LocationContext() const; 
         const std::string& getReturnPath(const std::string& path) const;
 
@@ -51,6 +52,7 @@ class ServerContext
         LocationContext _403LocationContext; 
         LocationContext _404LocationContext;
         LocationContext _405LocationContext;
+        LocationContext _500LocationContext;
         LocationContext _501LocationContext;
 };
 

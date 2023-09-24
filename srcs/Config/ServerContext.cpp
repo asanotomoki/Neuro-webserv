@@ -49,6 +49,9 @@ void ServerContext::setErrorPages()
 	_405LocationContext.addDirective("alias", "./docs/error_page/");
 	_405LocationContext.addDirective("index", getErrorPage("405"));
 	_405LocationContext.addAllowedMethod("GET");
+	_500LocationContext.addDirective("alias", "./docs/error_page/");
+	_500LocationContext.addDirective("index", getErrorPage("500"));
+	_500LocationContext.addAllowedMethod("GET");
 	_501LocationContext.addDirective("alias", "./docs/error_page/");
 	_501LocationContext.addDirective("index", getErrorPage("501"));	
 	_501LocationContext.addAllowedMethod("GET");
@@ -173,6 +176,11 @@ const LocationContext& ServerContext::get404LocationContext() const
 const LocationContext& ServerContext::get405LocationContext() const
 {
 	return _405LocationContext;
+}
+
+const LocationContext& ServerContext::get500LocationContext() const
+{
+	return _500LocationContext;
 }
 
 const LocationContext& ServerContext::get501LocationContext() const

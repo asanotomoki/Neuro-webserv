@@ -7,15 +7,12 @@ ConfigError::ConfigError(const ErrorType errorType, const std::string& errorWord
 	_errorMessage("Config Error: "), 
 	_fileInfo(" in " + filepath + ": " + itostr(lineNumber))
 {
+	if (!filepath.empty() && lineNumber != -1)
+		_fileInfo = " in " + filepath + ": " + itostr(lineNumber);
+	else if (!filepath.empty())
+		_fileInfo = " in " + filepath;
 	setErrorMessage(errorType, errorWord);
 }
-
-ConfigError::ConfigError(const ErrorType errorType, const std::string& errorWord)
-{
-	setErrorMessage(errorType, errorWord);
-}
-
-
 
 ConfigError::~ConfigError() throw()
 {
@@ -39,6 +36,9 @@ void ConfigError::setErrorMessage(const ErrorType errorType, const std::string& 
 			break;
 		case INVALID_PATH:
 			_errorMessage += "invalid path \"" + errorWord + "\"" + _fileInfo;
+			break;
+		case NEED_ALIAS:
+			_errorMessage += "need alias directive" + _fileInfo;
 			break;
 		case SYSTEM_ERROR:
 			_errorMessage += "system call error \"" + errorWord + ": " + strerror(errno) + "\"" + _fileInfo;

@@ -97,6 +97,7 @@ ParseUrlResult CoreHandler::parseUrl(std::string url, const ServerContext& serve
 			result.file = path_tokens[path_tokens.size() - 1];
 			path_tokens.pop_back();
 		} else {
+			std::cout << "aaaaaaaaaaaa" << std::endl;
 			if (autoindexEnabled == false)
 				result.isAutoIndex = false;
 			result.file = "index.html";

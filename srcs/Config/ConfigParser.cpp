@@ -104,7 +104,7 @@ void ConfigParser::parseFile(const std::string& filepath)
 	// パスがディレクトリの場合はエラー
 	if (!isFile(_filepath.c_str()))
 	{
-		std::cerr << "Given filepath is a directory" << std::endl;
+		std::cerr << "Given filepath is not found" << std::endl;
 		exit(EXIT_FAILURE);
 	}
 	std::ifstream ifs(_filepath.c_str());
@@ -242,6 +242,10 @@ const LocationContext ConfigParser::setLocationContext()
 		}
 		else
 			locationContext.addDirective(_oneLine[0], _oneLine[1], _filepath, _lineNumber + 1);
+	}
+	if (!locationContext.hasDirective("alias") && !locationContext.hasDirective("return")) {
+		std::cout << "debug" << std::endl;
+		throw ConfigError(NEED_ALIAS, "location", _filepath);
 	}
 	return locationContext;
 }

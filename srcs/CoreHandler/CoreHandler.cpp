@@ -106,7 +106,17 @@ std::string CgiBlockMethod(HttpRequest &req, const ServerContext &serverContext,
     std::cout << "CgiMethod :: command: " <<  command<< "\n";
     std::cout << "CgiMethod :: path: " << path << "\n";
     Cgi cgi(req, command, path);
-    return cgi.CgiHandler();
+    std::cout << "CGIBlockMethod :: cgi.CgiHandler(): " << "\n";
+    CgiResponse cgiResponse = cgi.CgiHandler();
+    if (cgiResponse.status == 200)
+    {
+        return successResponse(cgiResponse.message, "text/html");
+    }
+    else
+    {
+        LocationContext locationContext = serverContext.get501LocationContext(); //TODO: 501のlocationContextを取得する
+        return errorResponse(cgiResponse.status, cgiResponse.message, locationContext);
+    }
 }
 
 std::string CgiMethod(HttpRequest &req, const ServerContext &serverContext, std::string file)
@@ -115,10 +125,23 @@ std::string CgiMethod(HttpRequest &req, const ServerContext &serverContext, std:
     LocationContext locationContext = serverContext.getLocationContext(getLocationPath(req.url));
     std::string command = locationContext.getDirective("command");
     std::cout << "CgiMethod :: command: " <<  command<< "\n";
+    if (file == "")
+    {
+        file = locationContext.getDirective("index");
+    }
     std::string path = locationContext.getDirective("alias") + file;
     std::cout << "CgiMethod :: path: " << path << "\n";
     Cgi cgi(req, command, path);
-    return cgi.CgiHandler();
+    CgiResponse cgiResponse = cgi.CgiHandler();
+    if (cgiResponse.status == 200)
+    {
+        return successResponse(cgiResponse.message, "text/html");
+    }
+    else
+    {
+        locationContext = serverContext.get501LocationContext(); //TODO: 501のlocationContextを取得する
+        return errorResponse(cgiResponse.status, cgiResponse.message, locationContext);
+    }
 }
 
 bool CoreHandler::isCgiBlock(const ServerContext &serverContext, const std::string path)
@@ -189,13 +212,15 @@ std::string CoreHandler::processRequest(const std::string &request, const Server
     }
     if (isCgiBlock(serverContext, httpRequest.url))
     {
-        std::cout << "processRequest :: path: " << "IS CGI BLOCK" << "\n";
-        return CgiBlockMethod(httpRequest, serverContext, file);
+        std::string res = CgiBlockMethod(httpRequest, serverContext, file);
+        std::cout << "Is CGI BLOCK :: res: " << res << "\n";
+        return res;
     }
     else if (isCgi(request, serverContext, httpRequest.url))
     {
-        std::cout << "processRequest :: path: " << "IS CGI" << "\n";
-        return CgiMethod(httpRequest, serverContext, file);
+        std::string res = CgiMethod(httpRequest, serverContext, file);
+        std::cout << "Is CGI :: res: " << res << "\n";
+        return res;
     }
     else if (httpRequest.method == "GET")
     {

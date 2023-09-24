@@ -198,15 +198,6 @@ std::string CoreHandler::processRequest(const std::string &request, const Server
     std::cout << "processRequest :: directory: " << directory << "\n";
     // nextSlash以降、末尾の'/'の手前までをファイル名とする
     file = httpRequest.url.substr(nextSlash + 1, httpRequest.url.length() - nextSlash - 2); // 末尾の"/"を除く
-    // ディレクトリが"/"の場合、ディレクトリ名としてfileを設定し、fileを空にする
-    // if (directory == "/") {
-    //     directory += file;
-    //     file = "";
-    // }
-    // directoryの末尾に'/'を追加
-    // if (directory.back() != '/') {
-    //     directory += "/";
-    // }
     std::string redirectPath = serverContext.getReturnPath(directory);
     std::cout << "processRequest :: redirectPath: " << redirectPath << "\n";
     LocationContext locationContext;
@@ -284,4 +275,3 @@ std::string CoreHandler::processRequest(const std::string &request, const Server
 CoreHandler::~CoreHandler()
 {
 }
-

@@ -87,7 +87,8 @@ std::string postMethod(std::string body)
 
 std::string deleteMethod(const std::string& filename, const ServerContext& serverContext)
 {
-    if (std::remove(("./docs/upload" + filename).c_str()) != 0)
+    std::cout << "deleteMethod :: filename: " << filename << "\n";
+    if (std::remove(("./docs/upload/" + filename).c_str()) != 0)
     {
         std::cerr << "deleteMethod :: ERROR: File not found or delete failed.\n";
         std::cout << "deleteMethod :: DELETE FAILED\n";

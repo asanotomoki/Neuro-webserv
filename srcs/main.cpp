@@ -22,7 +22,7 @@ int main(int argc, char** argv)
         delete config;
     } catch (const std::exception& e) {
         std::cerr << e.what() << std::endl;
-        return 1;
+        std::cout << "main :: Error Catched" << std::endl;
     }
     return 0;
 }

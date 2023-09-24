@@ -40,6 +40,9 @@ void ServerContext::setIsCgi(bool is_cgi)
 
 void ServerContext::setErrorPages()
 {
+	_403LocationContext.addDirective("alias", "./docs/error_page/");
+	_403LocationContext.addDirective("index", getErrorPage("403"));
+	_403LocationContext.addAllowedMethod("GET");
 	_404LocationContext.addDirective("alias", "./docs/error_page/");
 	_404LocationContext.addDirective("index", getErrorPage("404"));
 	_404LocationContext.addAllowedMethod("GET");
@@ -155,6 +158,11 @@ std::string::size_type ServerContext::getMaxPrefixLength(const std::string& str1
 		++i;
 	}
 	return i;
+}
+
+const LocationContext& ServerContext::get403LocationContext() const
+{
+	return _403LocationContext;
 }
 
 const LocationContext& ServerContext::get404LocationContext() const

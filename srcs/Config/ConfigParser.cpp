@@ -52,6 +52,8 @@ void ConfigParser::setDirectiveType(const std::string& directive)
 		_directiveType = CGI_ON;
 	else if (directive == "return")
 		_directiveType = RETURN;
+	else if (directive == "autoindex")
+		_directiveType = AUTOINDEX;
 	else
 		_directiveType = UNKNOWN;
 }
@@ -72,7 +74,8 @@ bool ConfigParser::isInLocationContext()
 {
 	return  _directiveType == ALIAS || _directiveType == INDEX
 		|| _directiveType == LIMIT_EXCEPT || _directiveType == COMMAND
-		|| _directiveType == CGI_ON || _directiveType == RETURN;
+		|| _directiveType == CGI_ON || _directiveType == RETURN
+		|| _directiveType == AUTOINDEX;
 }
 
 bool ConfigParser::isInCgiContext()

@@ -58,13 +58,13 @@ std::string errorResponse(int statusCode, std::string message, const LocationCon
     return response;
 }
 
-std::string getMethod(const std::string& filename, const LocationContext& locationContext,
-                        const ServerContext& serverContext)
+std::string getMethod(const std::string& fullpath, const LocationContext& locationContext,
+                        const ServerContext& serverContext, bool isAutoIndex)
 {
     // 静的ファイルを提供する場合
     StaticFileReader fileReader;
-    std::string fileContent = fileReader.readFile(filename, locationContext,
-                                                        serverContext);
+    std::string fileContent = fileReader.readFile(fullpath, locationContext,
+                                                        serverContext, isAutoIndex);
     std::string response = successResponse(fileContent, "text/html");
 
     std::cout << "getMethod :: GET SUCCESS\n";
@@ -191,47 +191,59 @@ std::string CoreHandler::processRequest(const std::string &request, const Server
         httpRequest.url += '/';
     }
 
+    ParseUrlResult parseUrlResult = parseUrl(httpRequest.url, serverContext);
 
-    // httpRequest.urlをディレクトリとファイルに分割
-    std::string directory, file;
-    // 先頭から次の'/'までをディレクトリとする
-    size_t nextSlash = httpRequest.url.find_first_of("/", 1);
-    directory = httpRequest.url.substr(0, nextSlash + 1);
-    std::cout << "processRequest :: directory: " << directory << "\n";
-    // nextSlash以降、末尾の'/'の手前までをファイル名とする
-    file = httpRequest.url.substr(nextSlash + 1, httpRequest.url.length() - nextSlash - 2); // 末尾の"/"を除く
+    std::cout << "parseUrlResult.file: " << parseUrlResult.file << "\n";
+    std::cout << "parseUrlResult.directory: " << parseUrlResult.directory << "\n";
+    std::cout << "parseUrlResult.fullpath: " << parseUrlResult.fullpath << "\n";
+    
+    std::string file = parseUrlResult.file;
+    std::string directory = parseUrlResult.directory;
+    std::string redirectPath = serverContext.getReturnPath(directory);
+    LocationContext locationContext = serverContext.getLocationContext(directory);
+    std::string fullPath = parseUrlResult.fullpath;
+
+
+    //// httpRequest.urlをディレクトリとファイルに分割
+    //std::string directory, file;
+    //// 先頭から次の'/'までをディレクトリとする
+    //size_t nextSlash = httpRequest.url.find_first_of("/", 1);
+    //directory = httpRequest.url.substr(0, nextSlash + 1);
+    //std::cout << "processRequest :: directory: " << directory << "\n";
+    //// nextSlash以降、末尾の'/'の手前までをファイル名とする
+    //file = httpRequest.url.substr(nextSlash + 1, httpRequest.url.length() - nextSlash - 2); // 末尾の"/"を除く
     
 
-    // return ディレクティブがある場合にディレクトリを置き換える。
-    std::string redirectPath = serverContext.getReturnPath(directory);
-    std::cout << "processRequest :: redirectPath: " << redirectPath << "\n";
-    if (!redirectPath.empty())
-        directory = redirectPath;
+    //// return ディレクティブがある場合にディレクトリを置き換える。
+    //std::string redirectPath = serverContext.getReturnPath(directory);
+    //std::cout << "processRequest :: redirectPath: " << redirectPath << "\n";
+    //if (!redirectPath.empty())
+    //    directory = redirectPath;
 
 
-    LocationContext locationContext = serverContext.getLocationContext(directory); 
-    std::string alias = locationContext.getDirective("alias");
-    std::string fullPath = alias + file;
-    if (fullPath.back() == '/')
-        fullPath.pop_back();
-    std::cout << "processRequest :: fullPath: " << fullPath << "\n";
+    //LocationContext locationContext = serverContext.getLocationContext(directory); 
+    //std::string alias = locationContext.getDirective("alias");
+    //std::string fullPath = alias + file;
+    //if (fullPath.back() == '/')
+    //    fullPath.pop_back();
+    //std::cout << "processRequest :: fullPath: " << fullPath << "\n";
     
 
     // httpRequest.urlに'/'が２つ以下しか含まれない場合に以下の処理を行う
-    if (std::count(httpRequest.url.begin(), httpRequest.url.end(), '/') <= 2) {
-        if (isDirectory(fullPath)) {
-            if (directory.back() != '/')
-                directory += "/";
-        } else if (isFile(fullPath)) {
-            file = directory.substr(1, directory.size() - 2);
-            directory = "/";
-        } else {
-            std::cout << "processRequest :: NOT FOUND\n";
-            locationContext = serverContext.get404LocationContext();
-            return errorResponse(404, "Not Found", locationContext);
-        }
-    }
-    std::cout << "processRequest :: directory: " << directory << ", file: " << file << "\n";
+    //if (std::count(httpRequest.url.begin(), httpRequest.url.end(), '/') <= 2) {
+    //    if (isDirectory(fullPath)) {
+    //        if (directory.back() != '/')
+    //            directory += "/";
+    //    } else if (isFile(fullPath)) {
+    //        file = directory.substr(1, directory.size() - 2);
+    //        directory = "/";
+    //    } else {
+    //        std::cout << "processRequest :: NOT FOUND\n";
+    //        locationContext = serverContext.get404LocationContext();
+    //        return errorResponse(404, "Not Found", locationContext);
+    //    }
+    //}
+    //std::cout << "processRequest :: directory: " << directory << ", file: " << file << "\n";
     
     
     // directoryからLocationContextを取得
@@ -256,7 +268,7 @@ std::string CoreHandler::processRequest(const std::string &request, const Server
             locationContext = serverContext.get405LocationContext();
             return errorResponse(405, "Method Not Allowed", locationContext);
         }
-        return getMethod(file, locationContext, serverContext);
+        return getMethod(fullPath, locationContext, serverContext,  parseUrlResult.isAutoIndex);
     }
     else if (httpRequest.method == "POST")
     {

@@ -6,6 +6,7 @@ CFLAGS = -Wall -std=c++11 $(INC)
 LDFLAGS =
 SOURCES = srcs/main.cpp srcs/Config/Config.cpp srcs/SocketInterface/SocketInterface.cpp \
 			srcs/CoreHandler/CoreHandler.cpp \
+			srcs/CoreHandler/ParseRequestUrl.cpp \
 			srcs/Config/ConfigError.cpp srcs/Config/ConfigParser.cpp \
 			srcs/Config/CGIContext.cpp \
 			srcs/Config/LocationContext.cpp srcs/Config/ServerContext.cpp \

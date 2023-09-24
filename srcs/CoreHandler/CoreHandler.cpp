@@ -141,7 +141,7 @@ std::string CgiMethod(HttpRequest &req, const ServerContext &serverContext, std:
     }
     else
     {
-        locationContext = serverContext.get501LocationContext(); //TODO: 501のlocationContextを取得する
+        locationContext = serverContext.get500LocationContext();
         return errorResponse(cgiResponse.status, cgiResponse.message, locationContext);
     }
 }
@@ -185,29 +185,38 @@ std::string CoreHandler::processRequest(const std::string &request, const Server
         std::cout << "WARNING: favicon.ico request, ignoring\n";
         return {};
     }
-    // directoryname, filenameを取得
+
     // httpRequest.urlが"/"で終わっていない場合に、"/"を追加
     if (httpRequest.url[httpRequest.url.size() - 1] != '/') {
         httpRequest.url += '/';
     }
-    std::string directory, file;
+
+
     // httpRequest.urlをディレクトリとファイルに分割
+    std::string directory, file;
     // 先頭から次の'/'までをディレクトリとする
     size_t nextSlash = httpRequest.url.find_first_of("/", 1);
     directory = httpRequest.url.substr(0, nextSlash + 1);
     std::cout << "processRequest :: directory: " << directory << "\n";
     // nextSlash以降、末尾の'/'の手前までをファイル名とする
     file = httpRequest.url.substr(nextSlash + 1, httpRequest.url.length() - nextSlash - 2); // 末尾の"/"を除く
+    
+
+    // return ディレクティブがある場合にディレクトリを置き換える。
     std::string redirectPath = serverContext.getReturnPath(directory);
     std::cout << "processRequest :: redirectPath: " << redirectPath << "\n";
-    LocationContext locationContext;
     if (!redirectPath.empty())
         directory = redirectPath;
-    std::string fullPath = "./docs" + directory + file;
-    if (fullPath.back() == '/') {
+
+
+    LocationContext locationContext = serverContext.getLocationContext(directory); 
+    std::string alias = locationContext.getDirective("alias");
+    std::string fullPath = alias + file;
+    if (fullPath.back() == '/')
         fullPath.pop_back();
-    }
     std::cout << "processRequest :: fullPath: " << fullPath << "\n";
+    
+
     // httpRequest.urlに'/'が２つ以下しか含まれない場合に以下の処理を行う
     if (std::count(httpRequest.url.begin(), httpRequest.url.end(), '/') <= 2) {
         if (isDirectory(fullPath)) {
@@ -218,11 +227,13 @@ std::string CoreHandler::processRequest(const std::string &request, const Server
             directory = "/";
         } else {
             std::cout << "processRequest :: NOT FOUND\n";
-            LocationContext locationContext = serverContext.get404LocationContext();
+            locationContext = serverContext.get404LocationContext();
             return errorResponse(404, "Not Found", locationContext);
         }
     }
     std::cout << "processRequest :: directory: " << directory << ", file: " << file << "\n";
+    
+    
     // directoryからLocationContextを取得
     locationContext = serverContext.getLocationContext(directory);
     if (isCgiBlock(serverContext, httpRequest.url))

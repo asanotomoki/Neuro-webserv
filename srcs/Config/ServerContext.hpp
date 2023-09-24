@@ -36,7 +36,7 @@ class ServerContext
         const LocationContext& get405LocationContext() const;
         const LocationContext& get500LocationContext() const;
         const LocationContext& get501LocationContext() const; 
-        const std::string& getReturnPath(const std::string& path) const;
+        std::string getReturnPath(const std::string& path) const;
 
     private:
         std::string _listen;

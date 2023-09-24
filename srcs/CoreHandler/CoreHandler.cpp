@@ -161,7 +161,7 @@ bool CoreHandler::isCgiBlock(const ServerContext &serverContext, const std::stri
     }
     return false;
 }
-bool CoreHandler::isCgi(const std::string &request, const ServerContext &serverContext, const std::string path)
+bool CoreHandler::isCgi(const ServerContext &serverContext, const std::string path)
 {
     LocationContext locationContext = serverContext.getLocationContext(getLocationPath(path));
     bool res = locationContext.getIsCgi();
@@ -255,7 +255,7 @@ std::string CoreHandler::processRequest(const std::string &request, const Server
         std::cout << "Is CGI BLOCK :: res: " << res << "\n";
         return res;
     }
-    else if (isCgi(request, serverContext, httpRequest.url))
+    else if (isCgi(serverContext, httpRequest.url))
     {
         std::string res = CgiMethod(httpRequest, serverContext, file);
         std::cout << "Is CGI :: res: " << res << "\n";

@@ -24,7 +24,7 @@ std::string StaticFileReader::readErrorFile(const LocationContext& locationConte
 std::string StaticFileReader::readFile(std::string fullpath, LocationContext locationContext,
                                         const ServerContext& serverContext, bool isAutoIndex) {
     
-    if (isAutoIndex)
+    if (!isAutoIndex)
     {
         locationContext = serverContext.get403LocationContext();
         return readErrorFile(locationContext);

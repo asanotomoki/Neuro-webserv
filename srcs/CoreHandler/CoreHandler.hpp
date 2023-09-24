@@ -25,7 +25,7 @@ struct ParseUrlResult {
 class CoreHandler
 {
     private: 
-        bool isCgi(const std::string& request, const ServerContext& server_context, std::string path);
+        bool isCgi(const ServerContext& server_context, std::string path);
         bool isCgiBlock(const ServerContext& server_context, std::string path);
         ParseUrlResult parseUrl(std::string url, const ServerContext& server_context);
     public:

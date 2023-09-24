@@ -28,7 +28,7 @@ ParseUrlResult getCgiPath(std::vector<std::string> tokens)
 	// 必ずcgi-binが含まれているので、その次の要素がファイル名
 	result.file = tokens[1];
 	// その以降の要素がパスインフォ
-	for (int i = 2; i < tokens.size(); i++)
+	for (size_t i = 2; i < tokens.size(); i++)
 	{
 		result.pathInfo += "/" + tokens[i];
 	}
@@ -51,7 +51,7 @@ ParseUrlResult CoreHandler::parseUrl(std::string url, const ServerContext& serve
 		tokens[0].erase(0, 1);
 	std::vector<std::string> path_tokens = split(tokens[0], '/');
 	bool is_cgi = false;
-	for (int i = 0; i < path_tokens.size(); i++)
+	for (size_t i = 0; i < path_tokens.size(); i++)
 	{
 		if (path_tokens[i] == "cgi-bin")
 		{
@@ -65,8 +65,8 @@ ParseUrlResult CoreHandler::parseUrl(std::string url, const ServerContext& serve
 	}
 	
 	LocationContext location_context;
-	bool autoindexEnabled = false;
-	result.isAutoIndex = false;
+	bool autoindexEnabled = true;
+	result.isAutoIndex = true;
     if (location_context.hasDirective("autoindex"))
         autoindexEnabled = location_context.getDirective("autoindex") == "on";
 	if (path_tokens[0] == "/")
@@ -97,8 +97,8 @@ ParseUrlResult CoreHandler::parseUrl(std::string url, const ServerContext& serve
 			result.file = path_tokens[path_tokens.size() - 1];
 			path_tokens.pop_back();
 		} else {
-			if (!autoindexEnabled)
-				result.isAutoIndex = true;
+			if (autoindexEnabled == false)
+				result.isAutoIndex = false;
 			result.file = "index.html";
 		}
 	}
@@ -110,7 +110,7 @@ ParseUrlResult CoreHandler::parseUrl(std::string url, const ServerContext& serve
 	}
 	// fullpathの最後のスラッシュを削除
 	result.fullpath.erase(result.fullpath.size() - 1, 1);
-	for (int i = 1; i < path_tokens.size(); i++)
+	for (size_t i = 1; i < path_tokens.size(); i++)
 	{
 		result.fullpath += "/" + path_tokens[i];
 	}

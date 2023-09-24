@@ -2,7 +2,7 @@ CC = g++
 INC	= -I ./srcs/Config/ -I ./srcs/SocketInterface/ -I ./srcs/CoreHandler/ \
 		-I ./srcs/CoreHandler/RequestParser/ -I ./srcs/CoreHandler/StaticFileReader/ \
 		-I ./srcs/CoreHandler/DataProcessor -I ./srcs/CoreHandler/Cgi
-CFLAGS = -Wall -std=c++11 $(INC)
+CFLAGS = -Wall -Wextra -Werror -std=c++11 $(INC)
 LDFLAGS =
 SOURCES = srcs/main.cpp srcs/Config/Config.cpp srcs/SocketInterface/SocketInterface.cpp \
 			srcs/CoreHandler/CoreHandler.cpp \

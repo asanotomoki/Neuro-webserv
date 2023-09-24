@@ -7,10 +7,10 @@ ServerContext::ServerContext():
 	_listen(),
 	_serverName(),
 	_maxBodySize(),
+	_is_Cgi(false),
 	_errorPages(),
 	_locations(),
-	_directives(),
-	_is_Cgi(false)
+	_directives()
 {
 }
 
@@ -189,7 +189,7 @@ const LocationContext& ServerContext::get501LocationContext() const
 }
 
 // returnディレクティブの値を取得する関数
-const std::string& ServerContext::getReturnPath(const std::string& path) const
+std::string ServerContext::getReturnPath(const std::string& path) const
 {
     LocationContext locationContext = getLocationContext(path);
     if (locationContext.hasDirective("return"))

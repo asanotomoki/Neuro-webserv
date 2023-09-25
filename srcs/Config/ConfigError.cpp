@@ -40,6 +40,9 @@ void ConfigError::setErrorMessage(const ErrorType errorType, const std::string& 
 		case NEED_ALIAS:
 			_errorMessage += "need alias directive" + _fileInfo;
 			break;
+		case INVALID_RETURN:
+			_errorMessage += "invalid return directive" + _fileInfo;
+			break;
 		case SYSTEM_ERROR:
 			_errorMessage += "system call error \"" + errorWord + ": " + strerror(errno) + "\"" + _fileInfo;
 			break;

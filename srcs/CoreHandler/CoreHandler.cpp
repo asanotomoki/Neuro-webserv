@@ -200,7 +200,9 @@ std::string CoreHandler::processRequest(const std::string &request, const Server
     
     std::string file = parseUrlResult.file;
     std::string directory = parseUrlResult.directory;
-    std::string redirectPath = serverContext.getReturnPath(directory);
+    // std::string redirectPath = serverContext.getReturnPath(directory);
+    // if (!redirectPath.empty())
+    //     directory = redirectPath;
     LocationContext locationContext = serverContext.getLocationContext(directory);
     std::string fullPath = parseUrlResult.fullpath;
 

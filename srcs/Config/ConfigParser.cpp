@@ -240,12 +240,17 @@ const LocationContext ConfigParser::setLocationContext()
         		locationContext.addAllowedMethod(_oneLine[i]);
     		}
 		}
+		else if (_directiveType == RETURN) {
+			if (_oneLine[1] == locationContext.getDirective("path")) {
+				throw ConfigError(INVALID_RETURN, "location", _filepath, _lineNumber + 1);
+			}
+			locationContext.addDirective(_oneLine[0], _oneLine[1], _filepath, _lineNumber + 1);
+		}
 		else
 			locationContext.addDirective(_oneLine[0], _oneLine[1], _filepath, _lineNumber + 1);
 	}
 	if (!locationContext.hasDirective("alias") && !locationContext.hasDirective("return")) {
-		std::cout << "debug" << std::endl;
-		throw ConfigError(NEED_ALIAS, "location", _filepath);
+		throw ConfigError(NEED_ALIAS, "location", _filepath, _lineNumber + 1);
 	}
 	return locationContext;
 }

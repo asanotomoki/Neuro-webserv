@@ -143,6 +143,9 @@ ParseUrlResult CoreHandler::parseUrl(std::string url, const ServerContext& serve
 	LocationContext location_context;
 
 	result.directory = "/" + path_tokens[0] + "/";
+	std::string redirectPath = server_context.getReturnPath(result.directory);
+    if (!redirectPath.empty())
+        result.directory = redirectPath;
 	location_context = server_context.getLocationContext(result.directory);
 	std::string alias = location_context.getDirective("alias");
 	result.file = getFile(path_tokens, location_context);

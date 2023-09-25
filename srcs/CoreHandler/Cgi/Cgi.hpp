@@ -6,6 +6,7 @@
 #include <map>
 #include "RequestParser.hpp"
 #include "ServerContext.hpp"
+#include "CoreHandler.hpp"
 
 // CGIの実行結果を格納する構造体
 // status: OK or NG
@@ -31,14 +32,14 @@ class Cgi
 		char** vectorToChar(const std::vector<std::string>& vector);
 
 	public:
-		Cgi(HttpRequest &request, std::string executable, std::string path);
+		Cgi(HttpRequest &request, std::string executable, ParseUrlResult &url);
     	~Cgi();
 		
 		CgiResponse CgiHandler();
 		
 		// env
 		const std::map<std::string, std::string>& getEnv() const;
-		void initEnv(HttpRequest &request, std::string path);
+		void initEnv(HttpRequest &request, ParseUrlResult url);
 };
 
 #endif

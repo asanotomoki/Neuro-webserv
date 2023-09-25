@@ -27,6 +27,52 @@ int isFile(std::string path)
 	return 0;
 }
 
+bool isCgiBlockPath(const ServerContext& server_context, std::vector<std::string> tokens)
+{
+	if (!server_context.getIsCgi())
+		return false;
+	CGIContext cgi_context = server_context.getCGIContext();
+	std::string exe = cgi_context.getDirective("extension");
+	size_t i = 0;
+	while (i < tokens.size())
+	{
+		// 拡張子を取得
+		std::string ext = tokens[i].substr(tokens[i].find_last_of(".") + 1);
+		if (ext == exe)
+			return true;
+		i++;
+	}
+	return false;
+}
+
+ParseUrlResult parseCgiBlock(std::vector<std::string> tokens, const ServerContext& server_context)
+{
+	ParseUrlResult result;
+	result.directory = "./docs/cgi-bin";
+	result.file = tokens[0];
+	CGIContext cgi_context = server_context.getCGIContext();
+	std::string exe = cgi_context.getDirective("extension");
+	std::cout << "exe: " << exe << std::endl;
+	size_t i = 0;
+
+	while (i < tokens.size())
+	{
+		std::string ext = tokens[i].substr(tokens[i].find_last_of(".") + 1);
+		if (ext == exe)
+			break;
+		result.file += "/" + tokens[i];
+		i++;
+	}
+	result.fullpath = result.directory + "/" + result.file;
+	result.pathInfo = "";
+	// それ以降がpathinfo
+	for (size_t j = i + 1; j < tokens.size(); j++)
+	{
+		result.pathInfo += "/" + tokens[j];
+	}
+	return result;
+}
+
 bool isCgiDir(std::vector<std::string> tokens)
 {
 	if (tokens.size() < 2)
@@ -133,6 +179,10 @@ ParseUrlResult CoreHandler::parseUrl(std::string url, const ServerContext& serve
 	if (isCgiDir(path_tokens))
 	{
 		return getCgiPath(path_tokens);
+	}
+	if (isCgiBlockPath(server_context, path_tokens))
+	{
+		return parseCgiBlock(path_tokens, server_context);
 	}
 	if (path_tokens.size() == 1 && isFile(path_tokens[0]))
 	{

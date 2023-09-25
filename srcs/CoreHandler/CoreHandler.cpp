@@ -103,41 +103,48 @@ std::string deleteMethod(const std::string& filename, const ServerContext& serve
 }
 
 
-std::string CgiBlockMethod(HttpRequest &req, const ServerContext &serverContext, std::string file)
+std::string CgiBlockMethod(HttpRequest &req, const ServerContext &serverContext, ParseUrlResult path)
 {
     CGIContext cgiContext = serverContext.getCGIContext();
     std::string command  = cgiContext.getDirective("command");
-    std::string path = cgiContext.getDirective("alias") + file;
+
     std::cout << "CgiMethod :: command: " <<  command<< "\n";
-    std::cout << "CgiMethod :: path: " << path << "\n";
+    std::cout << "CgiMethod :: path.fullpath: " << path.fullpath << "\n";
     Cgi cgi(req, command, path);
     std::cout << "CGIBlockMethod :: cgi.CgiHandler(): " << "\n";
     CgiResponse cgiResponse = cgi.CgiHandler();
+    if (access(path.fullpath.c_str(), F_OK) == -1)
+    {
+        std::cout << "CGIBlockMethod :: access failed\n";
+        LocationContext locationContext = serverContext.get404LocationContext();
+        return errorResponse(404, "Not Found", locationContext);
+    }
     if (cgiResponse.status == 200)
     {
         return successResponse(cgiResponse.message, "text/html");
     }
     else
     {
-        LocationContext locationContext = serverContext.get501LocationContext(); //TODO: 501のlocationContextを取得する
+        LocationContext locationContext = serverContext.get500LocationContext();
         return errorResponse(cgiResponse.status, cgiResponse.message, locationContext);
     }
 }
 
-std::string CgiMethod(HttpRequest &req, const ServerContext &serverContext, std::string file)
+std::string CgiMethod(HttpRequest &req, const ServerContext &serverContext, ParseUrlResult path)
 {
     // Get Cgi Path, executable file path
-    LocationContext locationContext = serverContext.getLocationContext(getLocationPath(req.url));
+    LocationContext locationContext = serverContext.getLocationContext(getLocationPath(path.directory));
     std::string command = locationContext.getDirective("command");
-    std::cout << "CgiMethod :: command: " <<  command<< "\n";
-    if (file == "")
-    {
-        file = locationContext.getDirective("index");
-    }
-    std::string path = locationContext.getDirective("alias") + file;
-    std::cout << "CgiMethod :: path: " << path << "\n";
+    std::cout << "CgiMethod :: fullpath path: " << path.fullpath << "\n";
+    std::cout << "CgiMethod :: command: " << command << "\n";
     Cgi cgi(req, command, path);
     CgiResponse cgiResponse = cgi.CgiHandler();
+    if (access(path.fullpath.c_str(), F_OK) == -1)
+    {
+        std::cout << "CGIBlockMethod :: access failed\n";
+        LocationContext locationContext = serverContext.get404LocationContext();
+        return errorResponse(404, "Not Found", locationContext);
+    }
     if (cgiResponse.status == 200)
     {
         return successResponse(cgiResponse.message, "text/html");
@@ -269,13 +276,13 @@ std::string CoreHandler::processRequest(const std::string &request, const Server
     locationContext = serverContext.getLocationContext(directory);
     if (isCgiBlock(serverContext, httpRequest.url))
     {
-        std::string res = CgiBlockMethod(httpRequest, serverContext, file);
+        std::string res = CgiBlockMethod(httpRequest, serverContext, parseUrlResult);
         std::cout << "Is CGI BLOCK :: res: " << res << "\n";
         return res;
     }
     else if (isCgi(serverContext, httpRequest.url))
     {
-        std::string res = CgiMethod(httpRequest, serverContext, file);
+        std::string res = CgiMethod(httpRequest, serverContext,  parseUrlResult);
         std::cout << "Is CGI :: res: " << res << "\n";
         return res;
     }

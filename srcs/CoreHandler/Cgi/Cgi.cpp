@@ -3,16 +3,17 @@
 #include <string>
 #include <vector>
 #include <map>
+#include "Cgi.hpp"
 
 Cgi::Cgi()
 {
 }
 
-Cgi::Cgi(HttpRequest& req, std::string executable, std::string path) : 
-_executable(executable.c_str()), _path(path.c_str()){
+Cgi::Cgi(HttpRequest& req, std::string executable, ParseUrlResult &url) : 
+_executable(executable.c_str()), _path(url.fullpath.c_str()){
     this->_args.push_back(executable);
-    this->_args.push_back(path);
-    initEnv(req, path);
+    this->_args.push_back(url.fullpath);
+    initEnv(req, url);
 }
 
 CgiResponse Cgi::CgiHandler()
@@ -28,6 +29,8 @@ CgiResponse Cgi::CgiHandler()
         std::cerr << "pipe error" << std::endl;
         std::exit(1);
     }
+    std::cout << "CGIHandler: " << this->_executable << std::endl;
+        std::cout << "CGIHandler: " << this->_path << std::endl;
     if ((pid = fork()) < 0)
     {
         std::cerr << "fork error" << std::endl;
@@ -41,8 +44,10 @@ CgiResponse Cgi::CgiHandler()
         char **env = mapToChar(this->_env);
         char **args = vectorToChar(this->_args);
         execve(this->_executable, args, env);
+        std::cout << "CGIHandler: args[1]" << args[1] << std::endl;
         delete [] env;
         delete [] args;
+        perror("execve");
 		std::cerr << "execve error" << std::endl;
         cgi_response.status = 500;
         cgi_response.message = "Internal Server Error";
@@ -81,34 +86,14 @@ Cgi::~Cgi()
 }
 
 // env 
-void Cgi::initEnv(HttpRequest& req, std::string path) {
+void Cgi::initEnv(HttpRequest& req, ParseUrlResult url) {
 	static std::map<std::string, std::string> env;
 	env["REQUEST_METHOD"] = req.method;
-	env["PATH_INFO"] = path;
+	env["PATH_INFO"] = url.pathInfo;
 	env["CONTENT_LENGTH"] = req.headers["Content-Length"];
 	env["CONTENT_TYPE"] = req.headers["Content-Type"];
 	this->_env = env;
 }
-
-// char** Cgi::mapToChar(const std::map<std::string, std::string>& map) {
-//     std::vector<std::string> env_strs;
-//     for (const auto& pair : map) { 
-//         env_strs.push_back(pair.first + "=" + pair.second);
-//     }
-//     return vectorToChar(env_strs);
-// }
-
-// char** Cgi::vectorToChar(const std::vector<std::string>& vec) {
-//     char** envp = new char*[vec.size() + 1]; 
-//     size_t i = 0;
-//     for (const auto& str : vec) {
-//         envp[i] = new char[str.size() + 1];
-//         std::strcpy(envp[i], str.c_str());
-//         i++;
-//     }
-//     envp[vec.size()] = NULL;
-//     return envp;
-// }
 
 char** Cgi::mapToChar(const std::map<std::string, std::string>& map) {
     std::vector<std::string> env_strs;

@@ -3,6 +3,16 @@
 
 #include "ServerContext.hpp"
 #include "RequestParser.hpp"
+
+struct ParseUrlResult {
+    std::string file;
+    std::string directory;
+    std::string fullpath;
+    std::string query;
+    std::string pathInfo;
+    bool isAutoIndex;
+};
+
 #include "Cgi.hpp"
 #include <string>
 
@@ -15,14 +25,7 @@ struct ProcessResult {
         : status(s), message(m), statusCode(c) {}
 };
 
-struct ParseUrlResult {
-    std::string file;
-    std::string directory;
-    std::string fullpath;
-    std::string query;
-    std::string pathInfo;
-    bool isAutoIndex;
-};
+
 
 //大脳クラス
 class CoreHandler

@@ -2,7 +2,7 @@ NAME := webserv
 CC = g++
 INC	= -I ./srcs/Config/ -I ./srcs/SocketInterface/ -I ./srcs/CoreHandler/ \
 		-I ./srcs/CoreHandler/RequestParser/ -I ./srcs/CoreHandler/StaticFileReader/ \
-		-I ./srcs/CoreHandler/DataProcessor
+		-I ./srcs/CoreHandler/DataProcessor -I ./srcs/CoreHandler/Cgi/
 CFLAGS = -Wall -Wextra -Werror -std=c++98 $(INC)
 LDFLAGS =
 SOURCES = srcs/main.cpp srcs/Config/Config.cpp srcs/SocketInterface/SocketInterface.cpp \
@@ -43,5 +43,5 @@ git :
 	git commit -m "auto commit"
 	git push
 
-.PHONY: all clean fclean re
+.PHONY: all clean fclean re git
 

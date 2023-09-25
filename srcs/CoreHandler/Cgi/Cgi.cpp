@@ -1,4 +1,8 @@
 #include "Cgi.hpp"
+#include <cstring> // for std::strcpy
+#include <string>
+#include <vector>
+#include <map>
 
 Cgi::Cgi()
 {
@@ -86,21 +90,40 @@ void Cgi::initEnv(HttpRequest& req, std::string path) {
 	this->_env = env;
 }
 
+// char** Cgi::mapToChar(const std::map<std::string, std::string>& map) {
+//     std::vector<std::string> env_strs;
+//     for (const auto& pair : map) { 
+//         env_strs.push_back(pair.first + "=" + pair.second);
+//     }
+//     return vectorToChar(env_strs);
+// }
+
+// char** Cgi::vectorToChar(const std::vector<std::string>& vec) {
+//     char** envp = new char*[vec.size() + 1]; 
+//     size_t i = 0;
+//     for (const auto& str : vec) {
+//         envp[i] = new char[str.size() + 1];
+//         std::strcpy(envp[i], str.c_str());
+//         i++;
+//     }
+//     envp[vec.size()] = NULL;
+//     return envp;
+// }
+
 char** Cgi::mapToChar(const std::map<std::string, std::string>& map) {
     std::vector<std::string> env_strs;
-    for (const auto& pair : map) { 
-        env_strs.push_back(pair.first + "=" + pair.second);
+    std::map<std::string, std::string>::const_iterator it;
+    for (it = map.begin(); it != map.end(); ++it) {
+        env_strs.push_back(it->first + "=" + it->second);
     }
     return vectorToChar(env_strs);
 }
 
 char** Cgi::vectorToChar(const std::vector<std::string>& vec) {
-    char** envp = new char*[vec.size() + 1]; 
-    size_t i = 0;
-    for (const auto& str : vec) {
-        envp[i] = new char[str.size() + 1];
-        std::strcpy(envp[i], str.c_str());
-        i++;
+    char** envp = new char*[vec.size() + 1];
+    for (size_t i = 0; i < vec.size(); ++i) {
+        envp[i] = new char[vec[i].size() + 1];
+        std::strcpy(envp[i], vec[i].c_str());
     }
     envp[vec.size()] = NULL;
     return envp;

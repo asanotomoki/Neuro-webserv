@@ -5,7 +5,9 @@
 #include "LocationContext.hpp"
 #include <iostream>
 #include <algorithm>
-#include <filesystem>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 CoreHandler::CoreHandler()
 {
@@ -169,11 +171,25 @@ bool CoreHandler::isCgi(const ServerContext &serverContext, const std::string pa
 }
 
 bool isDirectory(const std::string& path) {
-    return std::__fs::filesystem::is_directory(path);
+    struct stat info;
+    if (stat(path.c_str(), &info) != 0) {
+        return false; // エラー時はfalse
+    } else if (info.st_mode & S_IFDIR) {
+        return true; // ディレクトリです
+    } else {
+        return false; // ディレクトリではありません
+    }
 }
 
 bool isFile(const std::string& path) {
-    return std::__fs::filesystem::is_regular_file(path);
+    struct stat info;
+    if (stat(path.c_str(), &info) != 0) {
+        return false; // エラー時はfalse
+    } else if (info.st_mode & S_IFREG) {
+        return true; // 通常のファイルです
+    } else {
+        return false; // 通常のファイルではありません
+    }
 }
 
 std::string CoreHandler::processRequest(const std::string &request, const ServerContext &serverContext)
@@ -184,7 +200,7 @@ std::string CoreHandler::processRequest(const std::string &request, const Server
 
     if (httpRequest.url == "/favicon.ico") {
         std::cout << "WARNING: favicon.ico request, ignoring\n";
-        return {};
+        return "";
     }
 
     // httpRequest.urlが"/"で終わっていない場合に、"/"を追加

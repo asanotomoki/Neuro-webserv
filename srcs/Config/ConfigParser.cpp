@@ -101,7 +101,7 @@ void ConfigParser::parseFile(const std::string& filepath)
 {
 	_filepath = filepath;
 
-	// パスがディレクトリの場合はエラー
+	// パスが見つからない場合
 	if (!isFile(_filepath.c_str()))
 	{
 		std::cerr << "Given filepath is not found" << std::endl;

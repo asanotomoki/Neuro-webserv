@@ -12,6 +12,8 @@ std::string StaticFileReader::readErrorFile(const LocationContext& locationConte
     std::string filename = locationContext.getDirective("index");
     std::string filePath = alias + filename;
 
+    std::cout << "readErrorFile :: filePath: " << filePath << "\n";
+
     std::ifstream file(filePath, std::ios::binary);
     if (!file) {
         std::cerr << "ERROR: File not found: " << filePath << "\n"; 

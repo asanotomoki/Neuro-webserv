@@ -1,16 +1,17 @@
 #include "ConfigError.hpp"
 #include <errno.h>
 #include <cstring>
+#include <iostream>
 
 ConfigError::ConfigError(const ErrorType errorType, const std::string& errorWord,
 						const std::string& filepath, int lineNumber):
-	_errorMessage("Config Error: "), 
-	_fileInfo(" in " + filepath + ": " + itostr(lineNumber))
+	_errorMessage("Config Error: ")
 {
 	if (!filepath.empty() && lineNumber != -1)
 		_fileInfo = " in " + filepath + ": " + itostr(lineNumber);
 	else if (!filepath.empty())
 		_fileInfo = " in " + filepath;
+	std::cout << "ConfigError :: " << _fileInfo << std::endl;
 	setErrorMessage(errorType, errorWord);
 }
 
@@ -34,8 +35,14 @@ void ConfigError::setErrorMessage(const ErrorType errorType, const std::string& 
 		case UNKOWN_DIRECTIVE:
 			_errorMessage += "unknown directive \"" + errorWord + "\"" + _fileInfo;
 			break;
+		case INVALID_LISTEN:
+			_errorMessage += "invalid listen directive \"" + errorWord + "\"" + _fileInfo;
+			break;
 		case INVALID_PATH:
 			_errorMessage += "invalid path \"" + errorWord + "\"" + _fileInfo;
+			break;
+		case DUPLICATE_PORT:
+			_errorMessage += "duplicate port \"" + errorWord + "\"" + _fileInfo;
 			break;
 		case NEED_ALIAS:
 			_errorMessage += "need alias directive" + _fileInfo;

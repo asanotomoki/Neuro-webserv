@@ -101,9 +101,9 @@ ParseUrlResult parseHomeDirectory(std::string url, const ServerContext& server_c
 		}
 	}
 	
-	alias.erase(alias.size() - 1, 1);
+	// alias.erase(alias.size() - 1, 1);
 	result.fullpath = alias + result.file;
-	result.fullpath.erase(result.fullpath.size() - 1, 1);
+	// result.fullpath.erase(result.fullpath.size() - 1, 1);
 	result.isAutoIndex = getIsAutoIndex(location_context, url);
 	return result;
 }

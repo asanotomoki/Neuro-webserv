@@ -7,6 +7,7 @@ StaticFileReader::StaticFileReader() {
 }
 
 std::string StaticFileReader::readErrorFile(const LocationContext& locationContext) {
+
     std::string alias = locationContext.getDirective("alias");
     std::string filename = locationContext.getDirective("index");
     std::string filePath = alias + filename;

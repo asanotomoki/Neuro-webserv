@@ -2,7 +2,6 @@
 #include <fstream>
 
 ProcessResult DataProcessor::processPostData(const std::string& postData) {
-
     // ファイルデータの部分を解析
     size_t fileDataStart = postData.find("\r\n") + 1;
     size_t fileDataEnd = postData.find("\r\n", fileDataStart);
@@ -19,11 +18,13 @@ ProcessResult DataProcessor::processPostData(const std::string& postData) {
     // 指定のディレクトリにファイルを保存
     std::ofstream file(filePath, std::ios::binary);
     if (!file) {
-        return { "error", "Failed to create file.", 500 };
+        ProcessResult result = ProcessResult("error", "Failed to create file.", 500);
+        return result;
     }
 
     file.write(fileData.c_str(), fileData.size());
     file.close();
 
-    return { "success", "File uploaded successfully.", 200 };
+    ProcessResult result = ProcessResult("success", "File uploaded successfully.", 200);
+    return result;
 }

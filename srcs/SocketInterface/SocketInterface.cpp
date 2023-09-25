@@ -17,15 +17,18 @@ SocketInterface::SocketInterface(Config *config)
 
 SocketInterface::~SocketInterface()
 {
-    for (int socket : _sockets)
+    for (size_t i = 0; i < _sockets.size(); ++i) {
+        int socket = _sockets[i];
         close(socket);
+    }
     delete[] _pollfds;
 }
 
 void SocketInterface::createSockets(const std::vector<std::string> &ports)
 {
-    for (const auto &port : ports)
+    for (std::vector<std::string>::const_iterator it = ports.begin(); it != ports.end(); ++it) 
     {
+        const std::string& port = *it;
         int sockfd = socket(AF_INET, SOCK_STREAM, 0);
         sockaddr_in addr;
         addr.sin_family = AF_INET;
@@ -91,22 +94,18 @@ std::pair<std::string, std::string> SocketInterface::parseHostAndPortFromRequest
 {
     std::string hostHeader = "Host: ";
     size_t start = request.find(hostHeader);
-    if (start == std::string::npos)
-        return {"", ""}; // Host header not found
+
+    if (start == std::string::npos) return std::make_pair("", ""); // Host header not found
     start += hostHeader.length();
     size_t end = request.find("\r\n", start);
-    if (end == std::string::npos)
-        return {"", ""}; // Malformed request
+    if (end == std::string::npos) std::make_pair("", ""); // Malformed request
 
     std::string hostPortStr = request.substr(start, end - start);
     size_t colonPos = hostPortStr.find(':');
-    if (colonPos != std::string::npos)
-    {
-        return {hostPortStr.substr(0, colonPos), hostPortStr.substr(colonPos + 1)};
-    }
-    else
-    {
-        return {hostPortStr, ""}; // No port specified
+    if (colonPos != std::string::npos) {
+        return std::make_pair(hostPortStr.substr(0, colonPos), hostPortStr.substr(colonPos + 1));
+    } else {
+        return std::make_pair(hostPortStr, ""); // No port specified
     }
 }
 

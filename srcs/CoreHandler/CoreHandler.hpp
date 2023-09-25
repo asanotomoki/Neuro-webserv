@@ -10,6 +10,9 @@ struct ProcessResult {
     std::string status;
     std::string message;
     int statusCode;
+
+    ProcessResult(const std::string s, const std::string m, int c)
+        : status(s), message(m), statusCode(c) {}
 };
 
 struct ParseUrlResult {

@@ -1,8 +1,9 @@
+NAME := webserv
 CC = g++
 INC	= -I ./srcs/Config/ -I ./srcs/SocketInterface/ -I ./srcs/CoreHandler/ \
 		-I ./srcs/CoreHandler/RequestParser/ -I ./srcs/CoreHandler/StaticFileReader/ \
-		-I ./srcs/CoreHandler/DataProcessor -I ./srcs/CoreHandler/Cgi
-CFLAGS = -Wall -Wextra -Werror -std=c++11 $(INC)
+		-I ./srcs/CoreHandler/DataProcessor
+CFLAGS = -Wall -Wextra -Werror -std=c++98 $(INC)
 LDFLAGS =
 SOURCES = srcs/main.cpp srcs/Config/Config.cpp srcs/SocketInterface/SocketInterface.cpp \
 			srcs/CoreHandler/CoreHandler.cpp \
@@ -16,9 +17,11 @@ SOURCES = srcs/main.cpp srcs/Config/Config.cpp srcs/SocketInterface/SocketInterf
 			srcs/CoreHandler/Cgi/Cgi.cpp
 OBJECTS_DIR = objs
 OBJECTS = $(addprefix $(OBJECTS_DIR)/, $(SOURCES:.cpp=.o))
-NAME = webserv
 
 all: $(NAME)
+
+test: 
+	$(CC) $(TEST_CFLAGS) $(SOURCES) -o $(NAME)
 
 $(NAME): $(OBJECTS)
 	$(CC) $(LDFLAGS) $^ -o $@
@@ -39,3 +42,6 @@ git :
 	git add .
 	git commit -m "auto commit"
 	git push
+
+.PHONY: all clean fclean re
+

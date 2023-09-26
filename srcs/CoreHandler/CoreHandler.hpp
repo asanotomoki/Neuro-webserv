@@ -31,7 +31,7 @@ struct ProcessResult {
 class CoreHandler
 {
     private: 
-        bool isCgi(const ServerContext& server_context, std::string path);
+        bool isCgi(std::string dir);
         bool isCgiBlock(const ServerContext& server_context, std::string path);
         ParseUrlResult parseUrl(std::string url, const ServerContext& server_context);
     public:

@@ -1,11 +1,9 @@
 #!/usr/bin/env python3
 
-import os
+import datetime
 
-pathInfo = os.environ["PATH_INFO"]
-print("Content-Type: text/html")
-print()
-print("<html><body>")
-print("<p>Hello, world!</p>")
-print("<p>path Info : "+ pathInfo + "</p>")
-print("</body></html>")
+print("HTTP/1.1 200 OK")
+print("Content-type: text/html\r\n\r\n")
+print("<html>")
+print("<head>")
+print(datetime.datetime.strftime(datetime.datetime.now(), "<h1>  %H:%M:%S </h1>"))

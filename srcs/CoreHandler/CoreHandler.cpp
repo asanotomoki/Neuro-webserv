@@ -41,10 +41,13 @@ std::string getLocationPath (std::string url)
 std::string successResponse(std::string fileContent, std::string contentType)
 {
     std::string response = "HTTP/1.1 200 OK\r\n";
-    response += "Content-Type: " + contentType + "\r\n";
+    response += "Content-Type: " + contentType + "; charset=UTF-8\r\n";
     response += "Content-Length: " + std::to_string(fileContent.size()) + "\r\n";
     response += "\r\n";
     response += fileContent;
+
+    std::cout << "successResponse :: SUCCESS\n" << response << std::endl;    
+
     return response;
 }
 
@@ -121,7 +124,7 @@ std::string CgiBlockMethod(HttpRequest &req, const ServerContext &serverContext,
     }
     if (cgiResponse.status == 200)
     {
-        return successResponse(cgiResponse.message, "text/html");
+        return cgiResponse.message;
     }
     else
     {
@@ -147,7 +150,7 @@ std::string CgiMethod(HttpRequest &req, const ServerContext &serverContext, Pars
     }
     if (cgiResponse.status == 200)
     {
-        return successResponse(cgiResponse.message, "text/html");
+        return cgiResponse.message;
     }
     else
     {
@@ -170,11 +173,9 @@ bool CoreHandler::isCgiBlock(const ServerContext &serverContext, const std::stri
     }
     return false;
 }
-bool CoreHandler::isCgi(const ServerContext &serverContext, const std::string path)
+bool CoreHandler::isCgi(const std::string dir)
 {
-    LocationContext locationContext = serverContext.getLocationContext(getLocationPath(path));
-    bool res = locationContext.getIsCgi();
-    return res;
+    return dir == "/cgi-bin/";
 }
 
 bool isDirectory(const std::string& path) {
@@ -280,7 +281,7 @@ std::string CoreHandler::processRequest(const std::string &request, const Server
         std::cout << "Is CGI BLOCK :: res: " << res << "\n";
         return res;
     }
-    else if (isCgi(serverContext, httpRequest.url))
+    else if (isCgi(directory))
     {
         std::string res = CgiMethod(httpRequest, serverContext,  parseUrlResult);
         std::cout << "Is CGI :: res: " << res << "\n";

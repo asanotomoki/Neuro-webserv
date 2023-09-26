@@ -72,7 +72,15 @@ const std::map<std::string, std::vector<ServerContext> >& Config::getServers() c
 const ServerContext& Config::getServerContext(const std::string& port, const std::string& host) const
 {
     // ポート番号が一致するServerブロックをすべて取得する
-    const std::vector<ServerContext>& serverContexts = getServers().at(port);
+    const std::map<std::string, std::vector<ServerContext> >& servers = getServers();
+    const std::vector<ServerContext>* serverContextsPtr;
+    if (servers.find(port) != servers.end()) {
+        serverContextsPtr = &servers.at(port);
+    } else {
+        std::cerr << "port not found!" << std::endl;
+       serverContextsPtr = &servers.begin()->second;
+    }
+    const std::vector<ServerContext>& serverContexts = *serverContextsPtr;
     try {
         // server_nameがhostヘッダーと一致する場合、そのserverブロックを返す
         for (std::vector<ServerContext>::const_iterator it = serverContexts.begin(); it != serverContexts.end(); ++it) {

@@ -48,22 +48,23 @@ bool isCgiBlockPath(const ServerContext& server_context, std::vector<std::string
 ParseUrlResult parseCgiBlock(std::vector<std::string> tokens, const ServerContext& server_context)
 {
 	ParseUrlResult result;
-	result.directory = "./docs/cgi-bin";
-	result.file = tokens[0];
+	result.directory = "/cgi-bin/";
 	CGIContext cgi_context = server_context.getCGIContext();
 	std::string exe = cgi_context.getDirective("extension");
 	std::cout << "exe: " << exe << std::endl;
 	size_t i = 0;
 
+	std::cout << "tokens[i]: " << result.file << std::endl;
 	while (i < tokens.size())
 	{
+		std::cout << "tokens[i]: " << tokens[i] << std::endl;
+		result.file += "/" + tokens[i];
 		std::string ext = tokens[i].substr(tokens[i].find_last_of(".") + 1);
 		if (ext == exe)
 			break;
-		result.file += "/" + tokens[i];
 		i++;
 	}
-	result.fullpath = result.directory + "/" + result.file;
+	result.fullpath = "./docs/cgi-bin" + result.file;
 	result.pathInfo = "";
 	// それ以降がpathinfo
 	for (size_t j = i + 1; j < tokens.size(); j++)
@@ -85,7 +86,7 @@ bool isCgiDir(std::vector<std::string> tokens)
 ParseUrlResult getCgiPath(std::vector<std::string> tokens)
 {
 	ParseUrlResult result;
-	result.directory = "./docs/cgi-bin";
+	result.directory = "/cgi-bin/";
 	// 必ずcgi-binが含まれているので、その次の要素がファイル名
 	result.file = tokens[1];
 	// その以降の要素がパスインフォ
@@ -93,7 +94,7 @@ ParseUrlResult getCgiPath(std::vector<std::string> tokens)
 	{
 		result.pathInfo += "/" + tokens[i];
 	}
-	result.fullpath = result.directory + "/" + result.file;
+	result.fullpath =  + "./docs/cgi-bin/" + result.file;
 	return result;
 }
 
@@ -176,6 +177,18 @@ ParseUrlResult CoreHandler::parseUrl(std::string url, const ServerContext& serve
 	tokens[0].erase(0, 1);
 	// cgi-bin
 	std::vector<std::string> path_tokens = split(tokens[0], '/');
+	result.directory = "/" + path_tokens[0] + "/";
+	std::string redirectPath = server_context.getReturnPath(result.directory);
+    if (!redirectPath.empty())
+	{
+		std::string redirectUrl = redirectPath;
+		size_t i = 1;
+		while (i < path_tokens.size())
+		{
+			redirectUrl += "/" + path_tokens[i++];
+		}
+		return parseUrl(redirectUrl, server_context);
+	}
 	if (isCgiDir(path_tokens))
 	{
 		return getCgiPath(path_tokens);
@@ -191,11 +204,6 @@ ParseUrlResult CoreHandler::parseUrl(std::string url, const ServerContext& serve
 		return res;
 	}
 	LocationContext location_context;
-
-	result.directory = "/" + path_tokens[0] + "/";
-	std::string redirectPath = server_context.getReturnPath(result.directory);
-    if (!redirectPath.empty())
-        result.directory = redirectPath;
 	location_context = server_context.getLocationContext(result.directory);
 	std::string alias = location_context.getDirective("alias");
 	result.file = getFile(path_tokens, location_context);

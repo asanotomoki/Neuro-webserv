@@ -18,6 +18,7 @@ class Config
 							const std::string& filepath, int line_number);
 		const std::map<std::string, std::vector<ServerContext> >& getServers() const;
 		const ServerContext& getServerContext(const std::string& port, const std::string& host) const;
+		void verifyConfig();
 
     private:
     	std::map<std::string, std::vector<ServerContext> > _servers;

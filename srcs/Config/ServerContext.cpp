@@ -4,7 +4,7 @@
 #include <iostream>
 
 ServerContext::ServerContext():
-	_listen(),
+	_listen("65535"),
 	_serverName(),
 	_maxBodySize(),
 	_is_Cgi(false),
@@ -20,6 +20,9 @@ ServerContext::~ServerContext()
 
 void ServerContext::setListen(const std::string& listen)
 {
+	int intListen = std::atoi(listen.c_str());
+	if (intListen < 1024 || intListen > 65535)
+		throw ConfigError(INVALID_LISTEN, listen);
 	_listen = listen;
 }
 

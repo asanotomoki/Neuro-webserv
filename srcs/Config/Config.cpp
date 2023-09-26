@@ -11,6 +11,7 @@ Config::Config(const std::string& filepath)
 {
     ConfigParser parser(*this);
     parser.parseFile(filepath);
+    verifyConfig();
 }
 
 Config::~Config()
@@ -22,12 +23,9 @@ const std::vector<std::string> Config::getPorts()
 	std::vector<std::string> ports;
 
 	for (std::map<std::string, std::vector<ServerContext> >::const_iterator it = getServers().begin();
-			it != getServers().end(); ++it)
-	{
+			it != getServers().end(); ++it) {
 		for (std::vector<ServerContext>::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2)
-		{
 			ports.push_back(it2->getListen());
-		}
 	}
 	return ports;
 }
@@ -38,25 +36,19 @@ void Config::addServerContext(const ServerContext& server)
     std::map<std::string, std::vector<ServerContext> >::iterator
         port_found = _servers.find(listen);
 
-    if (port_found != _servers.end())
-    {
-        if (server.getServerName().empty())
-        {
+    if (port_found != _servers.end()) {
+        if (server.getServerName().empty()) {
             //exception
-
         }
         std::vector<ServerContext> &servers = port_found->second;
-        for (size_t i = 0; i < servers.size(); i++)
-        {
-            if (servers.at(i).getServerName() == server.getServerName())
-            {
+        for (size_t i = 0; i < servers.size(); i++) {
+            if (servers.at(i).getServerName() == server.getServerName()) {
                 //exception
             }
         }
         servers.push_back(server);
     }
-    else
-    {
+    else {
         std::vector<ServerContext> new_servers(1, server);
         _servers.insert(std::make_pair(listen, new_servers));
     }
@@ -81,11 +73,9 @@ const ServerContext& Config::getServerContext(const std::string& port, const std
 {
     // ポート番号が一致するServerブロックをすべて取得する
     const std::vector<ServerContext>& serverContexts = getServers().at(port);
-    try
-    {
+    try {
         // server_nameがhostヘッダーと一致する場合、そのserverブロックを返す
-        for (std::vector<ServerContext>::const_iterator it = serverContexts.begin(); it != serverContexts.end(); ++it)
-        {
+        for (std::vector<ServerContext>::const_iterator it = serverContexts.begin(); it != serverContexts.end(); ++it) {
             if (it->getServerName() == host) {
                 std::cout << "server_name: " << it->getServerName() << std::endl;
                 return *it;
@@ -93,9 +83,7 @@ const ServerContext& Config::getServerContext(const std::string& port, const std
         }
         // server_nameがhostヘッダーと一致しない場合、最初のserverブロックを返す
         return serverContexts.at(0);
-    }
-    catch (std::out_of_range& e)
-    {
+    } catch (std::out_of_range& e) {
         std::cerr << "Caught runtime_error: " << e.what() << '\n';
         // // 一致するポート番号がない場合は上位に投げる
         // throw std::runtime_error("port not found!");
@@ -103,3 +91,22 @@ const ServerContext& Config::getServerContext(const std::string& port, const std
     return serverContexts.at(0);
 }
 
+void Config::verifyConfig()
+{
+    // 各サーバーのポートを確認
+    // ポートが被っていないか確認
+    // ポートが被っている場合に、サーバーネームが異なっているか確認
+    // サーバーネームが同じorサーバーネームがない場合は例外を投げる
+    for (std::map<std::string, std::vector<ServerContext> >::const_iterator it = getServers().begin();
+            it != getServers().end(); ++it) {
+        std::vector<ServerContext> servers = it->second;
+        for (size_t i = 0; i < servers.size(); i++) {
+            for (size_t j = i + 1; j < servers.size(); j++) {
+                if (servers.at(i).getServerName() == servers.at(j).getServerName()) {
+                    std::cout << "server_name: " << servers.at(i).getServerName() << std::endl;
+                    throw ConfigError(DUPLICATE_PORT, servers.at(i).getServerName());
+                }
+            }
+        }
+    }
+}

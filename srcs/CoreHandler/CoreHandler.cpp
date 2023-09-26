@@ -133,7 +133,7 @@ std::string CgiBlockMethod(HttpRequest &req, const ServerContext &serverContext,
 std::string CgiMethod(HttpRequest &req, const ServerContext &serverContext, ParseUrlResult path)
 {
     // Get Cgi Path, executable file path
-    LocationContext locationContext = serverContext.getLocationContext(getLocationPath(path.directory));
+    LocationContext locationContext = serverContext.getLocationContext("/cgi-bin/");
     std::string command = locationContext.getDirective("command");
     std::cout << "CgiMethod :: fullpath path: " << path.fullpath << "\n";
     std::cout << "CgiMethod :: command: " << command << "\n";

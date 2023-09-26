@@ -4,9 +4,9 @@
 #include <iostream>
 
 ServerContext::ServerContext():
-	_listen("65535"),
+	_listen(DEFAULT_LISTEN),
 	_serverName(),
-	_maxBodySize("1048576"),
+	_maxBodySize(DEFAULT_MAX_BODY_SIZE),
 	_is_Cgi(false),
 	_errorPages(),
 	_locations(),
@@ -20,7 +20,7 @@ ServerContext::~ServerContext()
 
 void ServerContext::setListen(const std::string& listen)
 {
-	int intListen = std::atoi(listen.c_str());
+	int intListen = std::stoi(listen.c_str());
 	if (intListen < 1024 || intListen > 65535)
 		throw ConfigError(INVALID_LISTEN, listen);
 	_listen = listen;
@@ -235,3 +235,6 @@ std::string ServerContext::getReturnPath(const std::string& path) const
     }
     return "";
 }
+
+const std::string ServerContext::DEFAULT_LISTEN = "65535";
+const std::string ServerContext::DEFAULT_MAX_BODY_SIZE = "1048576";

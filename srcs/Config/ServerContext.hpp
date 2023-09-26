@@ -54,6 +54,10 @@ class ServerContext
         LocationContext _405LocationContext;
         LocationContext _500LocationContext;
         LocationContext _501LocationContext;
+
+        // default values
+        static const std::string DEFAULT_LISTEN;
+        static const std::string DEFAULT_MAX_BODY_SIZE;
 };
 
 #endif

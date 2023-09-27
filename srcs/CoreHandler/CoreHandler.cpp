@@ -38,6 +38,14 @@ std::string getLocationPath (std::string url)
     }
 }
 
+std::string redirectResponse(std::string location)
+{
+    std::string response = "HTTP/1.1 302 Moved Permanently\r\n";
+    response += "Location: " + location + "\r\n";
+    response += "\r\n";
+    return response;
+}
+
 std::string successResponse(std::string fileContent, std::string contentType)
 {
     std::string response = "HTTP/1.1 200 OK\r\n";
@@ -81,7 +89,6 @@ std::string postMethod(std::string body)
     DataProcessor dataProcessor;
     ProcessResult result = dataProcessor.processPostData(body);
     // TODO FIX!! エラーハンドリングを追加する必要がある
-
     // レスポンスの生成
     std::string response = successResponse(result.message, "text/html");
 
@@ -221,14 +228,11 @@ std::string CoreHandler::processRequest(const std::string &request, const Server
     std::cout << "parseUrlResult.file: " << parseUrlResult.file << "\n";
     std::cout << "parseUrlResult.directory: " << parseUrlResult.directory << "\n";
     std::cout << "parseUrlResult.fullpath: " << parseUrlResult.fullpath << "\n";
-    
-    std::string file = parseUrlResult.file;
-    std::string directory = parseUrlResult.directory;
+
     // std::string redirectPath = serverContext.getReturnPath(directory);
     // if (!redirectPath.empty())
     //     directory = redirectPath;
-    LocationContext locationContext = serverContext.getLocationContext(directory);
-    std::string fullPath = parseUrlResult.fullpath;
+    LocationContext locationContext = serverContext.getLocationContext(parseUrlResult.directory);
 
 
     //// httpRequest.urlをディレクトリとファイルに分割
@@ -274,14 +278,19 @@ std::string CoreHandler::processRequest(const std::string &request, const Server
     
     
     // directoryからLocationContextを取得
-    locationContext = serverContext.getLocationContext(directory);
+    locationContext = serverContext.getLocationContext(parseUrlResult.directory);
+    if (parseUrlResult.statusCode >= 300 && parseUrlResult.statusCode < 400) {
+        std::cout << "processRequest :: REDIRECT\n";
+        std::string location = "http://localhost:2000" + parseUrlResult.fullpath;
+        return redirectResponse(location);
+    }
     if (isCgiBlock(serverContext, httpRequest.url))
     {
         std::string res = CgiBlockMethod(httpRequest, serverContext, parseUrlResult);
         std::cout << "Is CGI BLOCK :: res: " << res << "\n";
         return res;
     }
-    else if (isCgi(directory))
+    else if (isCgi(parseUrlResult.directory))
     {
         std::string res = CgiMethod(httpRequest, serverContext,  parseUrlResult);
         std::cout << "Is CGI :: res: " << res << "\n";
@@ -295,7 +304,7 @@ std::string CoreHandler::processRequest(const std::string &request, const Server
             locationContext = serverContext.get405LocationContext();
             return errorResponse(405, "Method Not Allowed", locationContext);
         }
-        return getMethod(fullPath, locationContext, serverContext,  parseUrlResult.isAutoIndex);
+        return getMethod(parseUrlResult.fullpath, locationContext, serverContext,  parseUrlResult.isAutoIndex);
     }
     else if (httpRequest.method == "POST")
     {
@@ -315,7 +324,7 @@ std::string CoreHandler::processRequest(const std::string &request, const Server
             locationContext = serverContext.get405LocationContext();
             return errorResponse(405, "Method Not Allowed", locationContext);
         }
-        return deleteMethod(file, serverContext);
+        return deleteMethod(parseUrlResult.file, serverContext);
     }
     std::cout << "processRequest :: NOT IMPLEMENTED\n";
     locationContext = serverContext.get501LocationContext();

@@ -159,6 +159,7 @@ ParseUrlResult parseHomeDirectory(std::string url, const ServerContext& server_c
 ParseUrlResult CoreHandler::parseUrl(std::string url, const ServerContext& server_context)
 {
 	ParseUrlResult result;
+	result.statusCode = 200;
 	std::vector<std::string> tokens = split(url, '?');
 	if (tokens.size() == 1)
 	{
@@ -181,13 +182,14 @@ ParseUrlResult CoreHandler::parseUrl(std::string url, const ServerContext& serve
 	std::string redirectPath = server_context.getReturnPath(result.directory);
     if (!redirectPath.empty())
 	{
-		std::string redirectUrl = redirectPath;
+		result.statusCode = 302;
+		result.fullpath = redirectPath;
 		size_t i = 1;
 		while (i < path_tokens.size())
 		{
-			redirectUrl += "/" + path_tokens[i++];
+			result.fullpath += path_tokens[i++] + "/";
 		}
-		return parseUrl(redirectUrl, server_context);
+		return result;
 	}
 	if (isCgiDir(path_tokens))
 	{

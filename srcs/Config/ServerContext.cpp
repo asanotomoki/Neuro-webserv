@@ -2,6 +2,7 @@
 #include "ConfigError.hpp"
 #include <stdexcept>
 #include <iostream>
+#include <set>
 
 ServerContext::ServerContext():
 	_listen(DEFAULT_LISTEN),
@@ -144,7 +145,6 @@ void ServerContext::verifyReturnLocations()
 
         while (_returnLocations.find(current) != _returnLocations.end()) {
             if (visited.find(current) != visited.end()) {
-                // ここでConfigErrorなどの例外をスロー
                 throw ConfigError(INVALID_RETURN, current);
             }
             visited.insert(current);

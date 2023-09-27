@@ -127,9 +127,30 @@ const std::string& ServerContext::getErrorPage(std::string status_code) const
 	return it->second;
 }
 
-void ServerContext::addLocationContext(const LocationContext& location)
+void ServerContext::addLocationContext(LocationContext& location)
 {
+	if (location.hasDirective("return")) {
+		_returnLocations.insert(std::make_pair(location.getDirective("path"), location.getDirective("return")));
+	}
 	_locations.push_back(location);
+}
+
+void ServerContext::verifyReturnLocations()
+{
+	std::map<std::string, std::string>::const_iterator it;
+    for (it = _returnLocations.begin(); it != _returnLocations.end(); ++it) {
+        std::set<std::string> visited; // 訪れたlocationを保存
+        std::string current = it->first;
+
+        while (_returnLocations.find(current) != _returnLocations.end()) {
+            if (visited.find(current) != visited.end()) {
+                // ここでConfigErrorなどの例外をスロー
+                throw ConfigError(INVALID_RETURN, current);
+            }
+            visited.insert(current);
+            current = _returnLocations[current];
+        }
+    }
 }
 
 void ServerContext::addCGIContext(const CGIContext& cgi)

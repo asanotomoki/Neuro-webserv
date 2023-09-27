@@ -111,9 +111,9 @@ std::pair<std::string, std::string> SocketInterface::parseHostAndPortFromRequest
 
 void SocketInterface::handleClient(int clientSocket)
 {
-    char buffer[1024]; // magic number to be fixed
-    ssize_t bytesRead = read(clientSocket, buffer, sizeof(buffer) - 1);
+    char buffer[1024];
 
+    ssize_t bytesRead = read(clientSocket, buffer, sizeof(buffer) - 1);
     if (bytesRead < 0)
     {
         std::cerr << "read() returned " << bytesRead << std::endl;

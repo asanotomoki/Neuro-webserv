@@ -214,6 +214,7 @@ const ServerContext ConfigParser::setServerContext()
 				serverContext.setErrorPage(_oneLine[1], _oneLine[2]);
 		}
 	}
+	serverContext.verifyReturnLocations();
 	serverContext.setErrorPages();
 	return serverContext;
 }

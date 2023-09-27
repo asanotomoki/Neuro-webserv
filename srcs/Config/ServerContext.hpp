@@ -24,7 +24,7 @@ class ServerContext
         bool getIsCgi() const;
         //const std::vector<std::string>& getAllowedMethods() const;
         const std::string& getErrorPage(std::string status_code) const; 
-		void addLocationContext(const LocationContext& location);
+		void addLocationContext(LocationContext& location);
         void addCGIContext(const CGIContext& cgi);
         void addDirectives(const std::string& directive, const std::string& value,
                             const std::string& filepath, int line_number);
@@ -37,6 +37,7 @@ class ServerContext
         const LocationContext& get500LocationContext() const;
         const LocationContext& get501LocationContext() const; 
         std::string getReturnPath(const std::string& path) const;
+        void verifyReturnLocations();
 
     private:
         std::string _listen;
@@ -54,6 +55,8 @@ class ServerContext
         LocationContext _405LocationContext;
         LocationContext _500LocationContext;
         LocationContext _501LocationContext;
+        // returnディレクティブの値を保持
+        std::map<std::string, std::string> _returnLocations;
 
         // default values
         static const std::string DEFAULT_LISTEN;

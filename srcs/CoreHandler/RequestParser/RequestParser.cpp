@@ -31,7 +31,7 @@ HttpRequest RequestParser::parse(const std::string& request, const ServerContext
             contentLength = std::stoi(value);
         }
     }
-    std::cout << "processRequest :: contentLength: " << contentLength << std::endl;
+    std::cout << "parse :: contentLength: " << contentLength << std::endl;
     // ボディを解析 (Content-Lengthが指定されていれば)
     if (contentLength > 0) {
         int maxBodySize = std::stoi(serverContext.getMaxBodySize());
@@ -41,7 +41,7 @@ HttpRequest RequestParser::parse(const std::string& request, const ServerContext
         char* buffer = new char[contentLength];
         requestStream.read(buffer, contentLength);
         httpRequest.body = std::string(buffer, contentLength);
-        std::cout << "processRequest :: body: " << httpRequest.body << std::endl;
+        std::cout << "parse :: body: " << httpRequest.body << std::endl;
         delete[] buffer;
     }
 

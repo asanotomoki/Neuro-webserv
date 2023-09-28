@@ -216,6 +216,8 @@ std::string CoreHandler::processRequest(const std::string &request, const Server
         httpRequest.url += '/';
     }
 
+    std::cout << "processRequest :: " << "method :" << httpRequest.method << "\n";
+
     ParseUrlResult parseUrlResult = parseUrl(httpRequest.url, serverContext);
 
     std::cout << "parseUrlResult.file: " << parseUrlResult.file << "\n";

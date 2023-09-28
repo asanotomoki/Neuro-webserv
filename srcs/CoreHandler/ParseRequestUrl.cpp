@@ -160,16 +160,13 @@ ParseUrlResult CoreHandler::parseUrl(std::string url, const ServerContext& serve
 {
 	ParseUrlResult result;
 	std::vector<std::string> tokens = split(url, '?');
-	if (tokens.size() == 1)
-	{
+	if (tokens.size() == 1) {
 		result.query = "";
 	} else {
 		result.query = tokens[1];
 	}	
 	// home directory
-	if (tokens[0] == "/")
-	{
-		std::cout << std::endl << std::endl << "home directory" << std::endl << std::endl;
+	if (tokens[0] == "/") {
 		ParseUrlResult res = parseHomeDirectory(url, server_context);
 		res.query = result.query;
 		return res;

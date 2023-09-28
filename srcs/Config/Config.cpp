@@ -77,7 +77,7 @@ const ServerContext& Config::getServerContext(const std::string& port, const std
     if (servers.find(port) != servers.end()) {
         serverContextsPtr = &servers.at(port);
     } else {
-        std::cerr << "port not found!" << std::endl;
+        std::cerr << "getServerContext :: port not found!" << std::endl;
        serverContextsPtr = &servers.begin()->second;
     }
     const std::vector<ServerContext>& serverContexts = *serverContextsPtr;

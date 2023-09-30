@@ -23,6 +23,7 @@ class Cgi
 		// execveを実行するのに必要な変数
 		Cgi();
 		std::map<std::string, std::string> _env;
+		HttpRequest _request;
 		const char* _executable;
 		const char* _path;
 		std::vector<std::string> _args;

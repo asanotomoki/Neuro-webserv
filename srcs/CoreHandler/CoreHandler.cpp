@@ -120,15 +120,15 @@ std::string CgiBlockMethod(HttpRequest &req, const ServerContext &serverContext,
 
     std::cout << "CgiMethod :: command: " <<  command<< "\n";
     std::cout << "CgiMethod :: path.fullpath: " << path.fullpath << "\n";
-    Cgi cgi(req, command, path);
-    std::cout << "CGIBlockMethod :: cgi.CgiHandler(): " << "\n";
-    CgiResponse cgiResponse = cgi.CgiHandler();
     if (access(path.fullpath.c_str(), F_OK) == -1)
     {
         std::cout << "CGIBlockMethod :: access failed\n";
         LocationContext locationContext = serverContext.get404LocationContext();
         return errorResponse(404, "Not Found", locationContext);
     }
+    Cgi cgi(req, command, path);
+    std::cout << "CGIBlockMethod :: cgi.CgiHandler(): " << "\n";
+    CgiResponse cgiResponse = cgi.CgiHandler();
     if (cgiResponse.status == 200)
     {
         return cgiResponse.message;
@@ -147,14 +147,14 @@ std::string CgiMethod(HttpRequest &req, const ServerContext &serverContext, Pars
     std::string command = locationContext.getDirective("command");
     std::cout << "CgiMethod :: fullpath path: " << path.fullpath << "\n";
     std::cout << "CgiMethod :: command: " << command << "\n";
-    Cgi cgi(req, command, path);
-    CgiResponse cgiResponse = cgi.CgiHandler();
     if (access(path.fullpath.c_str(), F_OK) == -1)
     {
         std::cout << "CGIBlockMethod :: access failed\n";
         LocationContext locationContext = serverContext.get404LocationContext();
         return errorResponse(404, "Not Found", locationContext);
     }
+    Cgi cgi(req, command, path);
+    CgiResponse cgiResponse = cgi.CgiHandler();
     if (cgiResponse.status == 200)
     {
         return cgiResponse.message;

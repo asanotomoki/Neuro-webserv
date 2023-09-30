@@ -174,5 +174,5 @@ void SocketInterface::handleClient(int clientSocket)
     }
 }
 
-// 2メガバイト+1
+// 2メガバイト+1バイト
 const int SocketInterface::DEFAULT_MAX_BUFFER_SIZE = 2097153;

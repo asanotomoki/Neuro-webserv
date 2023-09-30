@@ -46,7 +46,7 @@ std::string successResponse(std::string fileContent, std::string contentType)
     response += "\r\n";
     response += fileContent;
 
-    std::cout << "successResponse :: SUCCESS\n" << response << std::endl;    
+    // std::cout << "successResponse :: SUCCESS\n" << response << std::endl;    
 
     return response;
 }
@@ -86,7 +86,7 @@ std::string postMethod(std::string body)
     std::string response = successResponse(result.message, "text/html");
 
     std::cout << "postMethod :: POST SUCCESS\n";
-    std::cout << "postMethod :: response: " << response << "\n";
+    // std::cout << "postMethod :: response: " << response << "\n";
     return response;
 }
 

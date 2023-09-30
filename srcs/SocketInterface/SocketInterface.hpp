@@ -9,23 +9,28 @@
 //脊髄クラス
 class SocketInterface
 {
-public:
-    SocketInterface(Config* config);
-    ~SocketInterface();
+    public:
+        SocketInterface(Config* config);
+        ~SocketInterface();
 
-    void listen();
-    void acceptConnection(int fd);
-    void handleClient(int clientSocket);
+        void eventLoop();
+        void acceptConnection(int fd);
+        void handleClient(int clientSocket);
 
-private:
-    Config* _config;
-    std::vector<int> _sockets;
-    struct pollfd* _pollfds;
-    int _numPorts;
+    private:
+        Config* _config;
+        std::vector<int> _sockets;
+        std::vector<struct pollfd> _pollfds;
+        int _numPorts;
+        int _numClients;
 
-    void createSockets(const std::vector<std::string>& ports);
-    void setupPoll();
-    std::pair<std::string, std::string> parseHostAndPortFromRequest(const std::string& request);
+        void addClientsToPollfds(int clientFd);
+        bool isListeningSocket(int fd);
+        void createSockets(const std::vector<std::string>& ports);
+        void setupPoll();
+        std::pair<std::string, std::string> parseHostAndPortFromRequest(const std::string& request);
+
+        static const int DEFAULT_MAX_BUFFER_SIZE;
 };
 
-#endif // SOCKET_INTERFACE_HPP
+#endif

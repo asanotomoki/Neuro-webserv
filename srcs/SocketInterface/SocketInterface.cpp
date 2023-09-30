@@ -6,9 +6,10 @@
 #include <unistd.h>
 #include <cstring>
 #include <iostream>
+#include <fcntl.h>
 
 SocketInterface::SocketInterface(Config *config)
-    : _config(config)
+    : _config(config), _numClients(0)
 {
     _numPorts = _config->getPorts().size();
     createSockets(_config->getPorts());
@@ -21,7 +22,6 @@ SocketInterface::~SocketInterface()
         int socket = _sockets[i];
         close(socket);
     }
-    delete[] _pollfds;
 }
 
 void SocketInterface::createSockets(const std::vector<std::string> &ports)
@@ -30,21 +30,34 @@ void SocketInterface::createSockets(const std::vector<std::string> &ports)
     {
         const std::string& port = *it;
         int sockfd = socket(AF_INET, SOCK_STREAM, 0);
+        if (sockfd < 0)
+        {
+            std::cerr << "socket() failed" << std::endl;
+            exit(1);
+        }
         sockaddr_in addr;
         addr.sin_family = AF_INET;
         addr.sin_port = htons(std::stoi(port));
         addr.sin_addr.s_addr = INADDR_ANY;
 
-        bind(sockfd, (struct sockaddr *)&addr, sizeof(addr));
-        ::listen(sockfd, 5); // Allow up to 5 pending connections
-
+        if (bind(sockfd, (struct sockaddr *)&addr, sizeof(addr)))
+        {
+            perror("bind");
+            std::cerr << "bind() failed" << std::endl;
+            exit(1);
+        }
+        if (listen(sockfd, SOMAXCONN)) // 属性変更
+        {
+            std::cerr << "listen() failed" << std::endl;
+            exit(1);
+        }
         _sockets.push_back(sockfd);
     }
 }
 
 void SocketInterface::setupPoll()
 {
-    _pollfds = new struct pollfd[_numPorts];
+    _pollfds.resize(_numPorts);
     for (int i = 0; i < _numPorts; ++i)
     {
         _pollfds[i].fd = _sockets[i];
@@ -52,25 +65,43 @@ void SocketInterface::setupPoll()
     }
 }
 
-void SocketInterface::listen()
+void SocketInterface::addClientsToPollfds(int clientFd)
+{
+    struct pollfd clientPollfd;
+    clientPollfd.fd = clientFd;
+    clientPollfd.events = POLLIN;
+    _pollfds.push_back(clientPollfd);
+}
+
+bool SocketInterface::isListeningSocket(int fd)
+{
+    return std::find(_sockets.begin(), _sockets.end(), fd) != _sockets.end();
+}
+
+void SocketInterface::eventLoop()
 {
     while (true)
     {
-        int ret = poll(_pollfds, _numPorts, -1);
+        int ret = poll(_pollfds.data(), _numPorts + _numClients, -1);
         if (ret > 0)
         {
-            for (int i = 0; i < _numPorts; i++)
+            for (size_t i = 0; i < _pollfds.size(); i++)
             {
                 if (_pollfds[i].revents & POLLIN)
                 {
-                    acceptConnection(_pollfds[i].fd);
+                    if (isListeningSocket(_pollfds[i].fd)) {
+                        acceptConnection(_pollfds[i].fd);
+                        _numClients++;
+                    } else {
+                        handleClient(_pollfds[i].fd);
+                        _pollfds.erase(_pollfds.begin() + i);
+                        _numClients--;
+                    }
                 }
             }
         }
         else if (ret < 0)
-        {
             std::cerr << "poll() returned " << ret << std::endl;
-        }
     }
 }
 
@@ -82,11 +113,12 @@ void SocketInterface::acceptConnection(int fd)
 
     if (clientFd >= 0)
     {
-        handleClient(clientFd);
+        fcntl(clientFd, F_SETFL, O_NONBLOCK, FD_CLOEXEC);
+        addClientsToPollfds(clientFd);
     }
-    else
-    {
+    else {
         std::cerr << "accept() returned " << clientFd << std::endl;
+        exit(1);
     }
 }
 
@@ -111,30 +143,30 @@ std::pair<std::string, std::string> SocketInterface::parseHostAndPortFromRequest
 
 void SocketInterface::handleClient(int clientSocket)
 {
-    char buffer[1024];
+    char buffer[DEFAULT_MAX_BUFFER_SIZE];
 
     ssize_t bytesRead = read(clientSocket, buffer, sizeof(buffer) - 1);
-    if (bytesRead < 0)
+    if (bytesRead > 0)
     {
-        std::cerr << "read() returned " << bytesRead << std::endl;
-        return;
+        buffer[bytesRead] = '\0';
+        std::cout << "Received request:\n"
+                << buffer << std::endl;
+        std::string request(buffer);
+
+        // ホストとポートの解析
+        std::pair<std::string, std::string> hostPort = parseHostAndPortFromRequest(request);
+
+        const ServerContext &serverContext = _config->getServerContext(hostPort.second, hostPort.first);
+        CoreHandler coreHandler;
+        std::string response = coreHandler.processRequest(buffer, serverContext);
+
+        write(clientSocket, response.c_str(), response.length());
+        close(clientSocket);
     }
-
-    buffer[bytesRead] = '\0';
-    std::cout << "Received request:\n"
-              << buffer << std::endl;
-    std::string request(buffer);
-
-    // ホストとポートの解析
-    std::pair<std::string, std::string> hostPort = parseHostAndPortFromRequest(request);
-
-    // ここで、ホストとポートを使用して、適切なServerContextを取得
-    const ServerContext &serverContext = _config->getServerContext(hostPort.second, hostPort.first);
-
-    // responseの生成
-    CoreHandler coreHandler;
-    std::string response = coreHandler.processRequest(buffer, serverContext);
-
-    write(clientSocket, response.c_str(), response.length()); // レスポンスの送信
-    close(clientSocket);
+    else {
+        close(clientSocket);
+    }
 }
+
+// 2メガバイト+1
+const int SocketInterface::DEFAULT_MAX_BUFFER_SIZE = 2097153;

@@ -3,14 +3,14 @@
 #include <string>
 #include <vector>
 #include <map>
-#include "Cgi.hpp"
+#include <sys/socket.h>
 
 Cgi::Cgi()
 {
 }
 
 Cgi::Cgi(HttpRequest& req, std::string executable, ParseUrlResult &url) : 
-_executable(executable.c_str()), _path(url.fullpath.c_str()){
+    _request(req), _executable(executable.c_str()), _path(url.fullpath.c_str()){
     this->_args.push_back(executable);
     this->_args.push_back(url.fullpath);
     initEnv(req, url);
@@ -19,18 +19,21 @@ _executable(executable.c_str()), _path(url.fullpath.c_str()){
 CgiResponse Cgi::CgiHandler()
 {
     int pipe_fd[2];
+    int pipe_stdin[2];
     pid_t pid;
     char buf[1024];
     int status;
     CgiResponse cgi_response;
-//   return ("Content-Type: text/html\n\n<html><body>\n<p>Hello, world!</p>\n</body></html>");
     if (pipe(pipe_fd) < 0)
     {
         std::cerr << "pipe error" << std::endl;
         std::exit(1);
     }
-    std::cout << "CGIHandler: " << this->_executable << std::endl;
-        std::cout << "CGIHandler: " << this->_path << std::endl;
+    if (pipe(pipe_stdin) < 0)
+    {
+        std::cerr << "pipe error" << std::endl;
+        std::exit(1);
+    }
     if ((pid = fork()) < 0)
     {
         std::cerr << "fork error" << std::endl;
@@ -39,15 +42,18 @@ CgiResponse Cgi::CgiHandler()
     else if (pid == 0)
     {
         close(pipe_fd[0]);
-        dup2(pipe_fd[1], STDOUT_FILENO);
+        dup2(pipe_fd[1], 1);
         close(pipe_fd[1]);
+
+        close(pipe_stdin[1]);
+        dup2(pipe_stdin[0], 0);
+        close(pipe_stdin[0]);
+        
         char **env = mapToChar(this->_env);
         char **args = vectorToChar(this->_args);
         execve(this->_executable, args, env);
-        std::cout << "CGIHandler: args[1]" << args[1] << std::endl;
         delete [] env;
         delete [] args;
-        perror("execve");
 		std::cerr << "execve error" << std::endl;
         cgi_response.status = 500;
         cgi_response.message = "Internal Server Error";
@@ -56,18 +62,23 @@ CgiResponse Cgi::CgiHandler()
     else
     {
         close(pipe_fd[1]);
+        close(pipe_stdin[0]);
+        write(pipe_stdin[1], this->_request.body.c_str(), this->_request.body.size());
+        close(pipe_stdin[1]);
+        std::cout << "request.body: " << this->_request.body << std::endl;
+
         while (int n = read(pipe_fd[0], buf, sizeof(buf)))
         {
-            if(n < 0)
+            if(n >= 0)
             {
-                std::cerr << "read error" << std::endl;
-                std::exit(1);
+                cgi_response.message.append(buf, n);
             }
-            cgi_response.message.append(buf, n);
         }
         close(pipe_fd[0]);
+        std::cout << "cgi_response: " << cgi_response.message << std::endl;
         waitpid(pid, &status, 0);
     }
+    status = WEXITSTATUS(status);
     if (status != 0)
     {
         cgi_response.status = 500;
@@ -90,8 +101,17 @@ void Cgi::initEnv(HttpRequest& req, ParseUrlResult url) {
 	static std::map<std::string, std::string> env;
 	env["REQUEST_METHOD"] = req.method;
 	env["PATH_INFO"] = url.pathInfo;
+    std::cout << "Request.Body" << req.body << std::endl;
 	env["CONTENT_LENGTH"] = req.headers["Content-Length"];
 	env["CONTENT_TYPE"] = req.headers["Content-Type"];
+    env["GATEWAY_INTERFACE"] = "CGI/1.1";
+    env["SERVER_PROTOCOL"] = "HTTP/1.1";
+    env["SERVER_SOFTWARE"] = "webserv";
+    env["SCRIPT_NAME"] = url.fullpath;
+
+
+    std::cout << "QUERY_STRING: " << url.query << std::endl;
+    env["QUERY_STRING"] = url.query;
 	this->_env = env;
 }
 

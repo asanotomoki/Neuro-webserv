@@ -129,14 +129,14 @@ std::string CgiBlockMethod(HttpRequest &req, const ServerContext &serverContext,
     Cgi cgi(req, command, path);
     std::cout << "CGIBlockMethod :: cgi.CgiHandler(): " << "\n";
     CgiResponse cgiResponse = cgi.CgiHandler();
-    if (cgiResponse.status == 200)
-    {
-        return cgiResponse.message;
-    }
-    else
+    if (cgiResponse.status == 500)
     {
         LocationContext locationContext = serverContext.get500LocationContext();
         return errorResponse(cgiResponse.status, cgiResponse.message, locationContext);
+    }
+    else
+    {
+        return cgiResponse.message;
     }
 }
 
@@ -155,14 +155,14 @@ std::string CgiMethod(HttpRequest &req, const ServerContext &serverContext, Pars
     }
     Cgi cgi(req, command, path);
     CgiResponse cgiResponse = cgi.CgiHandler();
-    if (cgiResponse.status == 200)
-    {
-        return cgiResponse.message;
-    }
-    else
+    if (cgiResponse.status == 500)
     {
         locationContext = serverContext.get500LocationContext();
         return errorResponse(cgiResponse.status, cgiResponse.message, locationContext);
+    }
+    else
+    {
+        return cgiResponse.message;
     }
 }
 
@@ -241,15 +241,11 @@ std::string CoreHandler::processRequest(const std::string &request, const Server
     }
     if (isCgiBlock(serverContext, httpRequest.url))
     {
-        std::string res = CgiBlockMethod(httpRequest, serverContext, parseUrlResult);
-        std::cout << "Is CGI BLOCK :: res: " << res << "\n";
-        return res;
+        return CgiBlockMethod(httpRequest, serverContext, parseUrlResult);
     }
     else if (isCgi(parseUrlResult.directory))
     {
-        std::string res = CgiMethod(httpRequest, serverContext,  parseUrlResult);
-        std::cout << "Is CGI :: res: " << res << "\n";
-        return res;
+        return CgiMethod(httpRequest, serverContext,  parseUrlResult);
     }
     else if (httpRequest.method == "GET")
     {

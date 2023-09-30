@@ -39,7 +39,7 @@ CgiResponse Cgi::CgiHandler()
     else if (pid == 0)
     {
         close(pipe_fd[0]);
-        dup2(pipe_fd[1], 1);
+        dup2(pipe_fd[1], STDOUT_FILENO);
         close(pipe_fd[1]);
         char **env = mapToChar(this->_env);
         char **args = vectorToChar(this->_args);

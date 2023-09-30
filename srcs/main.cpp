@@ -15,14 +15,11 @@ int main(int argc, char** argv)
     }
     try {
         Config* config = new Config(configFilePath);
-        // ソケットインターフェースを作成
         SocketInterface socketInterface(config);
-        // クライアントからの接続を待機
-        socketInterface.listen();
+        socketInterface.eventLoop();
         delete config;
     } catch (const std::exception& e) {
         std::cerr << e.what() << std::endl;
-        std::cout << "main :: Error Catched" << std::endl;
     }
     return 0;
 }

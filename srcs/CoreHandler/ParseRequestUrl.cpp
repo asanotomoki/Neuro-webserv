@@ -165,6 +165,7 @@ ParseUrlResult CoreHandler::parseUrl(std::string url, const ServerContext& serve
 		result.query = "";
 	} else {
 		result.query = tokens[1];
+		result.query.erase(result.query.size() - 1, 1);
 	}	
 	// home directory
 	if (tokens[0] == "/") {

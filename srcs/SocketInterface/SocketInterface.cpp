@@ -164,7 +164,7 @@ void SocketInterface::handleClient(int clientSocket)
 
         const ServerContext &serverContext = _config->getServerContext(hostPort.second, hostPort.first);
         CoreHandler coreHandler;
-        std::string response = coreHandler.processRequest(buffer, serverContext);
+        std::string response = coreHandler.processRequest(buffer, serverContext, hostPort);
 
         write(clientSocket, response.c_str(), response.length());
         close(clientSocket);

@@ -207,7 +207,8 @@ bool isFile(const std::string& path) {
     }
 }
 
-std::string CoreHandler::processRequest(const std::string &request, const ServerContext &serverContext)
+std::string CoreHandler::processRequest(const std::string &request, const ServerContext &serverContext,
+                                        const std::pair<std::string, std::string>& hostPort)
 {
     // リクエストを解析
     RequestParser parser;
@@ -236,7 +237,8 @@ std::string CoreHandler::processRequest(const std::string &request, const Server
     locationContext = serverContext.getLocationContext(parseUrlResult.directory);
     if (parseUrlResult.statusCode >= 300 && parseUrlResult.statusCode < 400) {
         std::cout << "processRequest :: REDIRECT\n";
-        std::string location = "http://localhost:2000" + parseUrlResult.fullpath; // to do fix
+        std::string location = "http://" + hostPort.first + ":" + hostPort.second + parseUrlResult.fullpath;
+        std::cout << "processRequest :: location: " << location << "\n";
         return redirectResponse(location);
     }
     if (isCgiBlock(serverContext, httpRequest.url))

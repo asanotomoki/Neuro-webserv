@@ -35,6 +35,12 @@ void SocketInterface::createSockets(const std::vector<std::string> &ports)
             std::cerr << "socket() failed" << std::endl;
             exit(1);
         }
+        int optval = 1;
+        if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)) < 0)
+        {
+            perror("setsockopt");
+            exit(1);
+        }
         sockaddr_in addr;
         addr.sin_family = AF_INET;
         addr.sin_port = htons(std::stoi(port));

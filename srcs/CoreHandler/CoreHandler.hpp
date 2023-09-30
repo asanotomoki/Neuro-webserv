@@ -10,6 +10,7 @@ struct ParseUrlResult {
     std::string fullpath;
     std::string query;
     std::string pathInfo;
+    int statusCode;
     bool isAutoIndex;
 };
 

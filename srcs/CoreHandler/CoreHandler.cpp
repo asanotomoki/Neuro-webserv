@@ -53,16 +53,13 @@ std::string successResponse(std::string fileContent, std::string contentType)
     response += "Content-Length: " + std::to_string(fileContent.size()) + "\r\n";
     response += "\r\n";
     response += fileContent;
-
-    // std::cout << "successResponse :: SUCCESS\n" << response << std::endl;    
-
     return response;
 }
 
 std::string errorResponse(int statusCode, std::string message, const LocationContext& locationContext)
 {
     StaticFileReader fileReader;
-    std::string fileContent = fileReader.readErrorFile(locationContext);
+    std::string fileContent = fileReader.readErrorFile(locationContext, statusCode);
     std::string response = "HTTP/1.1 " + std::to_string(statusCode) + " " + message + "\r\n"; 
     response += "Content-Type: text/html\r\n";
     response += "Content-Length: " + std::to_string(fileContent.size()) + "\r\n";
@@ -93,7 +90,6 @@ std::string postMethod(std::string body)
     std::string response = successResponse(result.message, "text/html");
 
     std::cout << "postMethod :: POST SUCCESS\n";
-    // std::cout << "postMethod :: response: " << response << "\n";
     return response;
 }
 

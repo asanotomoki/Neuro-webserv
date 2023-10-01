@@ -66,17 +66,19 @@ CgiResponse Cgi::CgiHandler()
         write(pipe_stdin[1], this->_request.body.c_str(), this->_request.body.size());
         close(pipe_stdin[1]);
         std::cout << "request.body: " << this->_request.body << std::endl;
-
-        while (int n = read(pipe_fd[0], buf, sizeof(buf)))
-        {
-            if(n >= 0)
+        int wstatus = waitpid(pid, &status, WNOHANG);
+        if (wstatus != 0)
+        { 
+            while (int n = read(pipe_fd[0], buf, sizeof(buf))) // データを読み取る
             {
-                cgi_response.message.append(buf, n);
+                if(n > 0)
+                {
+                    cgi_response.message.append(buf, n);
+                }
             }
+            close(pipe_fd[0]);
         }
-        close(pipe_fd[0]);
         std::cout << "cgi_response: " << cgi_response.message << std::endl;
-        waitpid(pid, &status, 0);
     }
     status = WEXITSTATUS(status);
     if (status != 0)

@@ -42,6 +42,7 @@ void SocketInterface::createSockets(const std::vector<std::string> &ports)
             exit(1);
         }
         sockaddr_in addr;
+        std::memset(&addr, 0, sizeof(addr));
         addr.sin_family = AF_INET;
         addr.sin_port = htons(std::stoi(port));
         addr.sin_addr.s_addr = INADDR_ANY;

@@ -13,7 +13,7 @@ public:
     StaticFileReader();
     std::string readFile(std::string filename, LocationContext locationContext,
                         const ServerContext &serverContext, bool isAutoIndex);
-    std::string readErrorFile(const LocationContext& locationContext);
+    std::string readErrorFile(const LocationContext& locationContext, int statusCode);
     ~StaticFileReader();
 };
 

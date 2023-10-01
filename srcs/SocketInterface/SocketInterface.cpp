@@ -72,14 +72,6 @@ void SocketInterface::setupPoll()
     }
 }
 
-void SocketInterface::addClientsToPollfds(int clientFd)
-{
-    struct pollfd clientPollfd;
-    clientPollfd.fd = clientFd;
-    clientPollfd.events = POLLIN;
-    _pollfds.push_back(clientPollfd);
-}
-
 bool SocketInterface::isListeningSocket(int fd)
 {
     return std::find(_sockets.begin(), _sockets.end(), fd) != _sockets.end();
@@ -110,6 +102,14 @@ void SocketInterface::eventLoop()
         else if (ret < 0)
             std::cerr << "poll() returned " << ret << std::endl;
     }
+}
+
+void SocketInterface::addClientsToPollfds(int clientFd)
+{
+    struct pollfd clientPollfd;
+    clientPollfd.fd = clientFd;
+    clientPollfd.events = POLLIN;
+    _pollfds.push_back(clientPollfd);
 }
 
 void SocketInterface::acceptConnection(int fd)
@@ -165,7 +165,7 @@ void SocketInterface::handleClient(int clientSocket)
 
         const ServerContext &serverContext = _config->getServerContext(hostPort.second, hostPort.first);
         CoreHandler coreHandler;
-        std::string response = coreHandler.processRequest(buffer, serverContext);
+        std::string response = coreHandler.processRequest(buffer, serverContext, hostPort);
 
         write(clientSocket, response.c_str(), response.length());
         close(clientSocket);
@@ -175,5 +175,5 @@ void SocketInterface::handleClient(int clientSocket)
     }
 }
 
-// 2メガバイト+1
+// 2メガバイト+1バイト
 const int SocketInterface::DEFAULT_MAX_BUFFER_SIZE = 2097153;

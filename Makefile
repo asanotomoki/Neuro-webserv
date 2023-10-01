@@ -39,7 +39,7 @@ fclean:
 re: fclean all
 
 git :
-	git add .
+	git add -A
 	git commit -m "auto commit"
 	git push
 

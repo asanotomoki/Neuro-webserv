@@ -54,7 +54,6 @@ CgiResponse Cgi::CgiHandler()
         execve(this->_executable, args, env);
         delete [] env;
         delete [] args;
-		std::cerr << "execve error" << std::endl;
         cgi_response.status = 500;
         cgi_response.message = "Internal Server Error";
         std::exit(1);
@@ -65,7 +64,6 @@ CgiResponse Cgi::CgiHandler()
         close(pipe_stdin[0]);
         write(pipe_stdin[1], this->_request.body.c_str(), this->_request.body.size());
         close(pipe_stdin[1]);
-        std::cout << "request.body: " << this->_request.body << std::endl;
         int wstatus = waitpid(pid, &status, WNOHANG);
         if (wstatus != 0)
         { 
@@ -78,7 +76,6 @@ CgiResponse Cgi::CgiHandler()
             }
             close(pipe_fd[0]);
         }
-        std::cout << "cgi_response: " << cgi_response.message << std::endl;
     }
     status = WEXITSTATUS(status);
     if (status != 0)
@@ -103,16 +100,12 @@ void Cgi::initEnv(HttpRequest& req, ParseUrlResult url) {
 	static std::map<std::string, std::string> env;
 	env["REQUEST_METHOD"] = req.method;
 	env["PATH_INFO"] = url.pathInfo;
-    std::cout << "Request.Body" << req.body << std::endl;
 	env["CONTENT_LENGTH"] = req.headers["Content-Length"];
 	env["CONTENT_TYPE"] = req.headers["Content-Type"];
     env["GATEWAY_INTERFACE"] = "CGI/1.1";
     env["SERVER_PROTOCOL"] = "HTTP/1.1";
     env["SERVER_SOFTWARE"] = "webserv";
     env["SCRIPT_NAME"] = url.fullpath;
-
-
-    std::cout << "QUERY_STRING: " << url.query << std::endl;
     env["QUERY_STRING"] = url.query;
 	this->_env = env;
 }

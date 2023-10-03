@@ -51,13 +51,9 @@ ParseUrlResult parseCgiBlock(std::vector<std::string> tokens, const ServerContex
 	result.directory = "/cgi-bin/";
 	CGIContext cgi_context = server_context.getCGIContext();
 	std::string exe = cgi_context.getDirective("extension");
-	std::cout << "exe: " << exe << std::endl;
 	size_t i = 0;
-
-	std::cout << "tokens[i]: " << result.file << std::endl;
 	while (i < tokens.size())
 	{
-		std::cout << "tokens[i]: " << tokens[i] << std::endl;
 		result.file += "/" + tokens[i];
 		std::string ext = tokens[i].substr(tokens[i].find_last_of(".") + 1);
 		if (ext == exe)
@@ -106,7 +102,6 @@ bool getIsAutoIndex(LocationContext &location_context, std::string path)
 	{
         autoindexEnabled = location_context.getDirective("autoindex") == "on";
 	}
-	std::cout << "getIsAutoIndex path :: " << path << std::endl << std::endl;
 	if (!isFile(path) && !autoindexEnabled)
 	{
 		res = false;
@@ -216,7 +211,6 @@ ParseUrlResult CoreHandler::parseUrl(std::string url, const ServerContext& serve
 	
 	result.fullpath.erase(result.fullpath.size() - 1, 1);
 
-	std::cout << "fullpath alias: " << result.fullpath << std::endl;
 	size_t path_size = path_tokens.size() - isFile(path_tokens[path_tokens.size() - 1]);
 	for (size_t i = 1; i < path_size; i++)
 	{

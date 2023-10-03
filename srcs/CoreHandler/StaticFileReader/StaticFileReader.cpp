@@ -19,7 +19,6 @@ std::string StaticFileReader::readErrorFile(const LocationContext& locationConte
     std::string filePath = alias + filename;
 
     if (!isFileExist(filePath)) {
-        std::cerr << "ERROR: File not found: " << filePath << "\n"; 
         if (statusCode == 403)
             filePath = "./docs/error_page/default/403.html";
         else if (statusCode == 404)
@@ -34,7 +33,6 @@ std::string StaticFileReader::readErrorFile(const LocationContext& locationConte
             filePath = "./docs/error_page/default/404.html";
     }
     std::ifstream file(filePath, std::ios::binary);
-    std::cout << "readErrorFile :: success readErrorFile\n";
     return std::string(std::istreambuf_iterator<char>(file),
                        std::istreambuf_iterator<char>());
 }
@@ -53,8 +51,6 @@ std::string StaticFileReader::readFile(std::string fullpath, LocationContext loc
         locationContext = serverContext.get404LocationContext();
         return readErrorFile(locationContext, 404);
     }
-
-    std::cout << "readFile :: success readFile\n";
     return std::string(std::istreambuf_iterator<char>(file),
                        std::istreambuf_iterator<char>());
 }

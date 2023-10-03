@@ -38,7 +38,6 @@ void SocketInterface::createSockets(const std::vector<std::string> &ports)
         int optval = 1;
         if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)) < 0)
         {
-            perror("setsockopt");
             exit(1);
         }
         sockaddr_in addr;
@@ -156,8 +155,6 @@ void SocketInterface::handleClient(int clientSocket)
     if (bytesRead > 0)
     {
         buffer[bytesRead] = '\0';
-        std::cout << "Received request:\n"
-                << buffer << std::endl;
         std::string request(buffer);
 
         // ホストとポートの解析

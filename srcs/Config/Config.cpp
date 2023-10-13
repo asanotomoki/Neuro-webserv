@@ -75,9 +75,9 @@ const ServerContext& Config::getServerContext(const std::string& port, const std
     const std::map<std::string, std::vector<ServerContext> >& servers = getServers();
     const std::vector<ServerContext>* serverContextsPtr;
     if (servers.find(port) != servers.end()) {
+        std::cerr<<  "getServerContext :: port not found! -> " << port <<  std::endl;
         serverContextsPtr = &servers.at(port);
     } else {
-        std::cerr<<  "getServerContext :: port not found!"<<  std::endl;
        serverContextsPtr = &servers.begin()->second;
     }
     const std::vector<ServerContext>& serverContexts = *serverContextsPtr;
@@ -111,7 +111,6 @@ void Config::verifyConfig()
         for (size_t i = 0; i < servers.size(); i++) {
             for (size_t j = i + 1; j < servers.size(); j++) {
                 if (servers.at(i).getServerName() == servers.at(j).getServerName()) {
-                    std::cout  << "server_name: " <<  servers.at(i).getServerName() << std::endl;
                     throw ConfigError(DUPLICATE_PORT, servers.at(i).getServerName());
                 }
             }

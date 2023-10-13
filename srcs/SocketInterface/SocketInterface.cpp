@@ -1,176 +1,188 @@
 #include "SocketInterface.hpp"
-#include "CoreHandler.hpp"
 #include "ServerContext.hpp"
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <unistd.h>
-#include <cstring>
-#include <iostream>
-#include <fcntl.h>
+#include "Config.hpp"
+#include "RequestParser.hpp"
 
 SocketInterface::SocketInterface(Config *config)
-    : _config(config), _numClients(0)
+	: _config(config), _numClients(0)
 {
-    _numPorts = _config->getPorts().size();
-    createSockets(_config->getPorts());
-    setupPoll();
+	_numPorts = _config->getPorts().size();
+	createSockets(_config->getPorts());
+	setupPoll();
+	_clients.resize(1000);
 }
 
 SocketInterface::~SocketInterface()
 {
-    for (size_t i = 0; i < _sockets.size(); ++i) {
-        int socket = _sockets[i];
-        close(socket);
-    }
+	for (std::vector<int>::iterator it = _sockets.begin(); it != _sockets.end(); ++it)
+	{
+		close(*it);
+	}
 }
 
 void SocketInterface::createSockets(const std::vector<std::string> &ports)
 {
-    for (std::vector<std::string>::const_iterator it = ports.begin(); it != ports.end(); ++it) 
-    {
-        const std::string& port = *it;
-        int sockfd = socket(AF_INET, SOCK_STREAM, 0);
-        if (sockfd < 0)
-        {
-            std::cerr << "socket() failed" << std::endl;
-            exit(1);
-        }
-        int optval = 1;
-        if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)) < 0)
-        {
-            exit(1);
-        }
-        sockaddr_in addr;
-        std::memset(&addr, 0, sizeof(addr));
-        addr.sin_family = AF_INET;
-        addr.sin_port = htons(std::stoi(port));
-        addr.sin_addr.s_addr = INADDR_ANY;
+	for (std::vector<std::string>::const_iterator it = ports.begin(); it != ports.end(); ++it)
+	{
+		const std::string &port = *it;
+		int sockfd = socket(AF_INET, SOCK_STREAM, 0);
+		if (sockfd < 0)
+		{
+			std::cerr << "socket() failed" << std::endl;
+			exit(1);
+		}
+		int optval = 1;
+		if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)) < 0)
+		{
+			exit(1);
+		}
+		sockaddr_in addr;
+		std::memset(&addr, 0, sizeof(addr));
+		addr.sin_family = AF_INET;
+		addr.sin_port = htons(std::stoi(port));
+		addr.sin_addr.s_addr = INADDR_ANY;
 
-        if (bind(sockfd, (struct sockaddr *)&addr, sizeof(addr)))
-        {
-            perror("bind");
-            std::cerr << "bind() failed" << std::endl;
-            exit(1);
-        }
-        if (listen(sockfd, SOMAXCONN)) // 属性変更
-        {
-            std::cerr << "listen() failed" << std::endl;
-            exit(1);
-        }
-        _sockets.push_back(sockfd);
-    }
+		if (bind(sockfd, (struct sockaddr *)&addr, sizeof(addr)))
+		{
+			perror("bind");
+			std::cerr << "bind() failed" << std::endl;
+			exit(1);
+		}
+		if (listen(sockfd, SOMAXCONN)) // 属性変更
+		{
+			std::cerr << "listen() failed" << std::endl;
+			exit(1);
+		}
+		_sockets.push_back(sockfd);
+	}
 }
 
 void SocketInterface::setupPoll()
 {
-    _pollfds.resize(_numPorts);
-    for (int i = 0; i < _numPorts; ++i)
-    {
-        _pollfds[i].fd = _sockets[i];
-        _pollfds[i].events = POLLIN;
-    }
+	_pollFds.resize(_numPorts);
+	for (int i = 0; i < _numPorts; ++i)
+	{
+		_pollFds[i].fd = _sockets[i];
+		_pollFds[i].events = POLLIN;
+	}
 }
 
-bool SocketInterface::isListeningSocket(int fd)
+void SocketInterface::ReadRequest(int fd, RequestBuffer &client)
 {
-    return std::find(_sockets.begin(), _sockets.end(), fd) != _sockets.end();
+	char buf[1024];
+
+	int ret = read(fd, buf, sizeof(buf) - 1);
+	if (ret < 0)
+	{
+		std::cerr << "read() failed" << std::endl;
+	}
+
+	buf[ret] = '\0';
+	client.request += buf;
+	if (client.request.find("\r\n\r\n") != std::string::npos)
+	{
+		client.isRequestFinished = true;
+	}
+
 }
+
+HttpRequest SocketInterface::parseRequest(int clientFd)
+{
+	char buf[1024];
+
+	read(clientFd, buf, sizeof(buf) - 1);
+	buf[1024 - 1] = '\0';
+
+	std::string request(buf);
+	RequestParser parser(_config);
+	HttpRequest req = parser.parse(request);
+	req.fd = clientFd;
+	if (req.statusCode == 400)
+	{
+		std::cout << "400 Bad Request" << std::endl;
+		exit(1);
+	}
+	return parser.parse(request);
+}
+
 
 void SocketInterface::eventLoop()
 {
-    while (true)
-    {
-        int ret = poll(_pollfds.data(), _numPorts + _numClients, -1);
-        if (ret > 0)
-        {
-            for (size_t i = 0; i < _pollfds.size(); i++)
-            {
-                if (_pollfds[i].revents & POLLIN)
-                {
-                    if (isListeningSocket(_pollfds[i].fd)) {
-                        acceptConnection(_pollfds[i].fd);
-                        _numClients++;
-                    } else {
-                        handleClient(_pollfds[i].fd);
-                        _pollfds.erase(_pollfds.begin() + i);
-                        _numClients--;
-                    }
-                }
-            }
-        }
-        else if (ret < 0)
-            std::cerr << "poll() returned " << ret << std::endl;
-    }
+	while (1)
+	{
+		int ret = poll(&_pollFds[0], _numPorts + _numClients, 1000);
+		if (ret < 0)
+		{
+			std::cerr << "poll() failed" << std::endl;
+			continue;
+		}
+		for (int i = 0; i < _numPorts + _numClients; ++i)
+		{
+			if (_pollFds[i].revents & POLLIN)
+			{
+				std::cout << "POLLIN" << std::endl;
+				if (i < _numPorts) // Listening sockets
+				{
+					acceptConnection(_pollFds[i].fd);
+				}
+				else // Client sockets
+				{
+					ReadRequest(_pollFds[i].fd, _clients[_pollFds[i].fd]);
+					if (_clients[_pollFds[i].fd].isRequestFinished)
+					{
+						std::cout << "Request: " << _clients[_pollFds[i].fd].request << std::endl;
+						_clients[_pollFds[i].fd].isRequestFinished = false;
+						_clients[_pollFds[i].fd].request = "";
+						_clients[_pollFds[i].fd].state = WRITE_RESPONSE;
+						_pollFds[i].events = POLLOUT;
+					}
+				}
+			}
+			else if (_pollFds[i].revents & POLLOUT)
+			{
+				std::cout << "POLLOUT" << std::endl;
+				sendResponse(_pollFds[i].fd);
+				_pollFds[i].events = POLLIN;
+				_clients[_pollFds[i].fd].state = READ_REQUEST;
+				_clients[_pollFds[i].fd].request = "";
+			}
+			else if (_pollFds[i].revents & POLLHUP)
+			{
+				close(_pollFds[i].fd);
+				_pollFds.erase(_pollFds.begin() + i);
+				--_numClients;
+			}
+		}
+	}
 }
 
-void SocketInterface::addClientsToPollfds(int clientFd)
+void SocketInterface::sendResponse(int fd)
 {
-    struct pollfd clientPollfd;
-    clientPollfd.fd = clientFd;
-    clientPollfd.events = POLLIN;
-    _pollfds.push_back(clientPollfd);
+	write(fd, "HTTP/1.1 200 OK\r\n", 17);
+	write(fd, "Content-Type: text/html\r\n", 25);
+	write(fd, "Content-Length: 44\r\n", 20);
+	write(fd, "\r\n", 2);
+	write(fd, "<html><body><h1>hello</h1></body></html>\r\n\r\n", 44);
 }
 
 void SocketInterface::acceptConnection(int fd)
 {
-    struct sockaddr_in clientAddr;
-    socklen_t clientAddrLen = sizeof(clientAddr);
-    int clientFd = accept(fd, (struct sockaddr *)&clientAddr, &clientAddrLen);
-
-    if (clientFd >= 0)
-    {
-        fcntl(clientFd, F_SETFL, O_NONBLOCK, FD_CLOEXEC);
-        addClientsToPollfds(clientFd);
-    }
-    else {
-        std::cerr << "accept() returned " << clientFd << std::endl;
-        exit(1);
-    }
+	// sockaddr_in clientAddr;
+	// socklen_t clientAddrLen = sizeof(clientAddr);
+	std::cout << "accepting new connection : " << fd << std::endl;
+	int clientFd = accept(fd, NULL, NULL);
+	if (clientFd < 0)
+	{
+		std::cerr << "accept() failed" << std::endl;
+	}
+	std::cout << "clientFd: " << clientFd << std::endl;
+	fcntl(clientFd, F_SETFL, O_NONBLOCK);
+	pollfd new_pollFd;
+	std::cout << "new client connected" << std::endl;
+	new_pollFd.fd = clientFd;
+	new_pollFd.events |= POLLIN;
+	_pollFds.push_back(new_pollFd);
+	RequestBuffer client;
+	_clients.at(clientFd) = client;
+	++_numClients;
 }
-
-std::pair<std::string, std::string> SocketInterface::parseHostAndPortFromRequest(const std::string &request)
-{
-    std::string hostHeader = "Host: ";
-    size_t start = request.find(hostHeader);
-
-    if (start == std::string::npos) return std::make_pair("", ""); // Host header not found
-    start += hostHeader.length();
-    size_t end = request.find("\r\n", start);
-    if (end == std::string::npos) std::make_pair("", ""); // Malformed request
-
-    std::string hostPortStr = request.substr(start, end - start);
-    size_t colonPos = hostPortStr.find(':');
-    if (colonPos != std::string::npos) {
-        return std::make_pair(hostPortStr.substr(0, colonPos), hostPortStr.substr(colonPos + 1));
-    } else {
-        return std::make_pair(hostPortStr, ""); // No port specified
-    }
-}
-
-void SocketInterface::handleClient(int clientSocket)
-{
-    char buffer[DEFAULT_MAX_BUFFER_SIZE];
-
-    ssize_t bytesRead = read(clientSocket, buffer, sizeof(buffer) - 1);
-    if (bytesRead > 0)
-    {
-        buffer[bytesRead] = '\0';
-        std::string request(buffer);
-
-        // ホストとポートの解析
-        std::pair<std::string, std::string> hostPort = parseHostAndPortFromRequest(request);
-
-        const ServerContext &serverContext = _config->getServerContext(hostPort.second, hostPort.first);
-        CoreHandler coreHandler;
-        std::string response = coreHandler.processRequest(buffer, serverContext, hostPort);
-
-        write(clientSocket, response.c_str(), response.length());
-        close(clientSocket);
-    }
-    else {
-        close(clientSocket);
-    }
-}
-
-// 2メガバイト+1バイト
-const int SocketInterface::DEFAULT_MAX_BUFFER_SIZE = 2097153;

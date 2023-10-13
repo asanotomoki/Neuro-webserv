@@ -32,14 +32,10 @@ struct ProcessResult {
 class CoreHandler
 {
     private: 
-        bool isCgi(std::string dir);
-        bool isCgiBlock(const ServerContext& server_context, std::string path);
         ParseUrlResult parseUrl(std::string url, const ServerContext& server_context);
     public:
-    CoreHandler();
-    std::string processRequest(const std::string& request, const ServerContext& server_context,
-                                const std::pair<std::string, std::string>& hostPort);
-    ~CoreHandler();
+    	CoreHandler();
+    	~CoreHandler();
 };
 
 #endif

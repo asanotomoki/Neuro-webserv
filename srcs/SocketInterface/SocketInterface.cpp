@@ -78,7 +78,13 @@ void SocketInterface::ReadRequest(int fd, RequestBuffer &client)
 	}
 
 	buf[ret] = '\0';
+	std::string request(buf);
+	if (client.request.empty() && request == "\r\n")
+	{
+		return ;
+	}
 	client.request += buf;
+	
 	if (client.request.find("\r\n\r\n") != std::string::npos)
 	{
 		client.isRequestFinished = true;

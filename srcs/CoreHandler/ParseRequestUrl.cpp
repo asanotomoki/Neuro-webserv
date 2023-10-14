@@ -152,7 +152,7 @@ ParseUrlResult parseHomeDirectory(std::string url, const ServerContext& server_c
 }
 
 
-ParseUrlResult CoreHandler::parseUrl(std::string url, const ServerContext& server_context)
+ParseUrlResult CoreHandler::parseUrl(std::string url)
 {
 	ParseUrlResult result;
 	result.statusCode = 200;
@@ -165,7 +165,7 @@ ParseUrlResult CoreHandler::parseUrl(std::string url, const ServerContext& serve
 	}	
 	// home directory
 	if (tokens[0] == "/") {
-		ParseUrlResult res = parseHomeDirectory(url, server_context);
+		ParseUrlResult res = parseHomeDirectory(url, _serverContext);
 		res.query = result.query;
 		return res;
 	}
@@ -173,7 +173,7 @@ ParseUrlResult CoreHandler::parseUrl(std::string url, const ServerContext& serve
 	// cgi-bin
 	std::vector<std::string> path_tokens = split(tokens[0], '/');
 	result.directory = "/" + path_tokens[0] + "/";
-	std::string redirectPath = server_context.getReturnPath(result.directory);
+	std::string redirectPath = _serverContext.getReturnPath(result.directory);
     if (!redirectPath.empty())
 	{
 		result.statusCode = 302;
@@ -189,18 +189,18 @@ ParseUrlResult CoreHandler::parseUrl(std::string url, const ServerContext& serve
 	{
 		return getCgiPath(path_tokens);
 	}
-	if (isCgiBlockPath(server_context, path_tokens))
+	if (isCgiBlockPath(_serverContext, path_tokens))
 	{
-		return parseCgiBlock(path_tokens, server_context);
+		return parseCgiBlock(path_tokens, _serverContext);
 	}
 	if (path_tokens.size() == 1 && isFile(path_tokens[0]))
 	{
-		ParseUrlResult res = parseHomeDirectory(url, server_context);
+		ParseUrlResult res = parseHomeDirectory(url, _serverContext);
 		res.query = result.query;
 		return res;
 	}
 	LocationContext location_context;
-	location_context = server_context.getLocationContext(result.directory);
+	location_context = _serverContext.getLocationContext(result.directory);
 	std::string alias = location_context.getDirective("alias");
 	result.file = getFile(path_tokens, location_context);
 	result.isAutoIndex = getIsAutoIndex(location_context, path_tokens[path_tokens.size() - 1]);

@@ -33,14 +33,16 @@ class Cgi
 		char** vectorToChar(const std::vector<std::string>& vector);
 
 	public:
-		Cgi(HttpRequest &request, std::string executable, ParseUrlResult &url);
+		//Cgi(HttpRequest &request, std::string executable, ParseUrlResult &url);
+		Cgi(HttpRequest &request);
     	~Cgi();
 		
 		CgiResponse CgiHandler();
 		
 		// env
 		const std::map<std::string, std::string>& getEnv() const;
-		void initEnv(HttpRequest &request, ParseUrlResult url);
+		//void initEnv(HttpRequest &request, ParseUrlResult url);
+		void initEnv(HttpRequest &request);
 };
 
 #endif

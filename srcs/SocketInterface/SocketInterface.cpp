@@ -2,6 +2,8 @@
 #include "ServerContext.hpp"
 #include "Config.hpp"
 #include "RequestParser.hpp"
+#include "CoreHandler.hpp"
+#include "Cgi.hpp"
 
 SocketInterface::SocketInterface(Config *config)
 	: _config(config), _numClients(0)
@@ -92,17 +94,10 @@ void SocketInterface::ReadRequest(int fd, RequestBuffer &client)
 
 }
 
-HttpRequest SocketInterface::parseRequest(int clientFd)
+HttpRequest SocketInterface::parseRequest(std::string request)
 {
-	char buf[1024];
-
-	read(clientFd, buf, sizeof(buf) - 1);
-	buf[1024 - 1] = '\0';
-
-	std::string request(buf);
 	RequestParser parser(_config);
 	HttpRequest req = parser.parse(request);
-	req.fd = clientFd;
 	if (req.statusCode == 400)
 	{
 		std::cout << "400 Bad Request" << std::endl;
@@ -126,56 +121,83 @@ void SocketInterface::eventLoop()
 		{
 			if (_pollFds[i].revents & POLLIN)
 			{
-				std::cout << "POLLIN" << std::endl;
+				//std::cout << "POLLIN" << std::endl;
 				if (i < _numPorts) // Listening sockets
 				{
 					acceptConnection(_pollFds[i].fd);
 				}
 				else // Client sockets
 				{
+					//std::cout << "Client socket" << std::endl;
 					ReadRequest(_pollFds[i].fd, _clients[_pollFds[i].fd]);
 					if (_clients[_pollFds[i].fd].isRequestFinished)
 					{
-						std::cout << "Request: " << _clients[_pollFds[i].fd].request << std::endl;
+						// Requestの解析
+						RequestParser parser(_config);
+						_clients[_pollFds[i].fd].httpRequest = parser.parse(_clients[_pollFds[i].fd].request);
+						std::cout << _clients[_pollFds[i].fd].httpRequest.protocol << " : " << _clients[_pollFds[i].fd].httpRequest.statusCode << std::endl;
+						if (_clients[_pollFds[i].fd].httpRequest.isCgi)
+						{
+							std::cout << "set cgi" << std::endl;
+							_clients[_pollFds[i].fd].state = WITE_TO_CGI;
+						} else {
+							_clients[_pollFds[i].fd].state = WRITE_RESPONSE;
+						}
 						_clients[_pollFds[i].fd].isRequestFinished = false;
 						_clients[_pollFds[i].fd].request = "";
-						_clients[_pollFds[i].fd].state = WRITE_RESPONSE;
 						_pollFds[i].events = POLLOUT;
 					}
 				}
 			}
-			else if (_pollFds[i].revents & POLLOUT)
+			else if (_pollFds[i].revents & POLLOUT && _clients[_pollFds[i].fd].state == WRITE_RESPONSE)
 			{
 				std::cout << "POLLOUT" << std::endl;
-				sendResponse(_pollFds[i].fd);
+				CoreHandler coreHandler(_config->getServerContext("2000", "localhost"));
+				std::string response = coreHandler.processRequest(_clients[_pollFds[i].fd].httpRequest);
+				std::cout << response << std::endl;
+				sendResponse(_pollFds[i].fd, response);
 				_pollFds[i].events = POLLIN;
 				_clients[_pollFds[i].fd].state = READ_REQUEST;
+				_clients[_pollFds[i].fd].isRequestFinished = false;
+				_clients[_pollFds[i].fd].request = "";
+			}
+
+			else if (_pollFds[i].revents & POLLOUT &&  _clients[_pollFds[i].fd].state == WITE_TO_CGI)//CGIの実行
+			{
+				// CGIは実行と結果の受け取りは別で行う
+				std::cout << "POLLOUT CGI" << std::endl;
+				Cgi Cgi(_clients[_pollFds[i].fd].httpRequest);
+				CgiResponse response = Cgi.CgiHandler();
+				_pollFds[i].events = POLLIN;
+				_clients[_pollFds[i].fd].state = READ_CGI;
+				_clients[_pollFds[i].fd].isRequestFinished = false;
 				_clients[_pollFds[i].fd].request = "";
 			}
 			else if (_pollFds[i].revents & POLLHUP)
 			{
+				std::cout << "connect closed" << std::endl;
 				close(_pollFds[i].fd);
 				_pollFds.erase(_pollFds.begin() + i);
+				_clients.erase(_clients.begin() + i - _numPorts);
 				--_numClients;
 			}
 		}
 	}
 }
 
-void SocketInterface::sendResponse(int fd)
+void SocketInterface::sendResponse(int fd, std::string response)
 {
-	write(fd, "HTTP/1.1 200 OK\r\n", 17);
-	write(fd, "Content-Type: text/html\r\n", 25);
-	write(fd, "Content-Length: 44\r\n", 20);
-	write(fd, "\r\n", 2);
-	write(fd, "<html><body><h1>hello</h1></body></html>\r\n\r\n", 44);
+	int ret = write(fd, response.c_str(), response.size());
+	if (ret < 0)
+	{
+		std::cerr << "write() failed" << std::endl;
+	}
 }
 
 void SocketInterface::acceptConnection(int fd)
 {
-	// sockaddr_in clientAddr;
-	// socklen_t clientAddrLen = sizeof(clientAddr);
-	std::cout << "accepting new connection : " << fd << std::endl;
+
+	
 	int clientFd = accept(fd, NULL, NULL);
 	if (clientFd < 0)
 	{
@@ -188,7 +210,10 @@ void SocketInterface::acceptConnection(int fd)
 	new_pollFd.fd = clientFd;
 	new_pollFd.events |= POLLIN;
 	_pollFds.push_back(new_pollFd);
+	
+
 	RequestBuffer client;
+	client.state = READ_REQUEST;
 	_clients.at(clientFd) = client;
 	++_numClients;
 }

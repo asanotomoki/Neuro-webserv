@@ -2,7 +2,7 @@ NAME := webserv
 CC = g++
 INC	= -I ./srcs/Config/ -I ./srcs/SocketInterface/ -I ./srcs/CoreHandler/ \
 		-I ./srcs/SocketInterface/RequestParser/ -I ./srcs/CoreHandler/StaticFileReader/ \
-		-I ./srcs/CoreHandler/DataProcessor -I ./srcs/CoreHandler/Cgi/
+		-I ./srcs/CoreHandler/DataProcessor -I ./srcs/Cgi/
 CFLAGS = -Wall -Wextra -Werror -std=c++98 $(INC)
 LDFLAGS =
 SOURCES = srcs/main.cpp srcs/Config/Config.cpp srcs/SocketInterface/SocketInterface.cpp \
@@ -14,7 +14,7 @@ SOURCES = srcs/main.cpp srcs/Config/Config.cpp srcs/SocketInterface/SocketInterf
 			srcs/Config/LocationContext.cpp srcs/Config/ServerContext.cpp \
 			srcs/CoreHandler/StaticFileReader/StaticFileReader.cpp \
 			srcs/CoreHandler/DataProcessor/DataProcessor.cpp \
-			srcs/CoreHandler/Cgi/Cgi.cpp
+			srcs/Cgi/Cgi.cpp
 OBJECTS_DIR = objs
 OBJECTS = $(addprefix $(OBJECTS_DIR)/, $(SOURCES:.cpp=.o))
 

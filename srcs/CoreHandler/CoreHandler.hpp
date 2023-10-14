@@ -1,10 +1,14 @@
 #ifndef COREHANDLER_HPP
 #define COREHANDLER_HPP
 
+#include <string>
+
 #include "ServerContext.hpp"
 #include "RequestParser.hpp"
+#include "StaticFileReader.hpp"
 
-struct ParseUrlResult {
+struct ParseUrlResult
+{
     std::string file;
     std::string directory;
     std::string fullpath;
@@ -14,10 +18,8 @@ struct ParseUrlResult {
     bool isAutoIndex;
 };
 
-#include "Cgi.hpp"
-#include <string>
-
-struct ProcessResult {
+struct ProcessResult
+{
     std::string status;
     std::string message;
     int statusCode;
@@ -26,16 +28,22 @@ struct ProcessResult {
         : status(s), message(m), statusCode(c) {}
 };
 
-
-
-//大脳クラス
+#include "DataProcessor.hpp"
+// 大脳クラス
 class CoreHandler
 {
-    private: 
-        ParseUrlResult parseUrl(std::string url, const ServerContext& server_context);
-    public:
-    	CoreHandler();
-    	~CoreHandler();
+private:
+    ParseUrlResult parseUrl(std::string url);
+    ServerContext _serverContext;
+    std::string getMethod(const std::string &fullpath, const LocationContext &locationContext, bool isAutoIndex);
+    std::string postMethod(std::string body);
+    std::string deleteMethod(const std::string &filename);
+    CoreHandler();
+
+public:
+    CoreHandler(const ServerContext &serverContext);
+    ~CoreHandler();
+    std::string processRequest(HttpRequest httpRequest);
 };
 
 #endif

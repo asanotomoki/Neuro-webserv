@@ -28,7 +28,7 @@ std::vector<std::string> RequestParser::split(const std::string &s, char delimit
 
 bool RequestParser::isCgiDir(std::vector<std::string> tokens)
 {
-    return tokens.size() >= 2 && tokens[0] == "cgi-bin";
+    return tokens.size() >= 2 && tokens[1] == "cgi-bin";
 }
 
 bool RequestParser::isCgiBlockPath(const ServerContext& server_context, std::vector<std::string> tokens)
@@ -51,26 +51,6 @@ bool RequestParser::isCgiBlockPath(const ServerContext& server_context, std::vec
 
 
 
-std::pair<std::string, std::string> parseHostAndPortFromRequest(const std::string &request)
-{
-    std::cout << request << std::endl;
-    std::string hostHeader = "Host: ";
-    size_t start = request.find(hostHeader);
-
-    if (start == std::string::npos) return std::make_pair("", ""); // Host header not found
-    start += hostHeader.length();
-    size_t end = request.find("\r\n\r\n", start);
-    if (end == std::string::npos) std::make_pair("", ""); // Malformed request
-
-    std::string hostPortStr = request.substr(start, end - start);
-    size_t colonPos = hostPortStr.find(':');
-    if (colonPos != std::string::npos) {
-        return std::make_pair(hostPortStr.substr(0, colonPos), hostPortStr.substr(colonPos + 1));
-    } else {
-        return std::make_pair(hostPortStr, ""); // No port specified
-    }
-}
-
 
 HttpRequest RequestParser::parse(const std::string& request) {
     HttpRequest httpRequest;
@@ -78,21 +58,11 @@ HttpRequest RequestParser::parse(const std::string& request) {
     httpRequest.statusCode = 200;
     std::istringstream requestStream(request);
 
-    std::pair<std::string, std::string> hostPort = parseHostAndPortFromRequest(request);
-    if (hostPort.first.empty() || hostPort.second.empty()) {
-        httpRequest.statusCode = 400;
-        return httpRequest;
-    }
-	ServerContext serverContext = _config->getServerContext(hostPort.second, hostPort.first);
-
-    // 改行のみの場合は飛ばす
-    if (requestStream.peek() == '\r') {
-        requestStream.ignore();
-    }
-    // メソッドとURLを解析    
+	ServerContext serverContext = _config->getServerContext("2000", "localhost"); //TODO FIX 動的に取得する
+    // メソッドとURLを解析
     requestStream >> httpRequest.method >> httpRequest.url >> httpRequest.protocol;
-    
-    // 正しくない形式の場合は飛ばす
+
+    // 正しくない形式の場合は400を返す
     if (httpRequest.protocol.empty() || httpRequest.protocol.find("HTTP/") == std::string::npos || httpRequest.url.empty() || httpRequest.method.empty()) {
         httpRequest.statusCode = 400;
         return httpRequest;
@@ -124,13 +94,6 @@ HttpRequest RequestParser::parse(const std::string& request) {
         // Content-Lengthの取得
         if (key == "Content-Length") {
             contentLength = std::stoi(value);
-        }
-
-        
-
-        // Transfer-Encodingが指定されている場合は、ボディを解析しない
-        if (key == "Transfer-Encoding" && value == "chunked") {
-            return httpRequest;
         }
 
     }

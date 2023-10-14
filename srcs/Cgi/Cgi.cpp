@@ -9,11 +9,14 @@ Cgi::Cgi()
 {
 }
 
-Cgi::Cgi(HttpRequest& req, std::string executable, ParseUrlResult &url) : 
-    _request(req), _executable(executable.c_str()), _path(url.fullpath.c_str()){
-    this->_args.push_back(executable);
-    this->_args.push_back(url.fullpath);
-    initEnv(req, url);
+//Cgi::Cgi(HttpRequest& req, ParseUrlResult &url) : 
+Cgi::Cgi(HttpRequest& req) : 
+    _request(req), _executable("/usr/bin/python3"){
+
+    this->_args.push_back("/usr/bin/python3");
+    this->_args.push_back("/Users/tasano/Desktop/42tokyo/new_NuroSrv/docs/cgi-bin/test_cgi.py");
+    initEnv(req);
+    //initEnv(req, url);
 }
 
 CgiResponse Cgi::CgiHandler()
@@ -64,7 +67,7 @@ CgiResponse Cgi::CgiHandler()
         close(pipe_stdin[0]);
         write(pipe_stdin[1], this->_request.body.c_str(), this->_request.body.size());
         close(pipe_stdin[1]);
-        int wstatus = waitpid(pid, &status, WNOHANG);
+        int wstatus = waitpid(pid, &status, 0);
         if (wstatus != 0)
         { 
             while (int n = read(pipe_fd[0], buf, sizeof(buf))) // データを読み取る
@@ -96,17 +99,17 @@ Cgi::~Cgi()
 }
 
 // env 
-void Cgi::initEnv(HttpRequest& req, ParseUrlResult url) {
+void Cgi::initEnv(HttpRequest& req) {
 	static std::map<std::string, std::string> env;
 	env["REQUEST_METHOD"] = req.method;
-	env["PATH_INFO"] = url.pathInfo;
+	//env["PATH_INFO"] = url.pathInfo;
 	env["CONTENT_LENGTH"] = req.headers["Content-Length"];
 	env["CONTENT_TYPE"] = req.headers["Content-Type"];
     env["GATEWAY_INTERFACE"] = "CGI/1.1";
     env["SERVER_PROTOCOL"] = "HTTP/1.1";
     env["SERVER_SOFTWARE"] = "webserv";
-    env["SCRIPT_NAME"] = url.fullpath;
-    env["QUERY_STRING"] = url.query;
+    //env["SCRIPT_NAME"] = url.fullpath;
+    //env["QUERY_STRING"] = url.query;
 	this->_env = env;
 }
 

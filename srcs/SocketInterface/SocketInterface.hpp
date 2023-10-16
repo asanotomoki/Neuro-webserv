@@ -30,7 +30,6 @@ enum State
 struct RequestBuffer
 {
     std::string request;
-    int fd;
     int cgiFd; // CGIの場合のみ使用 (CGIの結果を返すため)
     pollfd* clientPollFd; // CGIの場合のみ使用 (CGIの結果を返すため)
     State state;
@@ -54,8 +53,10 @@ private:
     Config *_config;
     std::vector<int> _sockets;
     std::vector<struct pollfd> _pollFds;
+    std::vector<struct pollfd> _addPollFds;
     int _numPorts;
     int _numClients;
+     
     // buffer
     std::vector<RequestBuffer> _clients;
 
@@ -70,7 +71,7 @@ private:
     void execCgi(pollfd &pollfd, RequestBuffer &client);
     void execReadCgi(pollfd &pollFd, RequestBuffer &client);
     void execWriteCgi(pollfd pollFd, RequestBuffer &client);
-    pollfd createPollFd(int fd);
+    pollfd createClient(int fd, State state);
 };
 
 #endif

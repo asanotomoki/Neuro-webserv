@@ -78,20 +78,22 @@ void SocketInterface::ReadRequest(int fd, RequestBuffer &client)
 	{
 		std::cerr << "read() failed" << std::endl;
 	}
-
-	buf[ret] = '\0';
+	else if (ret == 0)
+	{
+		return;
+	}
+	buf[ret - 1] = '\0';
 	std::string request(buf);
 	if (client.request.empty() && request == "\r\n")
 	{
-		return ;
+		return;
 	}
 	client.request += buf;
-	
+
 	if (client.request.find("\r\n\r\n") != std::string::npos)
 	{
 		client.isRequestFinished = true;
 	}
-
 }
 
 HttpRequest SocketInterface::parseRequest(std::string request)
@@ -106,6 +108,106 @@ HttpRequest SocketInterface::parseRequest(std::string request)
 	return parser.parse(request);
 }
 
+void SocketInterface::execReadRequest(pollfd &pollfd, RequestBuffer &client)
+{
+	ReadRequest(pollfd.fd, client);
+	if (client.isRequestFinished)
+	{
+		// Requestの解析
+		RequestParser parser(_config);
+		client.httpRequest = parser.parse(client.request);
+		std::cout << client.httpRequest.protocol << " : " << client.httpRequest.statusCode << std::endl;
+		if (client.httpRequest.isCgi)
+		{
+			client.state = EXEC_CGI;
+		}
+		else
+		{
+			std::cout << "execCoreHandler" << std::endl;
+			client.state = WRITE_RESPONSE;
+		}
+		client.isRequestFinished = false;
+		client.request = "";
+		pollfd.events = POLLOUT;
+	}
+}
+
+void SocketInterface::execCoreHandler(pollfd &pollFd, RequestBuffer &client)
+{
+	std::cout << "POLLOUT" << std::endl;
+	CoreHandler coreHandler(_config->getServerContext("2000", "localhost"));
+	std::string response = coreHandler.processRequest(client.httpRequest);
+	std::cout << response << std::endl;
+	sendResponse(pollFd.fd, response);
+	pollFd.events = POLLIN;
+	client.state = READ_REQUEST;
+}
+
+void SocketInterface::execCgi(pollfd &pollFd, RequestBuffer &client) // clientのfd
+{
+	// clientはユーザー側 Cgiは今後pipeのfdでeventLoopを回す
+	std::cout << "POLLOUT CGI" << std::endl;
+	Cgi Cgi(client.httpRequest);
+	int fd = Cgi.execCGI(); // cgiのpipeのfd
+	pollfd cgiPollFd = createPollFd(fd);
+	_pollFds.push_back(cgiPollFd);
+	_numClients++;
+	RequestBuffer cgiClient;
+	cgiClient.state = READ_CGI;
+	cgiClient.clientPollFd = &pollFd;
+	_clients.at(fd) = cgiClient;
+	// cgiが終わったらresponseに書き込まれるので、終わり次第レスポンスとして送信する
+	pollFd.events = POLLOUT;
+	client.state = WAIT_CGI;
+}
+
+void SocketInterface::execReadCgi(pollfd &pollFd, RequestBuffer &client) // cgiのfd
+{
+	std::cout << "READ_CGI" << std::endl;
+	char buf[1024];
+
+	int ret = read(pollFd.fd, buf, sizeof(buf) - 1);
+	if (ret < 0)
+	{
+		std::cerr << "read() failed" << std::endl;
+	}
+	else if (ret == 0)
+	{
+		// cgiが終了したら
+		// cgiのfdをcloseする
+		// eventLoopからpollFdを削除する
+		//close(pollFd.fd); // Close the pipe
+		pollFd.events = 0;
+		client.state = WRITE_RESPONSE;
+
+		// Remove from _pollFds
+		//for (size_t i = 0; i < _pollFds.size(); ++i)
+		//{
+		//	if (_pollFds[i].fd == pollFd.fd)
+		//	{
+		//		_pollFds.erase(_pollFds.begin() + i);
+		//		break;
+		//	}
+		//}
+		//for (size_t i = 0; i < _clients.size(); ++i)
+		//{
+		//	if (_clients[i].fd == client.fd)
+		//	{
+		//		_clients.erase(_clients.begin() + i);
+		//		break;
+		//	}
+		//}
+		//_numClients--;
+		return;
+	}
+	buf[ret] = '\0';
+	std::string response(buf);
+	// 接続されているクライアントにレスポンスを送信する
+	_clients.at(client.clientPollFd->fd).response += response;
+	// 接続の方を読み取れるようにステータスを変更する
+	_clients.at(client.clientPollFd->fd).state = WRITE_CGI;
+	std::cout << "response : " << response << std::endl;
+}
 
 void SocketInterface::eventLoop()
 {
@@ -121,57 +223,47 @@ void SocketInterface::eventLoop()
 		{
 			if (_pollFds[i].revents & POLLIN)
 			{
-				//std::cout << "POLLIN" << std::endl;
-				if (i < _numPorts) // Listening sockets
-				{
+				if (i < _numPorts)
+				{ // Listening sockets
 					acceptConnection(_pollFds[i].fd);
 				}
-				else // Client sockets
+				else
 				{
-					//std::cout << "Client socket" << std::endl;
-					ReadRequest(_pollFds[i].fd, _clients[_pollFds[i].fd]);
-					if (_clients[_pollFds[i].fd].isRequestFinished)
+					State state = _clients[_pollFds[i].fd].state;
+
+					if (state == READ_REQUEST) // Client sockets
 					{
-						// Requestの解析
-						RequestParser parser(_config);
-						_clients[_pollFds[i].fd].httpRequest = parser.parse(_clients[_pollFds[i].fd].request);
-						std::cout << _clients[_pollFds[i].fd].httpRequest.protocol << " : " << _clients[_pollFds[i].fd].httpRequest.statusCode << std::endl;
-						if (_clients[_pollFds[i].fd].httpRequest.isCgi)
-						{
-							std::cout << "set cgi" << std::endl;
-							_clients[_pollFds[i].fd].state = WITE_TO_CGI;
-						} else {
-							_clients[_pollFds[i].fd].state = WRITE_RESPONSE;
-						}
-						_clients[_pollFds[i].fd].isRequestFinished = false;
-						_clients[_pollFds[i].fd].request = "";
-						_pollFds[i].events = POLLOUT;
+						execReadRequest(_pollFds[i], _clients[_pollFds[i].fd]);
+					}
+					else if (state == READ_CGI)
+					{
+						// CGIの結果を受け取る
+						execReadCgi(_pollFds[i], _clients[_pollFds[i].fd]);
 					}
 				}
 			}
-			else if (_pollFds[i].revents & POLLOUT && _clients[_pollFds[i].fd].state == WRITE_RESPONSE)
+			else if (_pollFds[i].revents & POLLOUT)
 			{
-				std::cout << "POLLOUT" << std::endl;
-				CoreHandler coreHandler(_config->getServerContext("2000", "localhost"));
-				std::string response = coreHandler.processRequest(_clients[_pollFds[i].fd].httpRequest);
-				std::cout << response << std::endl;
-				sendResponse(_pollFds[i].fd, response);
-				_pollFds[i].events = POLLIN;
-				_clients[_pollFds[i].fd].state = READ_REQUEST;
-				_clients[_pollFds[i].fd].isRequestFinished = false;
-				_clients[_pollFds[i].fd].request = "";
-			}
-
-			else if (_pollFds[i].revents & POLLOUT &&  _clients[_pollFds[i].fd].state == WITE_TO_CGI)//CGIの実行
-			{
-				// CGIは実行と結果の受け取りは別で行う
-				std::cout << "POLLOUT CGI" << std::endl;
-				Cgi Cgi(_clients[_pollFds[i].fd].httpRequest);
-				CgiResponse response = Cgi.CgiHandler();
-				_pollFds[i].events = POLLIN;
-				_clients[_pollFds[i].fd].state = READ_CGI;
-				_clients[_pollFds[i].fd].isRequestFinished = false;
-				_clients[_pollFds[i].fd].request = "";
+				State state = _clients[_pollFds[i].fd].state;
+				if (state == WRITE_RESPONSE)
+				{
+					execCoreHandler(_pollFds[i], _clients[_pollFds[i].fd]);
+				}
+				else if (state == EXEC_CGI)
+				{
+					execCgi(_pollFds[i], _clients[_pollFds[i].fd]);
+				}
+				else if (state == WRITE_CGI)
+				{
+					// CGIの結果をクライアントに送信する
+					std::cout << "WRITE_CGI" << std::endl;
+					std::cout << _clients[_pollFds[i].fd].response << std::endl;
+					std::cout << _clients[_pollFds[i].fd].fd << std::endl;
+					sendResponse(_pollFds[i].fd, _clients[_pollFds[i].fd].response);
+					_clients[_pollFds[i].fd].state = WAIT_CGI;
+					_clients[_pollFds[i].fd].response = "";
+					_pollFds[i].events = POLLIN;
+				}
 			}
 			else if (_pollFds[i].revents & POLLHUP)
 			{
@@ -194,10 +286,25 @@ void SocketInterface::sendResponse(int fd, std::string response)
 	}
 }
 
+pollfd SocketInterface::createPollFd(int fd)
+{
+	pollfd pollFd;
+	pollFd.fd = fd;
+	pollFd.events |= POLLIN;
+	return pollFd;
+}
+
+RequestBuffer SocketInterface::createRequestBuffer()
+{
+	RequestBuffer requestBuffer;
+	requestBuffer.state = READ_REQUEST;
+	requestBuffer.isRequestFinished = false;
+	requestBuffer.request = "";
+	return requestBuffer;
+}
+
 void SocketInterface::acceptConnection(int fd)
 {
-
-	
 	int clientFd = accept(fd, NULL, NULL);
 	if (clientFd < 0)
 	{
@@ -210,7 +317,6 @@ void SocketInterface::acceptConnection(int fd)
 	new_pollFd.fd = clientFd;
 	new_pollFd.events |= POLLIN;
 	_pollFds.push_back(new_pollFd);
-	
 
 	RequestBuffer client;
 	client.state = READ_REQUEST;

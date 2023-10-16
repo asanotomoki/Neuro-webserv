@@ -13,8 +13,7 @@
 // message: CGIの実行結果
 // statusCode: CGIの実行結果のステータスコード
 struct CgiResponse {
-	std::string message;
-	int status;
+	int id;
 };
 //CGIクラス
 class Cgi
@@ -37,7 +36,7 @@ class Cgi
 		Cgi(HttpRequest &request);
     	~Cgi();
 		
-		CgiResponse CgiHandler();
+		int execCGI();
 		
 		// env
 		const std::map<std::string, std::string>& getEnv() const;

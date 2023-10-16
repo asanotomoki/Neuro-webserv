@@ -3,7 +3,7 @@ CC = g++
 INC	= -I ./srcs/Config/ -I ./srcs/SocketInterface/ -I ./srcs/CoreHandler/ \
 		-I ./srcs/SocketInterface/RequestParser/ -I ./srcs/CoreHandler/StaticFileReader/ \
 		-I ./srcs/CoreHandler/DataProcessor -I ./srcs/Cgi/
-CFLAGS = -Wall -Wextra -Werror -std=c++98 $(INC)
+CFLAGS = -Wall -Wextra -Werror -g -fsanitize=address -std=c++98 $(INC)
 LDFLAGS =
 SOURCES = srcs/main.cpp srcs/Config/Config.cpp srcs/SocketInterface/SocketInterface.cpp \
 			srcs/SocketInterface/RequestParser/RequestParser.cpp \
@@ -24,7 +24,7 @@ test:
 	$(CC) $(TEST_CFLAGS) $(SOURCES) -o $(NAME)
 
 $(NAME): $(OBJECTS)
-	$(CC) $(LDFLAGS) $^ -o $@
+	$(CC) $(CFLAGS) $^ -o $@
 
 $(OBJECTS_DIR)/%.o: %.cpp
 	@mkdir -p $(dir $@)

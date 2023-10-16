@@ -1,9 +1,8 @@
-#include "Cgi.hpp"
-#include <cstring> // for std::strcpy
 #include <string>
 #include <vector>
 #include <map>
 #include <sys/socket.h>
+#include "Cgi.hpp"
 
 Cgi::Cgi()
 {
@@ -19,14 +18,11 @@ Cgi::Cgi(HttpRequest& req) :
     //initEnv(req, url);
 }
 
-CgiResponse Cgi::CgiHandler()
+int Cgi::execCGI()
 {
     int pipe_fd[2];
     int pipe_stdin[2];
     pid_t pid;
-    char buf[1024];
-    int status;
-    CgiResponse cgi_response;
     if (pipe(pipe_fd) < 0)
     {
         std::cerr << "pipe error" << std::endl;
@@ -57,8 +53,8 @@ CgiResponse Cgi::CgiHandler()
         execve(this->_executable, args, env);
         delete [] env;
         delete [] args;
-        cgi_response.status = 500;
-        cgi_response.message = "Internal Server Error";
+        std::cerr << "execve error" << std::endl;
+        std::cout << "Status: 500 Internal Server Error" << std::endl;
         std::exit(1);
     }
     else
@@ -67,31 +63,9 @@ CgiResponse Cgi::CgiHandler()
         close(pipe_stdin[0]);
         write(pipe_stdin[1], this->_request.body.c_str(), this->_request.body.size());
         close(pipe_stdin[1]);
-        int wstatus = waitpid(pid, &status, 0);
-        if (wstatus != 0)
-        { 
-            while (int n = read(pipe_fd[0], buf, sizeof(buf))) // データを読み取る
-            {
-                if(n > 0)
-                {
-                    cgi_response.message.append(buf, n);
-                }
-            }
-            close(pipe_fd[0]);
-        }
+        waitpid(pid, NULL, WNOHANG);
     }
-    status = WEXITSTATUS(status);
-    if (status != 0)
-    {
-        cgi_response.status = 500;
-        cgi_response.message = "Internal Server Error";
-    }
-    else
-    {
-        cgi_response.status = 200;
-    }
-
-    return cgi_response;
+    return pipe_fd[0];
 }
 
 Cgi::~Cgi()

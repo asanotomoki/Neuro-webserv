@@ -3,6 +3,7 @@
 
 #include "Config.hpp"
 #include <vector>
+#include <map>
 #include <string>
 #include <sys/poll.h>
 #include <sys/socket.h>
@@ -30,13 +31,13 @@ enum State
 struct RequestBuffer
 {
     std::string request;
-    int cgiFd; // CGIの場合のみ使用 (CGIの結果を返すため)
     pollfd* clientPollFd; // CGIの場合のみ使用 (CGIの結果を返すため)
     State state;
     bool isRequestFinished;
     HttpRequest httpRequest;
     ServerContext serverContext;
     std::string response;
+    int cgiInputFd;
 };
 
 // 脊髄クラス
@@ -54,16 +55,17 @@ private:
     std::vector<int> _sockets;
     std::vector<struct pollfd> _pollFds;
     std::vector<struct pollfd> _addPollFds;
+    std::vector<int> _delIndex;
     int _numPorts;
     int _numClients;
      
     // buffer
-    std::vector<RequestBuffer> _clients;
+    std::map<int, RequestBuffer> _clients;
 
     void createSockets(const std::vector<std::string> &ports);
     void setupPoll();
     HttpRequest parseRequest(std::string request);
-    void sendResponse(int fd, std::string response);
+    int sendResponse(int fd, std::string response);
     void ReadRequest(int fd, RequestBuffer &client);
     RequestBuffer createRequestBuffer();
     void execReadRequest(pollfd &pollfd, RequestBuffer &client);

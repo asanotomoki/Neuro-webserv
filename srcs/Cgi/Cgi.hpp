@@ -12,9 +12,7 @@
 // status: OK or NG
 // message: CGIの実行結果
 // statusCode: CGIの実行結果のステータスコード
-struct CgiResponse {
-	int id;
-};
+
 //CGIクラス
 class Cgi
 {

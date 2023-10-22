@@ -12,7 +12,7 @@ class StaticFileReader {
 public:
     StaticFileReader();
     std::string readFile(std::string filename, LocationContext locationContext,
-                        const ServerContext &serverContext, bool isAutoIndex);
+                        const ServerContext &serverContext);
     std::string readErrorFile(const LocationContext& locationContext, int statusCode);
     ~StaticFileReader();
 };

@@ -13,7 +13,7 @@ Cgi::Cgi(HttpRequest& req) :
     _request(req), _executable("/usr/bin/python3"){
 
     this->_args.push_back("/usr/bin/python3");
-    this->_args.push_back("/Users/tasano/Desktop/42tokyo/new_NuroSrv/docs/cgi-bin/test_cgi.py");
+    this->_args.push_back("./docs/cgi-bin/test_cgi.py");
     initEnv(req);
     //initEnv(req, url);
 }

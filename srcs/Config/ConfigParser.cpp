@@ -197,6 +197,7 @@ const ServerContext ConfigParser::setServerContext()
 		else if (_directiveType == LOCATION) {
 			LocationContext locationContext = setLocationContext();
 			serverContext.addLocationContext(locationContext);
+			serverContext.addPathPair(locationContext._pathPair);
 		}
 		else if (_directiveType == CGI) {
 			CGIContext cgiContext = setCGIContext();
@@ -253,6 +254,9 @@ const LocationContext ConfigParser::setLocationContext()
 	if (!locationContext.hasDirective("alias") && !locationContext.hasDirective("return")) {
 		throw ConfigError(NEED_ALIAS, "location", _filepath, _lineNumber + 1);
 	}
+	// _pathPairにpathとaliasのペアを保存
+	if (locationContext.hasDirective("alias"))
+		locationContext.setPathPair(locationContext.getDirective("alias"), locationContext.getDirective("path"));
 	return locationContext;
 }
 

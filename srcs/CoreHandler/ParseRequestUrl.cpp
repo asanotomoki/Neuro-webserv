@@ -203,7 +203,7 @@ ParseUrlResult CoreHandler::parseUrl(std::string url)
 	location_context = _serverContext.getLocationContext(result.directory);
 	std::string alias = location_context.getDirective("alias");
 	result.file = getFile(path_tokens, location_context);
-	result.isAutoIndex = getIsAutoIndex(location_context, path_tokens[path_tokens.size() - 1]);
+	// result.isAutoIndex = getIsAutoIndex(location_context, path_tokens[path_tokens.size() - 1]);
 
 
 	// fullpathの最後のスラッシュを削除

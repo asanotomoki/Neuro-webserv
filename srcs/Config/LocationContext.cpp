@@ -75,3 +75,8 @@ bool LocationContext::hasDirective(const std::string& directive)
 {
 	return _directives.find(directive) != _directives.end();
 }
+
+void LocationContext::setPathPair(const std::string& alias, const std::string& path)
+{
+	_pathPair = std::make_pair(alias, path);
+}

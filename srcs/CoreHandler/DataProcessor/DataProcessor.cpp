@@ -1,5 +1,9 @@
 #include "DataProcessor.hpp"
 #include <fstream>
+#include <iostream>
+#include <string>
+#include <vector>
+#include <dirent.h>
 
 ProcessResult DataProcessor::processPostData(const std::string& postData) {
     // ファイルデータの部分を解析
@@ -27,4 +31,41 @@ ProcessResult DataProcessor::processPostData(const std::string& postData) {
 
     ProcessResult result = ProcessResult("success", "File uploaded successfully.", 200);
     return result;
+}
+
+std::string DataProcessor::getAutoIndexHtml(std::string path, const ServerContext& serverContext) {
+
+    std::string html;
+    html += "<html><body><h1>Index of " + path + "</h1><ul>";
+
+    DIR* dir = opendir(path.c_str());
+    if (dir) {
+        struct dirent* entry;
+        while ((entry = readdir(dir)) != NULL) {
+            std::string name(entry->d_name);
+            if (entry->d_type == DT_DIR) {
+                name += "/";
+            }
+            // nameが"."で始まる場合は表示しない
+            if (name[0] == '.') {
+                continue;
+            }
+            std::cout << "path1: " << path << std::endl;
+            // pathが"./docs/"の場合はnameを追加
+            std::string tempPath = path;
+            if (path == "./docs/")
+                path += name;
+            std::cout << "path2: " << path << std::endl;
+            std::string clientPath = serverContext.getClientPath(path);
+            html += "<li><a href=\"" + clientPath + "\">" + name + "</a></li>";
+            if (path != tempPath) {
+                // pathからnameを削除
+                path = tempPath;
+            }
+                
+        }
+        closedir(dir);
+    }
+    html += "</ul></body></html>";
+    return html;
 }

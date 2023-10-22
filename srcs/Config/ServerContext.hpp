@@ -38,6 +38,10 @@ class ServerContext
         const LocationContext& get501LocationContext() const; 
         std::string getReturnPath(const std::string& path) const;
         void verifyReturnLocations();
+        void addPathPair(const std::pair<std::string, std::string>& path_pair);
+        const std::string& getClientPath(const std::string& path) const;
+        // クライアントのパスとサーバーのパスのマップ
+        std::map<std::string, std::string> _pathMap;
 
     private:
         std::string _listen;
@@ -57,6 +61,8 @@ class ServerContext
         LocationContext _501LocationContext;
         // returnディレクティブの値を保持
         std::map<std::string, std::string> _returnLocations;
+        // // クライアントのパスとサーバーのパスのマップ
+        // std::map<std::string, std::string> _pathMap;
 
         // default values
         static const std::string DEFAULT_LISTEN;

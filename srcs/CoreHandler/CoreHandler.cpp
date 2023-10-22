@@ -48,14 +48,12 @@ std::string errorResponse(int statusCode, std::string message, const LocationCon
 	return response;
 }
 
-std::string CoreHandler::getMethod(const std::string &fullpath, const LocationContext &locationContext,
-					  bool isAutoIndex)
+std::string CoreHandler::getMethod(const std::string &fullpath, const LocationContext &locationContext)
 {
 	// 静的ファイルを提供する場合
 	StaticFileReader fileReader;
 
-	std::string fileContent = fileReader.readFile(fullpath, locationContext,
-												  _serverContext, isAutoIndex);
+	std::string fileContent = fileReader.readFile(fullpath, locationContext, _serverContext);
 	std::string response = successResponse(fileContent, "text/html");
 	return response;
 }
@@ -112,7 +110,7 @@ std::string CoreHandler::processRequest(HttpRequest httpRequest)
 			locationContext = _serverContext.get405LocationContext();
 			return errorResponse(405, "Method Not Allowed", locationContext);
 		}
-		return getMethod(parseUrlResult.fullpath, locationContext, parseUrlResult.isAutoIndex);
+		return getMethod(parseUrlResult.fullpath, locationContext);
 	}
 	else if (httpRequest.method == "POST")
 	{

@@ -35,7 +35,7 @@ class CoreHandler
 private:
     ParseUrlResult parseUrl(std::string url);
     ServerContext _serverContext;
-    std::string getMethod(const std::string &fullpath, const LocationContext &locationContext, bool isAutoIndex);
+    std::string getMethod(const std::string &fullpath, const LocationContext &locationContext);
     std::string postMethod(std::string body);
     std::string deleteMethod(const std::string &filename);
     CoreHandler();

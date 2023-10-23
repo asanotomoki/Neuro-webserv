@@ -196,7 +196,7 @@ std::string parseCgiResponse(std::string response)
 	if (header.find("Content-Length") == std::string::npos)
 	{
 		
-		std::string contentLength = "Content-Length: " + std::to_string(body.size() - 2) + "\r\n";
+		std::string contentLength = "Content-Length: " + std::to_string(body.size() - 1) + "\r\n";
 		header += "\r\n" + contentLength;
 	}
 	return header + "\r\n" + body;

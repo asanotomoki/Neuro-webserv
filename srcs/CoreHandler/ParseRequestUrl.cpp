@@ -205,7 +205,6 @@ ParseUrlResult CoreHandler::parseUrl(std::string url)
 	result.file = getFile(path_tokens, location_context);
 	result.isAutoIndex = getIsAutoIndex(location_context, path_tokens[path_tokens.size() - 1]);
 
-
 	// fullpathの最後のスラッシュを削除
 	result.fullpath = alias;
 

@@ -49,9 +49,6 @@ bool RequestParser::isCgiBlockPath(const ServerContext& server_context, std::vec
 	return false;
 }
 
-
-
-
 HttpRequest RequestParser::parse(const std::string& request) {
     HttpRequest httpRequest;
     httpRequest.isCgi = false;
@@ -95,7 +92,6 @@ HttpRequest RequestParser::parse(const std::string& request) {
         if (key == "Content-Length") {
             contentLength = std::stoi(value);
         }
-
     }
     // Method /path HTTP/1.1以外の場合はisRequestFinishedをfalseにする
     if (httpRequest.method == "" &&  httpRequest.url == "") {

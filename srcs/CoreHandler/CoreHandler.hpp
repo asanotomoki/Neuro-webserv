@@ -15,7 +15,7 @@ struct ParseUrlResult
     std::string query;
     std::string pathInfo;
     int statusCode;
-    bool isAutoIndex;
+    std::string message;
 };
 
 struct ProcessResult
@@ -38,6 +38,8 @@ private:
     std::string getMethod(const std::string &fullpath, const LocationContext &locationContext);
     std::string postMethod(std::string body);
     std::string deleteMethod(const std::string &filename);
+    std::string getFile(std::vector<std::string> tokens, LocationContext &locationContext, ParseUrlResult &result);
+    LocationContext determineLocationContext(ParseUrlResult &result);
     CoreHandler();
 
 public:

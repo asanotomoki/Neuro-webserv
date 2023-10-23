@@ -33,6 +33,24 @@ ProcessResult DataProcessor::processPostData(const std::string& postData) {
     return result;
 }
 
+bool isDirectory(std::string path) {
+    DIR* dir = opendir(path.c_str());
+    if (dir) {
+        closedir(dir);
+        return true;
+    }
+    return false;
+}
+
+// bool isFile(std::string path) {
+//     std::ifstream file(path);
+//     if (file) {
+//         file.close();
+//         return true;
+//     }
+//     return false;
+// }
+
 std::string DataProcessor::getAutoIndexHtml(std::string path, const ServerContext& serverContext) {
 
     std::string html;
@@ -50,19 +68,25 @@ std::string DataProcessor::getAutoIndexHtml(std::string path, const ServerContex
             if (name[0] == '.') {
                 continue;
             }
-            std::cout << "path1: " << path << std::endl;
+            std::cout << "name: " << name << std::endl;
+            // std::cout << "path1: " << path << std::endl;
             // pathが"./docs/"の場合はnameを追加
             std::string tempPath = path;
-            if (path == "./docs/")
+            std::string clientPath;
+            if (path == "./docs/") {
                 path += name;
-            std::cout << "path2: " << path << std::endl;
-            std::string clientPath = serverContext.getClientPath(path);
+                clientPath = serverContext.getClientPath(path);
+            } else {
+                clientPath = serverContext.getClientPath(path);
+                clientPath += name;
+            }
+            std::cout << "clientPath: " << clientPath << std::endl;
             html += "<li><a href=\"" + clientPath + "\">" + name + "</a></li>";
             if (path != tempPath) {
                 // pathからnameを削除
                 path = tempPath;
             }
-                
+            std::cout << "-----------------------" << std::endl;
         }
         closedir(dir);
     }

@@ -264,7 +264,6 @@ void ServerContext::addPathPair(const std::pair<std::string, std::string>& path_
 
 const std::string& ServerContext::getClientPath(const std::string& path) const
 {
-	std::cout << "path: " << path << std::endl;
 	// _pathMapからpathに対応するclient_pathを取得する
 	// pathはmapのpairの最初の要素
 	std::map<std::string, std::string>::const_iterator it = _pathMap.find(path);

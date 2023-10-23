@@ -79,6 +79,34 @@ std::string CoreHandler::deleteMethod(const std::string &filename)
 	return "HTTP/1.1 204 No Content\r\n\r\n"; // 成功のレスポンス
 }
 
+LocationContext CoreHandler::determineLocationContext(ParseUrlResult& result)
+{
+	LocationContext locationContext;
+	if (result.statusCode == 403) {
+		locationContext = _serverContext.get403LocationContext();
+		result.message = "Forbidden";
+	}
+	else if (result.statusCode == 404) {
+		locationContext = _serverContext.get404LocationContext();
+		result.message = "Not Found";
+	}
+	else if (result.statusCode == 405) {
+		locationContext = _serverContext.get405LocationContext();
+		result.message = "Method Not Allowed";
+	}
+	else if (result.statusCode == 500) {
+		locationContext = _serverContext.get500LocationContext();
+		result.message = "Internal Server Error";
+	}
+	else if (result.statusCode == 501) {
+		locationContext = _serverContext.get501LocationContext();
+		result.message = "Not Implemented";
+	}
+	else
+		locationContext = _serverContext.getLocationContext(result.directory);
+	return locationContext;
+}
+
 std::string CoreHandler::processRequest(HttpRequest httpRequest)
 {
 	if (httpRequest.url == "/favicon.ico")
@@ -94,11 +122,11 @@ std::string CoreHandler::processRequest(HttpRequest httpRequest)
 	}
 
 	ParseUrlResult parseUrlResult = parseUrl(httpRequest.url);
-
-	LocationContext locationContext = _serverContext.getLocationContext(parseUrlResult.directory);
-
-	// directoryからLocationContextを取得
-	locationContext = _serverContext.getLocationContext(parseUrlResult.directory);
+	LocationContext locationContext = CoreHandler::determineLocationContext(parseUrlResult);
+	if (parseUrlResult.statusCode != 200) {
+		std::cout << "helooooooooooo" << std::endl;
+		return errorResponse(parseUrlResult.statusCode, parseUrlResult.message, locationContext);
+	}
 	// if (parseUrlResult.statusCode >= 300 && parseUrlResult.statusCode < 400) {
 	//     std::string location = "http://" + hostPort.first + ":" + hostPort.second + parseUrlResult.fullpath;
 	//     return redirectResponse(location);

@@ -41,18 +41,20 @@ std::string StaticFileReader::readErrorFile(const LocationContext& locationConte
 std::string StaticFileReader::readFile(std::string fullpath, LocationContext locationContext,
                                         const ServerContext& serverContext) {
     
-    std::cout << "fullpath: " << fullpath << std::endl;
+    std::cout << "readFile:: fullpath: " << fullpath << std::endl;
     // ファイルをバイナリモードで読み込み
     std::ifstream file(fullpath, std::ios::binary);
     if (!file) {
-        if (locationContext.getDirective("autoindex") == "on") {
-            // autoindexがonの場合
-            // ディレクトリの中身を表示する
-            // std::string response = "HTTP/1.1 200 OK\r\n";
-            // response += "Content-Type: text/html; charset=UTF-8\r\n";
-            // response += "\r\n";
-            std::string response = DataProcessor::getAutoIndexHtml(locationContext.getDirective("alias"), serverContext);
-            return response;
+        if (locationContext.hasDirective("autoindex")) {
+            if (locationContext.getDirective("autoindex") == "on") {
+                // autoindexがonの場合
+                // ディレクトリの中身を表示する
+                // std::string response = "HTTP/1.1 200 OK\r\n";
+                // response += "Content-Type: text/html; charset=UTF-8\r\n";
+                // response += "\r\n";
+                std::string response = DataProcessor::getAutoIndexHtml(locationContext.getDirective("alias"), serverContext);
+                return response;
+            }
         }
         locationContext = serverContext.get404LocationContext();
         return readErrorFile(locationContext, 404);

@@ -1,7 +1,9 @@
 #include "CoreHandler.hpp"
+#include "ServerContext.hpp"
 #include <sstream>
 #include <vector>
-#include "ServerContext.hpp"
+#include <iostream>
+#include <dirent.h>
 
 std::vector<std::string> split(const std::string &s, char delimiter) {
     std::vector<std::string> tokens;
@@ -26,6 +28,16 @@ int isFile(std::string path)
 	if (path.find('.') != std::string::npos)
 		return 1;
 	return 0;
+}
+
+int isDirectory_x(std::string path) {
+	std::cout << "isdir path: " << path << std::endl;
+    DIR* dir = opendir(path.c_str());
+    if (dir) {
+        closedir(dir);
+        return 1;
+    }
+    return 0;
 }
 
 bool isCgiBlockPath(const ServerContext& server_context, std::vector<std::string> tokens)
@@ -110,22 +122,28 @@ bool getIsAutoIndex(LocationContext &location_context, std::string path)
 	return res;
 }
 
-std::string getFile(std::vector<std::string> tokens, LocationContext &location_context)
+std::string CoreHandler::getFile(std::vector<std::string> tokens, LocationContext &locationContext,
+								ParseUrlResult &result)
 {
+	std::cout << "reslt.fullpath: " << result.fullpath << std::endl;
 	std::string file;
 	if (isFile(tokens[tokens.size() - 1]))
 	{
 		file = tokens[tokens.size() - 1];
-	} else {
+	} else if (isDirectory_x(result.fullpath)) {
 		try {
-			file = location_context.getDirective("index");
+			file = locationContext.getDirective("index");
+			std::cout << "file: " << file << std::endl;
 		} catch (const std::exception& e) {
 			file = "index.html";
 		}
+	} else {
+		locationContext = _serverContext.get404LocationContext();
+		file = locationContext.getDirective("index");
+		result.statusCode = 404;
 	}
 	return file;
 }
-
 
 ParseUrlResult parseHomeDirectory(std::string url, const ServerContext& server_context)
 {
@@ -147,7 +165,7 @@ ParseUrlResult parseHomeDirectory(std::string url, const ServerContext& server_c
 	// alias.erase(alias.size() - 1, 1);
 	result.fullpath = alias + result.file;
 	// result.fullpath.erase(result.fullpath.size() - 1, 1);
-	result.isAutoIndex = getIsAutoIndex(location_context, url);
+	// result.isAutoIndex = getIsAutoIndex(location_context, url);
 	return result;
 }
 
@@ -173,9 +191,15 @@ ParseUrlResult CoreHandler::parseUrl(std::string url)
 	// cgi-bin
 	std::vector<std::string> path_tokens = split(tokens[0], '/');
 	result.directory = "/" + path_tokens[0] + "/";
+	for (size_t i = 1; i < path_tokens.size(); i++) {
+		if (!isFile(path_tokens[i]))
+			result.directory += path_tokens[i] + "/";
+		else
+			break ;
+	}
+	std::cout << "result.directory1: " << result.directory << std::endl;
 	std::string redirectPath = _serverContext.getReturnPath(result.directory);
-    if (!redirectPath.empty())
-	{
+    if (!redirectPath.empty()) {
 		result.statusCode = 302;
 		result.fullpath = redirectPath;
 		size_t i = 1;
@@ -186,37 +210,32 @@ ParseUrlResult CoreHandler::parseUrl(std::string url)
 		return result;
 	}
 	if (isCgiDir(path_tokens))
-	{
 		return getCgiPath(path_tokens);
-	}
 	if (isCgiBlockPath(_serverContext, path_tokens))
-	{
 		return parseCgiBlock(path_tokens, _serverContext);
-	}
-	if (path_tokens.size() == 1 && isFile(path_tokens[0]))
-	{
+	if (path_tokens.size() == 1 && isFile(path_tokens[0])) {
 		ParseUrlResult res = parseHomeDirectory(url, _serverContext);
 		res.query = result.query;
 		return res;
 	}
-	LocationContext location_context;
-	location_context = _serverContext.getLocationContext(result.directory);
-	std::string alias = location_context.getDirective("alias");
-	result.file = getFile(path_tokens, location_context);
-	// result.isAutoIndex = getIsAutoIndex(location_context, path_tokens[path_tokens.size() - 1]);
-
-
-	// fullpathの最後のスラッシュを削除
+	LocationContext locationContext;
+	std::cout << "result.directory2: " << result.directory << std::endl;
+	locationContext = _serverContext.getLocationContext(result.directory);
+	std::string alias = locationContext.getDirective("alias");
 	result.fullpath = alias;
+	std::cout << "alias: " << alias << std::endl;
+	result.file = getFile(path_tokens, locationContext, result);
+	// result.isAutoIndex = getIsAutoIndex(location_context, path_tokens[path_tokens.size() - 1]);
+	std::cout << "HAHAHA: " << result.fullpath << std::endl;
 
-	
 	result.fullpath.erase(result.fullpath.size() - 1, 1);
-
-	size_t path_size = path_tokens.size() - isFile(path_tokens[path_tokens.size() - 1]);
-	for (size_t i = 1; i < path_size; i++)
-	{
-		result.fullpath += "/" + path_tokens[i];
-	}
-	result.fullpath +=  "/" + result.file;
+	// size_t path_size = path_tokens.size() - isFile(path_tokens[path_tokens.size() - 1]);
+	// for (size_t i = 1; i < path_size; i++)
+	// {
+	// 	result.fullpath += "/" + path_tokens[i];
+	// }
+	result.fullpath += "/" + result.file;
+	std::cout << "HIHIHI: " << result.fullpath << std::endl;
+	std::cout << "ステータスコード: " << result.statusCode << std::endl;
 	return result;
 }

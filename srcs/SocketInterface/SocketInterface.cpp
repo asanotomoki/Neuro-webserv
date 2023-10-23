@@ -157,12 +157,18 @@ void SocketInterface::execReadRequest(pollfd &pollfd, RequestBuffer &client)
 
 void SocketInterface::execCoreHandler(pollfd &pollFd, RequestBuffer &client)
 {
-	
 	CoreHandler coreHandler(_config->getServerContext("2000", "localhost"));
 	std::string response = coreHandler.processRequest(client.httpRequest);
-	sendResponse(pollFd.fd, response);
-	pollFd.events = POLLIN;
-	client.state = READ_REQUEST;
+	if (sendResponse(pollFd.fd, response) >= 0)
+	{
+		pollFd.events = POLLIN;
+		client.state = READ_REQUEST;
+	}
+	else
+	{
+		pollFd.events = POLLOUT;
+		client.state = WRITE_RESPONSE;
+	}
 }
 
 void SocketInterface::execCgi(pollfd &pollFd, RequestBuffer &client) // clientのfd
@@ -180,11 +186,16 @@ void SocketInterface::execCgi(pollfd &pollFd, RequestBuffer &client) // client�
 	client.state = WAIT_CGI;
 }
 
-void SocketInterface::execWriteError(pollfd &pollFd)
+void SocketInterface::execWriteError(pollfd &pollFd, int index)
 {
 	std::string response = "HTTP/1.1 400 Bad Request\nContent-Type: text/html\r\n\r\n";
-	sendResponse(pollFd.fd, response);
-	pollFd.events = POLLIN;
+	if (sendResponse(pollFd.fd, response) >= 0)
+	{
+		pollFd.events = POLLIN;
+		pushDelPollFd(pollFd.fd, index);
+	} else {
+		pollFd.events = POLLOUT;
+	}
 }
 
 std::string parseCgiResponse(std::string response)
@@ -195,7 +206,7 @@ std::string parseCgiResponse(std::string response)
 	std::string body = response.substr(response.find("\r\n\r\n") + 4);
 	if (header.find("Content-Length") == std::string::npos)
 	{
-		
+
 		std::string contentLength = "Content-Length: " + std::to_string(body.size() - 1) + "\r\n";
 		header += "\r\n" + contentLength;
 	}
@@ -238,7 +249,7 @@ void SocketInterface::execReadCgi(pollfd &pollFd, RequestBuffer &client) // cgi�
 void SocketInterface::execWriteCgi(pollfd &pollFd, RequestBuffer &client) // clientのfd
 {
 	// レスポンスを送信する
-	if (sendResponse(pollFd.fd, client.response) > 0)
+	if (sendResponse(pollFd.fd, client.response) >= 0)
 	{
 		if (close(_clients[pollFd.fd].cgiFd) < 0)
 		{
@@ -282,7 +293,7 @@ void SocketInterface::deleteClient()
 						break;
 					}
 				}
-			} 
+			}
 			pushDelPollFd(_pollFds[i].fd, i);
 		}
 	}
@@ -337,8 +348,7 @@ void SocketInterface::eventLoop()
 				}
 				else if (state == WRITE_REQUEST_ERROR)
 				{
-					execWriteError(_pollFds[i]);
-					pushDelPollFd(_pollFds[i].fd, i);
+					execWriteError(_pollFds[i], i);
 				}
 			}
 			else if (_pollFds[i].revents & POLLIN)
@@ -354,7 +364,7 @@ void SocketInterface::eventLoop()
 					{
 						execReadRequest(_pollFds[i], _clients[_pollFds[i].fd]);
 					}
-					else if (state == READ_CGI)// CGIの結果を受け取る
+					else if (state == READ_CGI) // CGIの結果を受け取る
 					{
 						execReadCgi(_pollFds[i], _clients[_pollFds[i].fd]);
 					}
@@ -374,7 +384,8 @@ void SocketInterface::eventLoop()
 
 int SocketInterface::sendResponse(int fd, std::string response)
 {
-	std::cout  << "sendResponse"<< std::endl << response << std::endl;
+	std::cout << "sendResponse" << std::endl
+			  << response << std::endl;
 	int ret = write(fd, response.c_str(), response.size());
 	if (ret < 0)
 	{

@@ -77,7 +77,7 @@ private:
     void execCgi(pollfd &pollfd, RequestBuffer &client);
     void execReadCgi(pollfd &pollFd, RequestBuffer &client);
     void execWriteCgi(pollfd &pollFd, RequestBuffer &client);
-    void execWriteError(pollfd &pollFd);
+    void execWriteError(pollfd &pollFd, int index);
     pollfd createClient(int fd, State state);
 };
 

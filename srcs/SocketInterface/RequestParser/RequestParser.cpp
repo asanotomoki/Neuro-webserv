@@ -70,7 +70,7 @@ HttpRequest RequestParser::parse(const std::string& request) {
     }
     // ヘッダーを解析
     std::string headerLine;
-    int contentLength = 0; // Content-Lengthを保存する変数
+    int contentLength = -1; // Content-Lengthを保存する変数
     bool isCR = false;
     while (std::getline(requestStream, headerLine)) {
         // ヘッダーの終了判定
@@ -96,10 +96,10 @@ HttpRequest RequestParser::parse(const std::string& request) {
         if (key == "Content-Length") {
             contentLength = std::stoi(value);
         }
-
     }
-    // Method /path HTTP/1.1以外の場合はisRequestFinishedをfalseにする
-    if (httpRequest.method == "" &&  httpRequest.url == "") {
+    if (httpRequest.method == "POST" && contentLength == -1) {
+        std::cout << "411 Length Required" << std::endl;
+        httpRequest.statusCode = 411;
         return httpRequest;
     }
     // ボディを解析 (Content-Lengthが指定されていれば)

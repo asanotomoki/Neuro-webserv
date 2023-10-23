@@ -187,6 +187,21 @@ void SocketInterface::execWriteError(pollfd &pollFd)
 	pollFd.events = POLLIN;
 }
 
+std::string parseCgiResponse(std::string response)
+{
+	// cgiのresponseにはContent-Lengthがない場合がある
+	// その場合はContent-Lengthを追加する
+	std::string header = response.substr(0, response.find("\r\n\r\n"));
+	std::string body = response.substr(response.find("\r\n\r\n") + 4);
+	if (header.find("Content-Length") == std::string::npos)
+	{
+		
+		std::string contentLength = "Content-Length: " + std::to_string(body.size() - 2) + "\r\n";
+		header += "\r\n" + contentLength;
+	}
+	return header + "\r\n" + body;
+}
+
 void SocketInterface::execReadCgi(pollfd &pollFd, RequestBuffer &client) // cgiのfd
 {
 	char buf[1024];
@@ -216,7 +231,7 @@ void SocketInterface::execReadCgi(pollfd &pollFd, RequestBuffer &client) // cgi�
 			// レスポンスを送信したら、クライアントの方を読み取れるようにステータスを変更する
 			_clients.at(client.clientFd).state = WRITE_CGI;
 		}
-		_clients.at(client.clientFd).response += response;
+		_clients.at(client.clientFd).response += parseCgiResponse(response);
 	}
 }
 
@@ -359,6 +374,7 @@ void SocketInterface::eventLoop()
 
 int SocketInterface::sendResponse(int fd, std::string response)
 {
+	std::cout  << "sendResponse"<< std::endl << response << std::endl;
 	int ret = write(fd, response.c_str(), response.size());
 	if (ret < 0)
 	{

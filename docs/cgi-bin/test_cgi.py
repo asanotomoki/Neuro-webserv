@@ -14,13 +14,11 @@ if request_method == "POST":
 	body = sys.stdin.read(content_length)
 
 print("HTTP/1.1 200 OK")
-print("Content-Length: 100")
 print("Content-type: text/html\r\n\r\n")
 
 
 print("<html>")
 print("<head>")
-
 
 print("</head>")
 print("<body>")

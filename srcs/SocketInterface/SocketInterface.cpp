@@ -114,6 +114,28 @@ void SocketInterface::ReadRequest(int fd, RequestBuffer &client)
 
 	if (client.request.find("\r\n\r\n") != std::string::npos)
 	{
+		std::string header = client.request.substr(0, client.request.find("\r\n\r\n"));
+		std::string method = header.substr(0, header.find(" "));
+		if (method == "POST")
+		{
+			std::string body = client.request.substr(client.request.find("\r\n\r\n") + 4);
+			std::cout << "body: " << body << std::endl;
+
+			std::string contentLength = header.substr(header.find("Content-Length: ") + 16);
+			contentLength = contentLength.substr(0, contentLength.find("\r\n"));
+			size_t len = std::stoi(contentLength);
+			std::cout << "len: " << len << std::endl;
+			if (contentLength == "0")
+			{
+				client.isRequestFinished = true;
+			}
+			else if (body.size() > len)
+			{
+				std::cout << "body.size(): " << body.size() << std::endl;
+				client.isRequestFinished = true;
+			}
+			return;
+		}
 		client.isRequestFinished = true;
 	}
 }
@@ -186,14 +208,26 @@ void SocketInterface::execCgi(pollfd &pollFd, RequestBuffer &client) // clientã
 	client.state = WAIT_CGI;
 }
 
-void SocketInterface::execWriteError(pollfd &pollFd, int index)
+void SocketInterface::execWriteError(pollfd &pollFd, RequestBuffer &client, int index)
 {
-	std::string response = "HTTP/1.1 400 Bad Request\nContent-Type: text/html\r\n\r\n";
+	std::string statusCode = std::to_string(client.httpRequest.statusCode);
+	std::string response = "HTTP/1.1 " + statusCode + " ";
+	if (client.httpRequest.statusCode == 400)
+	{
+		response += "Bad Request";
+	}
+	else if (client.httpRequest.statusCode == 411)
+	{
+		response += "Length Required";
+	}
+	response += "\r\n\r\n";
 	if (sendResponse(pollFd.fd, response) >= 0)
 	{
 		pollFd.events = POLLIN;
 		pushDelPollFd(pollFd.fd, index);
-	} else {
+	}
+	else
+	{
 		pollFd.events = POLLOUT;
 	}
 }
@@ -206,7 +240,6 @@ std::string parseCgiResponse(std::string response)
 	std::string body = response.substr(response.find("\r\n\r\n") + 4);
 	if (header.find("Content-Length") == std::string::npos)
 	{
-
 		std::string contentLength = "Content-Length: " + std::to_string(body.size() - 1) + "\r\n";
 		header += "\r\n" + contentLength;
 	}
@@ -348,7 +381,7 @@ void SocketInterface::eventLoop()
 				}
 				else if (state == WRITE_REQUEST_ERROR)
 				{
-					execWriteError(_pollFds[i], i);
+					execWriteError(_pollFds[i], _clients[_pollFds[i].fd], i);
 				}
 			}
 			else if (_pollFds[i].revents & POLLIN)

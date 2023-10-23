@@ -75,6 +75,20 @@ void SocketInterface::setupPoll()
 	}
 }
 
+RequestBuffer initRequestBuffer(int fd)
+{
+	RequestBuffer client;
+	client.clientFd = fd;
+	client.cgiFd = -1;
+	client.cgiPid = -1;
+	client.state = READ_REQUEST;
+	client.isRequestFinished = false;
+	client.request = "";
+	client.cgiPid = -1;
+	client.response = "";
+	return client;
+}
+
 void SocketInterface::ReadRequest(int fd, RequestBuffer &client)
 {
 	char buf[1024];
@@ -108,12 +122,7 @@ HttpRequest SocketInterface::parseRequest(std::string request)
 {
 	RequestParser parser(_config);
 	HttpRequest req = parser.parse(request);
-	if (req.statusCode == 400)
-	{
-		std::cout << "400 Bad Request" << std::endl;
-		exit(1);
-	}
-	return parser.parse(request);
+	return req;
 }
 
 void SocketInterface::execReadRequest(pollfd &pollfd, RequestBuffer &client)
@@ -123,7 +132,15 @@ void SocketInterface::execReadRequest(pollfd &pollfd, RequestBuffer &client)
 	{
 		// Requestの解析
 		RequestParser parser(_config);
-		client.httpRequest = parser.parse(client.request);
+		client.httpRequest = parseRequest(client.request);
+		if (client.httpRequest.statusCode != 200)
+		{
+			client.state = WRITE_REQUEST_ERROR;
+			client.isRequestFinished = false;
+			client.request = "";
+			pollfd.events = POLLOUT;
+			return;
+		}
 		if (client.httpRequest.isCgi)
 		{
 			client.state = EXEC_CGI;
@@ -140,6 +157,7 @@ void SocketInterface::execReadRequest(pollfd &pollfd, RequestBuffer &client)
 
 void SocketInterface::execCoreHandler(pollfd &pollFd, RequestBuffer &client)
 {
+	
 	CoreHandler coreHandler(_config->getServerContext("2000", "localhost"));
 	std::string response = coreHandler.processRequest(client.httpRequest);
 	sendResponse(pollFd.fd, response);
@@ -153,7 +171,6 @@ void SocketInterface::execCgi(pollfd &pollFd, RequestBuffer &client) // client�
 	Cgi Cgi(client.httpRequest);
 	CgiResult result = Cgi.execCGI(); // cgiのpipeのfd
 	int fd = result.fd;
-	std::cout << "fd: " << fd << std::endl;
 	pollfd cgi = createClient(fd, READ_CGI);
 	_clients[fd].clientFd = pollFd.fd; // clientのpollFdをcgiに渡す
 	_clients[fd].cgiPid = result.pid;
@@ -161,6 +178,13 @@ void SocketInterface::execCgi(pollfd &pollFd, RequestBuffer &client) // client�
 	// cgiが終わったらresponseに書き込まれるので、終わり次第レスポンスとして送信する
 	pollFd.events = POLLOUT;
 	client.state = WAIT_CGI;
+}
+
+void SocketInterface::execWriteError(pollfd &pollFd)
+{
+	std::string response = "HTTP/1.1 400 Bad Request\nContent-Type: text/html\r\n\r\n";
+	sendResponse(pollFd.fd, response);
+	pollFd.events = POLLIN;
 }
 
 void SocketInterface::execReadCgi(pollfd &pollFd, RequestBuffer &client) // cgiのfd
@@ -174,7 +198,7 @@ void SocketInterface::execReadCgi(pollfd &pollFd, RequestBuffer &client) // cgi�
 	if (ret < 0)
 	{
 		std::cerr << "read() failed" << std::endl;
-		return ;
+		return;
 	}
 	else if (ret == 0)
 	{
@@ -191,9 +215,74 @@ void SocketInterface::execReadCgi(pollfd &pollFd, RequestBuffer &client) // cgi�
 		{
 			// レスポンスを送信したら、クライアントの方を読み取れるようにステータスを変更する
 			_clients.at(client.clientFd).state = WRITE_CGI;
-		} 
+		}
 		_clients.at(client.clientFd).response += response;
 	}
+}
+
+void SocketInterface::execWriteCgi(pollfd &pollFd, RequestBuffer &client) // clientのfd
+{
+	// レスポンスを送信する
+	if (sendResponse(pollFd.fd, client.response) > 0)
+	{
+		if (close(_clients[pollFd.fd].cgiFd) < 0)
+		{
+			std::cerr << "close() failed" << std::endl;
+		}
+		_clients[pollFd.fd].response = "";
+		_clients[pollFd.fd].request = "";
+		_clients[pollFd.fd].isRequestFinished = false;
+		_clients[pollFd.fd].cgiFd = -1;
+		_clients[pollFd.fd].state = READ_REQUEST;
+		pollFd.events = POLLIN;
+	}
+	else
+	{
+		_clients[pollFd.fd].state = WRITE_CGI;
+		pollFd.events = POLLOUT;
+	}
+}
+
+void SocketInterface::pushDelPollFd(int fd, int index)
+{
+	_delIndex.push_back(index);
+	_clients.erase(fd);
+}
+
+void SocketInterface::deleteClient()
+{
+	for (size_t i = 0; i < _pollFds.size(); ++i)
+	{
+		State state = _clients[_pollFds[i].fd].state;
+		if ((state != EXEC_CGI && state != READ_CGI) && _pollFds[i].revents & POLLHUP)
+		{
+			if (_clients[_pollFds[i].fd].cgiFd > 0)
+			{
+				for (size_t j = i; j < _pollFds.size(); ++j)
+				{
+					std::cout << _pollFds[j].fd << std::endl;
+					if (_pollFds[j].fd == _clients[_pollFds[i].fd].cgiFd)
+					{
+						pushDelPollFd(_pollFds[j].fd, j);
+						break;
+					}
+				}
+			} 
+			pushDelPollFd(_pollFds[i].fd, i);
+		}
+	}
+	std::sort(_delIndex.begin(), _delIndex.end(), std::greater<int>());
+	// 重複しているインデックスを削除する
+	_delIndex.erase(std::unique(_delIndex.begin(), _delIndex.end()), _delIndex.end());
+	for (size_t i = 0; i < _delIndex.size(); ++i)
+	{
+		int index = _delIndex[i];
+		close(_pollFds[index].fd);
+		_pollFds.erase(_pollFds.begin() + index);
+		_numClients--;
+	}
+	if (_delIndex.size() > 0)
+		_delIndex.clear();
 }
 
 void SocketInterface::eventLoop()
@@ -214,7 +303,7 @@ void SocketInterface::eventLoop()
 		}
 		for (int i = 0; i < _numPorts + _numClients; ++i)
 		{
-			
+
 			if (_pollFds[i].revents & POLLOUT)
 			{
 				State state = _clients[_pollFds[i].fd].state;
@@ -229,26 +318,12 @@ void SocketInterface::eventLoop()
 				}
 				else if (state == WRITE_CGI)
 				{
-					std::cout << "WRITE_CGI" << std::endl;
-					if (sendResponse(_pollFds[i].fd, _clients[_pollFds[i].fd].response) > 0)
-					{
-						std::cout << "close " << _clients[_pollFds[i].fd].cgiFd << std::endl;
-						if (close(_clients[_pollFds[i].fd].cgiFd) < 0)
-						{
-							std::cerr << "close() failed" << std::endl;
-						}
-						_clients[_pollFds[i].fd].response = "";
-						_clients[_pollFds[i].fd].request = "";
-						_clients[_pollFds[i].fd].isRequestFinished = false;
-						_clients[_pollFds[i].fd].cgiFd = -1;
-						_clients[_pollFds[i].fd].state = READ_REQUEST;
-						_pollFds[i].events = POLLIN;
-					}
-					else
-					{
-						_clients[_pollFds[i].fd].state = WRITE_CGI;
-						_pollFds[i].events = POLLOUT;
-					}
+					execWriteCgi(_pollFds[i], _clients[_pollFds[i].fd]);
+				}
+				else if (state == WRITE_REQUEST_ERROR)
+				{
+					execWriteError(_pollFds[i]);
+					pushDelPollFd(_pollFds[i].fd, i);
 				}
 			}
 			else if (_pollFds[i].revents & POLLIN)
@@ -260,59 +335,18 @@ void SocketInterface::eventLoop()
 				else
 				{
 					State state = _clients[_pollFds[i].fd].state;
-
 					if (state == READ_REQUEST) // Client sockets
 					{
 						execReadRequest(_pollFds[i], _clients[_pollFds[i].fd]);
 					}
-					else if (state == READ_CGI)
+					else if (state == READ_CGI)// CGIの結果を受け取る
 					{
-						// CGIの結果を受け取る
 						execReadCgi(_pollFds[i], _clients[_pollFds[i].fd]);
 					}
 				}
 			}
 		}
-		for (size_t i = 0; i < _pollFds.size(); ++i)
-		{
-			State state = _clients[_pollFds[i].fd].state;
-			if ((state != EXEC_CGI && state != READ_CGI) && _pollFds[i].revents & POLLHUP)
-			{
-				std::cout << "POLLHUP " << _pollFds[i].fd << std::endl;
-				std::cout << "state: " << state << std::endl;
-				// 削除すべき要素のインデックスを記録
-				_delIndex.push_back(i);
-				_pollFds[i].events = 0;
-				std::cout << "poll hup client fd" << _pollFds[i].fd << std::endl;
-				std::cout << "cgi fd  " << _clients[_pollFds[i].fd].cgiFd << std::endl;
-				if (_clients[_pollFds[i].fd].cgiFd > 0)
-				{
-					for (size_t j = i; j < _pollFds.size(); ++j)
-					{
-						std::cout << _pollFds[j].fd << std::endl;
-						if (_pollFds[j].fd == _clients[_pollFds[i].fd].cgiFd)
-						{
-							std::cout << "cgi fd" << _pollFds[j].fd << std::endl;
-							_clients.erase(_pollFds[j].fd);
-							_delIndex.push_back(j);
-							_pollFds[j].events = 0;
-							break;
-						}
-					}
-				}
-				_clients.erase(_pollFds[i].fd);
-			}
-		}
-		std::sort(_delIndex.begin(), _delIndex.end(), std::greater<int>());
-		for (size_t i = 0; i < _delIndex.size(); ++i)
-		{
-			int index = _delIndex[i];
-			close (_pollFds[index].fd);
-			_pollFds.erase(_pollFds.begin() + index);
-			_numClients--;
-		}
-		if (_delIndex.size() > 0)
-			_delIndex.clear();
+		deleteClient();
 		for (size_t i = 0; i < _addPollFds.size(); ++i)
 		{
 			_pollFds.push_back(_addPollFds[i]);
@@ -348,7 +382,6 @@ pollfd SocketInterface::createClient(int fd, State state)
 	client.clientFd = fd;
 	// pollFdのfdをキーにしてクライアントを管理する
 	_clients.insert(std::make_pair(fd, client));
-	std::cout << "clientFd: " << _clients[fd].clientFd << std::endl;
 	return pollFd;
 }
 

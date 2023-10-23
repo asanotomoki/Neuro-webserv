@@ -25,7 +25,8 @@ enum State
     CLOSE_CONNECTION,
     EXEC_CGI,
     WRITE_CGI,
-    WAIT_CGI
+    WAIT_CGI,
+    WRITE_REQUEST_ERROR,
 };
 
 struct RequestBuffer
@@ -50,6 +51,7 @@ public:
 
     void eventLoop();
     void acceptConnection(int fd);
+    void pushDelPollFd(int fd, int index);
 
 private:
     Config *_config;
@@ -66,6 +68,7 @@ private:
     void createSockets(const std::vector<std::string> &ports);
     void setupPoll();
     HttpRequest parseRequest(std::string request);
+    void deleteClient();
     int sendResponse(int fd, std::string response);
     void ReadRequest(int fd, RequestBuffer &client);
     RequestBuffer createRequestBuffer();
@@ -73,7 +76,8 @@ private:
     void execCoreHandler(pollfd &pollfd, RequestBuffer &client);
     void execCgi(pollfd &pollfd, RequestBuffer &client);
     void execReadCgi(pollfd &pollFd, RequestBuffer &client);
-    void execWriteCgi(pollfd pollFd, RequestBuffer &client);
+    void execWriteCgi(pollfd &pollFd, RequestBuffer &client);
+    void execWriteError(pollfd &pollFd);
     pollfd createClient(int fd, State state);
 };
 

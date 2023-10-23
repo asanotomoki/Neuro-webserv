@@ -8,6 +8,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <map>
 CoreHandler::CoreHandler()
 {
 	ServerContext serverContext;
@@ -48,15 +49,53 @@ std::string errorResponse(int statusCode, std::string message, const LocationCon
 	return response;
 }
 
+std::string getContentType(const std::string& filepath) {
+    // MIMEタイプのマッピング
+    static std::map<std::string, std::string> mimeTypes;
+	mimeTypes.insert(std::make_pair(".html", "text/html"));
+	mimeTypes.insert(std::make_pair(".css", "text/css"));
+	mimeTypes.insert(std::make_pair(".js", "application/javascript"));
+	mimeTypes.insert(std::make_pair(".png", "image/png"));
+	mimeTypes.insert(std::make_pair(".jpg", "image/jpeg"));
+	mimeTypes.insert(std::make_pair(".jpeg", "image/jpeg"));
+	mimeTypes.insert(std::make_pair(".gif", "image/gif"));
+	mimeTypes.insert(std::make_pair(".ico", "image/x-icon"));
+	mimeTypes.insert(std::make_pair(".json", "application/json"));
+	mimeTypes.insert(std::make_pair(".xml", "application/xml"));
+	mimeTypes.insert(std::make_pair(".pdf", "application/pdf"));
+	mimeTypes.insert(std::make_pair(".zip", "application/zip"));
+	mimeTypes.insert(std::make_pair(".tar", "application/x-tar"));
+	mimeTypes.insert(std::make_pair(".txt", "text/plain"));
+
+    // ファイル名から最後のドットを検索して拡張子を取得
+    size_t pos = filepath.find_last_of(".");
+    if (pos == std::string::npos) {
+        return "application/octet-stream";  // 拡張子がない場合のデフォルトMIMEタイプ
+    }
+
+    std::string ext = filepath.substr(pos);
+    if (mimeTypes.find(ext) != mimeTypes.end()) {
+        return mimeTypes[ext];
+    } else {
+        return "application/octet-stream";  // 拡張子がマッピングにない場合のデフォルトMIMEタイプ
+    }
+}
+
 std::string CoreHandler::getMethod(const std::string &fullpath, const LocationContext &locationContext,
 					  bool isAutoIndex)
 {
 	// 静的ファイルを提供する場合
 	StaticFileReader fileReader;
+	std::cout << "fullpath: " << fullpath << "\n";
+
+	// スラッシュが2個続く場合があるため取り除く
 
 	std::string fileContent = fileReader.readFile(fullpath, locationContext,
 												  _serverContext, isAutoIndex);
-	std::string response = successResponse(fileContent, "text/html");
+																								  
+	std::string contentType = getContentType(fullpath);
+	std::cout << "contentType: " << contentType << "\n"; 
+	std::string response = successResponse(fileContent, contentType);
 	return response;
 }
 
@@ -95,6 +134,7 @@ std::string CoreHandler::processRequest(HttpRequest httpRequest)
 		httpRequest.url += '/';
 	}
 
+	std::cout << "httpRequest.url: " << httpRequest.url << "\n";
 	ParseUrlResult parseUrlResult = parseUrl(httpRequest.url);
 
 	LocationContext locationContext = _serverContext.getLocationContext(parseUrlResult.directory);

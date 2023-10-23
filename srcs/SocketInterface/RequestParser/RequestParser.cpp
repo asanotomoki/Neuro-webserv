@@ -63,7 +63,8 @@ HttpRequest RequestParser::parse(const std::string& request) {
     requestStream >> httpRequest.method >> httpRequest.url >> httpRequest.protocol;
 
     // 正しくない形式の場合は400を返す
-    if (httpRequest.protocol.empty() || httpRequest.protocol.find("HTTP/") == std::string::npos || httpRequest.url.empty() || httpRequest.method.empty()) {
+    if (httpRequest.protocol.empty() || httpRequest.protocol.find("HTTP/1.1") == std::string::npos || httpRequest.url.empty() || httpRequest.method.empty()) {
+        std::cout << "400 Bad Request" << std::endl;
         httpRequest.statusCode = 400;
         return httpRequest;
     }

@@ -20,7 +20,7 @@ print("Content-type: text/html\r\n\r\n")
 
 print("<html>")
 print("<head>")
-time.sleep(10)
+
 
 print("</head>")
 print("<body>")

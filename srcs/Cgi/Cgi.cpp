@@ -18,11 +18,13 @@ Cgi::Cgi(HttpRequest& req) :
     //initEnv(req, url);
 }
 
-int Cgi::execCGI()
+CgiResult Cgi::execCGI()
 {
     int pipe_fd[2];
     int pipe_stdin[2];
-    pid_t pid;
+    char **env = mapToChar(this->_env);
+    char **args = vectorToChar(this->_args);
+    CgiResult result;
     if (pipe(pipe_fd) < 0)
     {
         std::cerr << "pipe error" << std::endl;
@@ -33,12 +35,12 @@ int Cgi::execCGI()
         std::cerr << "pipe error" << std::endl;
         std::exit(1);
     }
-    if ((pid = fork()) < 0)
+    if ((result.pid = fork()) < 0)
     {
         std::cerr << "fork error" << std::endl;
         std::exit(1);
     }
-    else if (pid == 0)
+    else if (result.pid == 0)
     {
         close(pipe_fd[0]);
         dup2(pipe_fd[1], 1);
@@ -48,11 +50,7 @@ int Cgi::execCGI()
         dup2(pipe_stdin[0], 0);
         close(pipe_stdin[0]);
         
-        char **env = mapToChar(this->_env);
-        char **args = vectorToChar(this->_args);
         execve(this->_executable, args, env);
-        delete [] env;
-        delete [] args;
         std::cerr << "execve error" << std::endl;
         std::cout << "Status: 500 Internal Server Error" << std::endl;
         std::exit(1);
@@ -63,9 +61,11 @@ int Cgi::execCGI()
         close(pipe_stdin[0]);
         write(pipe_stdin[1], this->_request.body.c_str(), this->_request.body.size());
         close(pipe_stdin[1]);
-        waitpid(pid, NULL, WNOHANG);
+        delete [] env;
+        delete [] args;
     }
-    return pipe_fd[0];
+    result.fd = pipe_fd[0];
+    return result;
 }
 
 Cgi::~Cgi()

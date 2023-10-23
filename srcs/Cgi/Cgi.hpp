@@ -9,9 +9,12 @@
 #include "CoreHandler.hpp"
 
 // CGIの実行結果を格納する構造体
-// status: OK or NG
-// message: CGIの実行結果
-// statusCode: CGIの実行結果のステータスコード
+
+struct CgiResult
+{
+	int fd;
+	pid_t pid;
+};
 
 //CGIクラス
 class Cgi
@@ -34,7 +37,7 @@ class Cgi
 		Cgi(HttpRequest &request);
     	~Cgi();
 		
-		int execCGI();
+		CgiResult execCGI();
 		
 		// env
 		const std::map<std::string, std::string>& getEnv() const;

@@ -87,8 +87,6 @@ void SocketInterface::ReadRequest(int fd, RequestBuffer &client)
 	}
 	else if (ret == 0)
 	{
-
-		client.state = READ_REQUEST;
 		return;
 	}
 
@@ -153,11 +151,13 @@ void SocketInterface::execCgi(pollfd &pollFd, RequestBuffer &client) // client�
 {
 	// clientはユーザー側 Cgiは今後pipeのfdでeventLoopを回す
 	Cgi Cgi(client.httpRequest);
-	int fd = Cgi.execCGI(); // cgiのpipeのfd
-
-	std::cout << "cgi output fd: " << fd << std::endl;
-	createClient(fd, READ_CGI);
-	_clients[fd].clientPollFd = &pollFd;
+	CgiResult result = Cgi.execCGI(); // cgiのpipeのfd
+	int fd = result.fd;
+	std::cout << "fd: " << fd << std::endl;
+	pollfd cgi = createClient(fd, READ_CGI);
+	_clients[fd].clientFd = pollFd.fd; // clientのpollFdをcgiに渡す
+	_clients[fd].cgiPid = result.pid;
+	client.cgiFd = cgi.fd; // 削除時にpollFdを削除するために必要
 	// cgiが終わったらresponseに書き込まれるので、終わり次第レスポンスとして送信する
 	pollFd.events = POLLOUT;
 	client.state = WAIT_CGI;
@@ -165,12 +165,16 @@ void SocketInterface::execCgi(pollfd &pollFd, RequestBuffer &client) // client�
 
 void SocketInterface::execReadCgi(pollfd &pollFd, RequestBuffer &client) // cgiのfd
 {
-
 	char buf[1024];
+	if (waitpid(client.cgiPid, NULL, WNOHANG) <= 0)
+	{
+		return;
+	}
 	int ret = read(pollFd.fd, buf, sizeof(buf) - 1);
 	if (ret < 0)
 	{
 		std::cerr << "read() failed" << std::endl;
+		return ;
 	}
 	else if (ret == 0)
 	{
@@ -180,9 +184,16 @@ void SocketInterface::execReadCgi(pollfd &pollFd, RequestBuffer &client) // cgi�
 	buf[ret] = '\0';
 	std::string response(buf);
 	// 接続されているクライアントにレスポンスを送信する
-	_clients.at(client.clientPollFd->fd).response += response;
-	// 接続の方を読み取れるようにステータスを変更する
-	_clients.at(client.clientPollFd->fd).state = WRITE_CGI;
+	if (client.clientFd)
+	{
+		printf("response: %d\n", client.clientFd);
+		if (response.find("\r\n\r\n") != std::string::npos) // レスポンスの終わり
+		{
+			// レスポンスを送信したら、クライアントの方を読み取れるようにステータスを変更する
+			_clients.at(client.clientFd).state = WRITE_CGI;
+		} 
+		_clients.at(client.clientFd).response += response;
+	}
 }
 
 void SocketInterface::eventLoop()
@@ -201,32 +212,10 @@ void SocketInterface::eventLoop()
 			std::cout << "poll() timeout" << std::endl;
 			continue;
 		}
-		usleep(10000);
 		for (int i = 0; i < _numPorts + _numClients; ++i)
 		{
-			if (_pollFds[i].revents & POLLIN)
-			{
-				if (i < _numPorts)
-				{
-					acceptConnection(_pollFds[i].fd);
-				}
-				else
-				{
-					State state = _clients[_pollFds[i].fd].state;
-
-					if (state == READ_REQUEST) // Client sockets
-					{
-						execReadRequest(_pollFds[i], _clients[_pollFds[i].fd]);
-					}
-					else if (state == READ_CGI)
-					{
-						// CGIの結果を受け取る
-						std::cout << "READ_CGI" << std::endl;
-						execReadCgi(_pollFds[i], _clients[_pollFds[i].fd]);
-					}
-				}
-			}
-			else if (_pollFds[i].revents & POLLOUT)
+			
+			if (_pollFds[i].revents & POLLOUT)
 			{
 				State state = _clients[_pollFds[i].fd].state;
 				if (state == WRITE_RESPONSE)
@@ -243,7 +232,15 @@ void SocketInterface::eventLoop()
 					std::cout << "WRITE_CGI" << std::endl;
 					if (sendResponse(_pollFds[i].fd, _clients[_pollFds[i].fd].response) > 0)
 					{
+						std::cout << "close " << _clients[_pollFds[i].fd].cgiFd << std::endl;
+						if (close(_clients[_pollFds[i].fd].cgiFd) < 0)
+						{
+							std::cerr << "close() failed" << std::endl;
+						}
 						_clients[_pollFds[i].fd].response = "";
+						_clients[_pollFds[i].fd].request = "";
+						_clients[_pollFds[i].fd].isRequestFinished = false;
+						_clients[_pollFds[i].fd].cgiFd = -1;
 						_clients[_pollFds[i].fd].state = READ_REQUEST;
 						_pollFds[i].events = POLLIN;
 					}
@@ -254,27 +251,63 @@ void SocketInterface::eventLoop()
 					}
 				}
 			}
+			else if (_pollFds[i].revents & POLLIN)
+			{
+				if (i < _numPorts)
+				{
+					acceptConnection(_pollFds[i].fd);
+				}
+				else
+				{
+					State state = _clients[_pollFds[i].fd].state;
+
+					if (state == READ_REQUEST) // Client sockets
+					{
+						execReadRequest(_pollFds[i], _clients[_pollFds[i].fd]);
+					}
+					else if (state == READ_CGI)
+					{
+						// CGIの結果を受け取る
+						execReadCgi(_pollFds[i], _clients[_pollFds[i].fd]);
+					}
+				}
+			}
 		}
 		for (size_t i = 0; i < _pollFds.size(); ++i)
 		{
 			State state = _clients[_pollFds[i].fd].state;
 			if ((state != EXEC_CGI && state != READ_CGI) && _pollFds[i].revents & POLLHUP)
 			{
-				std::cout << "POLLHUP " << _pollFds[i].fd  << std::endl;
+				std::cout << "POLLHUP " << _pollFds[i].fd << std::endl;
 				std::cout << "state: " << state << std::endl;
 				// 削除すべき要素のインデックスを記録
-				_clients[_pollFds[i].fd].state = READ_REQUEST;
-				_clients[_pollFds[i].fd].response = "";
-				_clients[_pollFds[i].fd].request = "";
-				_clients.erase(_pollFds[i].fd);
 				_delIndex.push_back(i);
 				_pollFds[i].events = 0;
+				std::cout << "poll hup client fd" << _pollFds[i].fd << std::endl;
+				std::cout << "cgi fd  " << _clients[_pollFds[i].fd].cgiFd << std::endl;
+				if (_clients[_pollFds[i].fd].cgiFd > 0)
+				{
+					for (size_t j = i; j < _pollFds.size(); ++j)
+					{
+						std::cout << _pollFds[j].fd << std::endl;
+						if (_pollFds[j].fd == _clients[_pollFds[i].fd].cgiFd)
+						{
+							std::cout << "cgi fd" << _pollFds[j].fd << std::endl;
+							_clients.erase(_pollFds[j].fd);
+							_delIndex.push_back(j);
+							_pollFds[j].events = 0;
+							break;
+						}
+					}
+				}
+				_clients.erase(_pollFds[i].fd);
 			}
 		}
-		for (int i = static_cast<int>(_delIndex.size()) - 1; i >= 0; --i)
+		std::sort(_delIndex.begin(), _delIndex.end(), std::greater<int>());
+		for (size_t i = 0; i < _delIndex.size(); ++i)
 		{
 			int index = _delIndex[i];
-			close(_pollFds[index].fd);
+			close (_pollFds[index].fd);
 			_pollFds.erase(_pollFds.begin() + index);
 			_numClients--;
 		}
@@ -311,8 +344,11 @@ pollfd SocketInterface::createClient(int fd, State state)
 	client.response = "";
 	client.request = "";
 	client.isRequestFinished = false;
+	client.cgiFd = -1;
+	client.clientFd = fd;
 	// pollFdのfdをキーにしてクライアントを管理する
 	_clients.insert(std::make_pair(fd, client));
+	std::cout << "clientFd: " << _clients[fd].clientFd << std::endl;
 	return pollFd;
 }
 
@@ -328,9 +364,9 @@ void SocketInterface::acceptConnection(int fd)
 		perror("accept");
 		return;
 	}
-	std::cout << "clientFd: " << clientFd << std::endl;
 	fcntl(clientFd, F_SETFL, O_NONBLOCK);
 	createClient(clientFd, READ_REQUEST);
+
 	// アクセスされたサーバーのhost名を取得する
 	// getsockname(clientFd, (sockaddr *)&clientAddr, &clientAddrSize);
 	// int serverPort = ntohs(clientAddr.sin_port);

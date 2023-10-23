@@ -31,13 +31,14 @@ enum State
 struct RequestBuffer
 {
     std::string request;
-    pollfd* clientPollFd; // CGIの場合のみ使用 (CGIの結果を返すため)
+    int clientFd; // CGIの場合のみ使用 (CGIの結果を返すため)
+    int cgiFd; // CGIの場合のみ使用 (CGIを削除するため)
+    pid_t cgiPid; // CGIの場合のみ使用 (CGIを削除するため)
     State state;
     bool isRequestFinished;
     HttpRequest httpRequest;
     ServerContext serverContext;
     std::string response;
-    int cgiInputFd;
 };
 
 // 脊髄クラス

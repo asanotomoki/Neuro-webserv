@@ -129,7 +129,7 @@ void SocketInterface::ReadRequest(int fd, RequestBuffer &client)
 			{
 				client.isRequestFinished = true;
 			}
-			else if (body.size() > len)
+			else if (body.size() >= len)
 			{
 				std::cout << "body.size(): " << body.size() << std::endl;
 				client.isRequestFinished = true;

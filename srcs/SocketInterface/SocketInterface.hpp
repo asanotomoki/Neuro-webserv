@@ -73,7 +73,7 @@ private:
     void execCoreHandler(pollfd &pollfd, RequestBuffer &client);
     void execCgi(pollfd &pollfd, RequestBuffer &client);
     void execReadCgi(pollfd &pollFd, RequestBuffer &client);
-    void execWriteCgi(pollfd pollFd, RequestBuffer &client);
+    void execWriteCgi(pollfd &pollFd, RequestBuffer &client);
     pollfd createClient(int fd, State state);
 };
 

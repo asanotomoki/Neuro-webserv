@@ -124,8 +124,6 @@ int parseChunkedRequest(std::string body, RequestBuffer &client)
 		client.isRequestFinished = true;
 		return 200;
 	}
-	std::cout << "chunkedSize = " << client.chunkedSize + 2 << std::endl;
-	std::cout << "chunkedBodySize() = " << client.chunkedBody.size() << std::endl;
 	if (client.chunkedBody.size() > (size_t)client.chunkedSize + 2)
 	{
 		client.isRequestFinished = false;

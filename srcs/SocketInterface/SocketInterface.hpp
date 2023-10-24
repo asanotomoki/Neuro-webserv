@@ -12,9 +12,9 @@
 #include <cstring>
 #include <iostream>
 #include <fcntl.h>
-#include "RequestParser.hpp"
 #include "ServerContext.hpp"
 #include "Cgi.hpp"
+#include "RequestParser.hpp"
 
 enum State
 {
@@ -33,14 +33,18 @@ struct RequestBuffer
 {
     std::string request;
     int clientFd; // CGIの場合のみ使用 (CGIの結果を返すため)
-    int cgiFd; // CGIの場合のみ使用 (CGIを削除するため)
+    int cgiFd;    // CGIの場合のみ使用 (CGIを削除するため)
     pid_t cgiPid; // CGIの場合のみ使用 (CGIを削除するため)
     State state;
     bool isRequestFinished;
     HttpRequest httpRequest;
+    bool isChunked;
+    ssize_t chunkedSize;
+    std::string chunkedBody;
     ServerContext serverContext;
     std::string response;
 };
+
 
 // 脊髄クラス
 class SocketInterface
@@ -61,22 +65,22 @@ private:
     std::vector<int> _delIndex;
     int _numPorts;
     int _numClients;
-     
+
     // buffer
     std::map<int, RequestBuffer> _clients;
 
     void createSockets(const std::vector<std::string> &ports);
     void setupPoll();
-    HttpRequest parseRequest(std::string request);
+    HttpRequest parseRequest(std::string request, RequestBuffer &client);
     void deleteClient();
     int sendResponse(int fd, std::string response);
-    void ReadRequest(int fd, RequestBuffer &client);
+    int ReadRequest(int fd, RequestBuffer &client);
     void execReadRequest(pollfd &pollfd, RequestBuffer &client);
     void execCoreHandler(pollfd &pollfd, RequestBuffer &client);
     void execCgi(pollfd &pollfd, RequestBuffer &client);
     void execReadCgi(pollfd &pollFd, RequestBuffer &client);
     void execWriteCgi(pollfd &pollFd, RequestBuffer &client);
-    void execWriteError(pollfd &pollFd, RequestBuffer &client,int index);
+    void execWriteError(pollfd &pollFd, RequestBuffer &client, int index);
     pollfd createClient(int fd, State state);
 };
 

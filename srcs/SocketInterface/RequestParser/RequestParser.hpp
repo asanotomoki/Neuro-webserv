@@ -22,7 +22,7 @@ struct HttpRequest {
 class RequestParser
 {
 public:
-    HttpRequest parse(const std::string &request);
+    HttpRequest parse(const std::string &request, bool isChunked);
     RequestParser(Config *config);
     ~RequestParser();
 

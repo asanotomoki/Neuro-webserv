@@ -124,7 +124,8 @@ int parseChunkedRequest(std::string body, RequestBuffer &client)
 		client.isRequestFinished = true;
 		return 200;
 	}
-	std::cout << "chunkedSize = " << client.chunkedBody.size() << std::endl;
+	std::cout << "chunkedSize = " << client.chunkedSize + 2 << std::endl;
+	std::cout << "chunkedBodySize() = " << client.chunkedBody.size() << std::endl;
 	if (client.chunkedBody.size() > (size_t)client.chunkedSize + 2)
 	{
 		client.isRequestFinished = false;
@@ -139,7 +140,6 @@ int parseChunkedRequest(std::string body, RequestBuffer &client)
 		body = client.chunkedBody.substr(client.chunkedSize + 2);
 		client.chunkedSize = -1;
 		client.chunkedBody = "";
-		// chunkedSizeの分だけ読み込んだ後は、chunkedSizeの分だけ読み込んだbodyをresponseに追加する
 		return parseChunkedRequest(body, client);
 	}
 	else
@@ -192,7 +192,12 @@ int SocketInterface::ReadRequest(int fd, RequestBuffer &client)
 			{
 				return 411;
 			}
-			size_t len = std::stoi(contentLength);
+			size_t len = 0;
+			try {
+				len = std::stoi(contentLength);
+			} catch (std::exception &e) {
+				return 400;
+			}
 			if (contentLength == "0")
 			{
 				client.isRequestFinished = true;

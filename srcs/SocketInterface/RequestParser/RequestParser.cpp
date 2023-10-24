@@ -49,18 +49,18 @@ bool RequestParser::isCgiBlockPath(const ServerContext& server_context, std::vec
 	return false;
 }
 
-
-
-
 HttpRequest RequestParser::parse(const std::string& request, bool isChunked) {
     HttpRequest httpRequest;
     httpRequest.isCgi = false;
     httpRequest.statusCode = 200;
-    std::istringstream requestStream(request);
+    std::string header = request.substr(0, request.find("\r\n\r\n"));
+    std::string body = request.substr(request.find("\r\n\r\n") + 4);
+    std::istringstream headerStream(header);
+    std::istringstream bodyStream(body);
 
 	ServerContext serverContext = _config->getServerContext("2000", "localhost"); //TODO FIX 動的に取得する
     // メソッドとURLを解析
-    requestStream >> httpRequest.method >> httpRequest.url >> httpRequest.protocol;
+    headerStream >> httpRequest.method >> httpRequest.url >> httpRequest.protocol;
 
     // 正しくない形式の場合は400を返す
     if (httpRequest.protocol.empty() || httpRequest.protocol.find("HTTP/1.1") == std::string::npos || httpRequest.url.empty() || httpRequest.method.empty()) {
@@ -71,17 +71,7 @@ HttpRequest RequestParser::parse(const std::string& request, bool isChunked) {
     // ヘッダーを解析
     std::string headerLine;
     int contentLength = -1; // Content-Lengthを保存する変数
-    bool isCR = false;
-    while (std::getline(requestStream, headerLine)) {
-        // ヘッダーの終了判定
-        if (headerLine == "\r" && isCR) {
-            break;
-        }
-        if (headerLine == "\r") {
-            isCR = true;
-            continue;
-        }
-        isCR = false;
+    while (std::getline(headerStream, headerLine)) {
         std::istringstream headerStream(headerLine);
         std::string key;
         std::string value;
@@ -97,28 +87,20 @@ HttpRequest RequestParser::parse(const std::string& request, bool isChunked) {
             contentLength = std::stoi(value);
         }
     }
-    if (isChunked)
-    {
-        // header以降のデータを読み込む
-        // requestにbody(sizeを除いたもの)が入っている
-        std::cout << "request: " << request << std::endl;
-        
-    }
     if (httpRequest.method == "POST" && contentLength == -1 && !isChunked) {
         std::cout << "411 Length Required" << std::endl;
         httpRequest.statusCode = 411;
         return httpRequest;
     }
-    // ボディを解析 (Content-Lengthが指定されていれば)
+    
     if (contentLength > 0) {
         int maxBodySize = std::stoi(serverContext.getMaxBodySize()); //TODO FIX!!
         if (contentLength > maxBodySize) {
             contentLength = maxBodySize;
         }
         char* buffer = new char[contentLength];
-        requestStream.read(buffer, contentLength);
+        bodyStream.read(buffer, contentLength);
         httpRequest.body = std::string(buffer, contentLength);
-
         delete[] buffer;
     }
     std::vector<std::string> tokens = split(httpRequest.url, '?');

@@ -188,11 +188,10 @@ int SocketInterface::ReadRequest(int fd, RequestBuffer &client)
 		{
 			std::string contentLength = header.substr(header.find("Content-Length: ") + 16);
 			std::cout << "contentLength: " << contentLength << std::endl;
-			if (contentLength.empty() || contentLength.find("\r\n") != std::string::npos)
+			if (contentLength.empty())
 			{
 				return 411;
 			}
-			contentLength = contentLength.substr(0, contentLength.find("\r\n"));
 			size_t len = std::stoi(contentLength);
 			if (contentLength == "0")
 			{
@@ -202,6 +201,9 @@ int SocketInterface::ReadRequest(int fd, RequestBuffer &client)
 			{
 				std::cout << "body.size(): " << body.size() << std::endl;
 				client.isRequestFinished = true;
+			} else {
+				client.isRequestFinished = false;
+				return 200;
 			}
 		}
 		client.isRequestFinished = true;
@@ -300,8 +302,14 @@ void SocketInterface::execWriteError(pollfd &pollFd, RequestBuffer &client, int 
 	{
 		response += "Bad Request";
 	}
-
+	response += "\r\n";
+	response += "Content-Length: 0";
+	response += "\r\n";
+	response += "Connection: close";
+	response += "\r\n";
+	response += "content-type: text/html";
 	response += "\r\n\r\n";
+
 	if (sendResponse(pollFd.fd, response) >= 0)
 	{
 		pollFd.events = POLLIN;

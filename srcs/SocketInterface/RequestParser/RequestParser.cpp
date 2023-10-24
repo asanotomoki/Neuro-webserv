@@ -113,7 +113,9 @@ HttpRequest RequestParser::parse(const std::string& request, bool isChunked) {
     if (contentLength > 0) {
         int maxBodySize = std::stoi(serverContext.getMaxBodySize()); //TODO FIX!!
         if (contentLength > maxBodySize) {
-            contentLength = maxBodySize;
+            std::cout << "413 Payload Too Large" << std::endl;
+            httpRequest.statusCode = 413;
+            return httpRequest;
         }
         char* buffer = new char[contentLength];
         requestStream.read(buffer, contentLength);

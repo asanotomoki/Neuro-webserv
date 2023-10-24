@@ -52,7 +52,7 @@ bool RequestParser::isCgiBlockPath(const ServerContext& server_context, std::vec
 
 
 
-HttpRequest RequestParser::parse(const std::string& request) {
+HttpRequest RequestParser::parse(const std::string& request, bool isChunked) {
     HttpRequest httpRequest;
     httpRequest.isCgi = false;
     httpRequest.statusCode = 200;
@@ -97,14 +97,21 @@ HttpRequest RequestParser::parse(const std::string& request) {
             contentLength = std::stoi(value);
         }
     }
-    if (httpRequest.method == "POST" && contentLength == -1) {
+    if (isChunked)
+    {
+        // header以降のデータを読み込む
+        // requestにbody(sizeを除いたもの)が入っている
+        std::cout << "request: " << request << std::endl;
+        
+    }
+    if (httpRequest.method == "POST" && contentLength == -1 && !isChunked) {
         std::cout << "411 Length Required" << std::endl;
         httpRequest.statusCode = 411;
         return httpRequest;
     }
     // ボディを解析 (Content-Lengthが指定されていれば)
     if (contentLength > 0) {
-        int maxBodySize = std::stoi(serverContext.getMaxBodySize());
+        int maxBodySize = std::stoi(serverContext.getMaxBodySize()); //TODO FIX!!
         if (contentLength > maxBodySize) {
             contentLength = maxBodySize;
         }

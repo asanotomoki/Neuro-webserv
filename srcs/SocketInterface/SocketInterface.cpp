@@ -1,7 +1,6 @@
 #include "SocketInterface.hpp"
 #include "ServerContext.hpp"
 #include "Config.hpp"
-#include "RequestParser.hpp"
 #include "CoreHandler.hpp"
 #include "Cgi.hpp"
 #include <iostream>
@@ -89,7 +88,69 @@ RequestBuffer initRequestBuffer(int fd)
 	return client;
 }
 
-void SocketInterface::ReadRequest(int fd, RequestBuffer &client)
+int parseChunkedRequest(std::string body, RequestBuffer &client)
+{
+	std::cout << "body = " << body << std::endl;
+	if (body.empty())
+	{
+		client.isRequestFinished = false;
+		client.chunkedSize = -1;
+		return 200;
+	}
+	if (client.chunkedSize < 0)
+	{
+		std::string chunkedSizeStr = body.substr(0, body.find("\r\n"));
+		try
+		{
+			client.chunkedSize = std::stoi(chunkedSizeStr, 0, 16);
+		}
+		catch (std::exception &e)
+		{
+			client.isRequestFinished = false;
+			client.chunkedSize = -1;
+			return 400;
+		}
+		client.chunkedBody = body.substr(body.find("\r\n") + 2);
+	}
+	else
+	{
+		client.chunkedBody += body;
+	}
+	// chunkedSizeが0かつ、bodyに\r\n\r\nが含まれている場合は、chunkedSizeを-1に戻して、chunkedBodyを空にする
+	if (client.chunkedSize == 0 && body == "\r\n")
+	{
+		client.chunkedSize = -1;
+		client.chunkedBody = "";
+		client.isRequestFinished = true;
+		return 200;
+	}
+	std::cout << "chunkedSize = " << client.chunkedBody.size() << std::endl;
+	if (client.chunkedBody.size() > (size_t)client.chunkedSize + 2)
+	{
+		client.isRequestFinished = false;
+		return 400;
+	}
+	else if (client.chunkedBody.size() == (size_t)client.chunkedSize + 2)
+	{
+		// chunkedSizeの分だけ読み込んだら、chunkedSizeを-1に戻して、chunkedSizeの分だけ読み込んだbodyをresponseに追加する
+		client.request += client.chunkedBody.substr(0, client.chunkedSize);
+		std::cout << "request: " << client.request << std::endl;
+		// bodyに読み込んでいない部分を残す
+		body = client.chunkedBody.substr(client.chunkedSize + 2);
+		client.chunkedSize = -1;
+		client.chunkedBody = "";
+		// chunkedSizeの分だけ読み込んだ後は、chunkedSizeの分だけ読み込んだbodyをresponseに追加する
+		return parseChunkedRequest(body, client);
+	}
+	else
+	{
+		// chunkedSizeの分だけ読み込んでいない場合は、bodyをそのまま返す
+		client.isRequestFinished = false;
+		return 200;
+	}
+}
+
+int SocketInterface::ReadRequest(int fd, RequestBuffer &client)
 {
 	char buf[1024];
 
@@ -97,34 +158,42 @@ void SocketInterface::ReadRequest(int fd, RequestBuffer &client)
 	if (ret < 0)
 	{
 		std::cerr << "read() failed" << std::endl;
-		return;
+		return 200;
 	}
-	else if (ret == 0)
-	{
-		return;
-	}
-
 	buf[ret] = '\0';
 	std::string request(buf);
+	std::cout << "request: " << request << std::endl;
 	if (client.request.empty() && request == "\r\n")
 	{
-		return;
+		return 200;
 	}
-	client.request += buf;
-
+	if (client.isChunked)
+	{
+		return parseChunkedRequest(request, client);
+	}
+	client.request += request;
 	if (client.request.find("\r\n\r\n") != std::string::npos)
 	{
+		std::cout << "request: " << request << std::endl;
 		std::string header = client.request.substr(0, client.request.find("\r\n\r\n"));
 		std::string method = header.substr(0, header.find(" "));
-		if (method == "POST")
+		std::string body = client.request.substr(client.request.find("\r\n\r\n") + 4);
+		if (header.find("Transfer-Encoding: chunked") != std::string::npos)
 		{
-			std::string body = client.request.substr(client.request.find("\r\n\r\n") + 4);
-			std::cout << "body: " << body << std::endl;
-
+			client.isChunked = true;
+			client.request = header + "\r\n\r\n";
+			return parseChunkedRequest(body, client);
+		}
+		if (method == "POST" && !client.isChunked)
+		{
 			std::string contentLength = header.substr(header.find("Content-Length: ") + 16);
+			std::cout << "contentLength: " << contentLength << std::endl;
+			if (contentLength.empty() || contentLength.find("\r\n") != std::string::npos)
+			{
+				return 411;
+			}
 			contentLength = contentLength.substr(0, contentLength.find("\r\n"));
 			size_t len = std::stoi(contentLength);
-			std::cout << "len: " << len << std::endl;
 			if (contentLength == "0")
 			{
 				client.isRequestFinished = true;
@@ -134,27 +203,36 @@ void SocketInterface::ReadRequest(int fd, RequestBuffer &client)
 				std::cout << "body.size(): " << body.size() << std::endl;
 				client.isRequestFinished = true;
 			}
-			return;
 		}
 		client.isRequestFinished = true;
 	}
+	return 200;
 }
 
-HttpRequest SocketInterface::parseRequest(std::string request)
+HttpRequest SocketInterface::parseRequest(std::string request, RequestBuffer &client)
 {
 	RequestParser parser(_config);
-	HttpRequest req = parser.parse(request);
+	HttpRequest req = parser.parse(request, client.isChunked);
 	return req;
 }
 
 void SocketInterface::execReadRequest(pollfd &pollfd, RequestBuffer &client)
 {
-	ReadRequest(pollfd.fd, client);
+	int ret = ReadRequest(pollfd.fd, client);
+	if (ret != 200)
+	{
+		client.httpRequest.statusCode = ret;
+		client.state = WRITE_REQUEST_ERROR;
+		client.isRequestFinished = false;
+		client.request = "";
+		pollfd.events = POLLOUT;
+		return;
+	}
 	if (client.isRequestFinished)
 	{
 		// Requestの解析
 		RequestParser parser(_config);
-		client.httpRequest = parseRequest(client.request);
+		client.httpRequest = parseRequest(client.request, client);
 		if (client.httpRequest.statusCode != 200)
 		{
 			client.state = WRITE_REQUEST_ERROR;
@@ -185,6 +263,8 @@ void SocketInterface::execCoreHandler(pollfd &pollFd, RequestBuffer &client)
 	{
 		pollFd.events = POLLIN;
 		client.state = READ_REQUEST;
+		client.isChunked = false;
+		client.isRequestFinished = false;
 	}
 	else
 	{
@@ -212,14 +292,15 @@ void SocketInterface::execWriteError(pollfd &pollFd, RequestBuffer &client, int 
 {
 	std::string statusCode = std::to_string(client.httpRequest.statusCode);
 	std::string response = "HTTP/1.1 " + statusCode + " ";
-	if (client.httpRequest.statusCode == 400)
-	{
-		response += "Bad Request";
-	}
-	else if (client.httpRequest.statusCode == 411)
+	if (client.httpRequest.statusCode == 411)
 	{
 		response += "Length Required";
 	}
+	else
+	{
+		response += "Bad Request";
+	}
+
 	response += "\r\n\r\n";
 	if (sendResponse(pollFd.fd, response) >= 0)
 	{
@@ -269,7 +350,6 @@ void SocketInterface::execReadCgi(pollfd &pollFd, RequestBuffer &client) // cgi�
 	// 接続されているクライアントにレスポンスを送信する
 	if (client.clientFd)
 	{
-		printf("response: %d\n", client.clientFd);
 		if (response.find("\r\n\r\n") != std::string::npos) // レスポンスの終わり
 		{
 			// レスポンスを送信したら、クライアントの方を読み取れるようにステータスを変更する
@@ -355,11 +435,6 @@ void SocketInterface::eventLoop()
 			std::cerr << "poll() failed" << std::endl;
 			continue;
 		}
-		else if (ret == 0)
-		{
-			std::cout << "poll() timeout" << std::endl;
-			continue;
-		}
 		for (int i = 0; i < _numPorts + _numClients; ++i)
 		{
 
@@ -437,6 +512,9 @@ pollfd SocketInterface::createClient(int fd, State state)
 	client.state = state;
 	client.response = "";
 	client.request = "";
+	client.isChunked = false;
+	client.chunkedSize = -1;
+	client.chunkedBody = "";
 	client.isRequestFinished = false;
 	client.cgiFd = -1;
 	client.clientFd = fd;
@@ -451,6 +529,7 @@ void SocketInterface::acceptConnection(int fd)
 	// socklen_t clientAddrSize = sizeof(clientAddr);
 	// int clientFd = accept(fd, (sockaddr *)&clientAddr, &clientAddrSize);
 	int clientFd = accept(fd, NULL, NULL);
+	std::cout << "acceptConnection " << clientFd << std::endl;
 	if (clientFd < 0)
 	{
 		std::cerr << "accept() failed" << std::endl;

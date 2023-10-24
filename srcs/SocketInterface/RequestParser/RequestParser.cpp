@@ -49,9 +49,6 @@ bool RequestParser::isCgiBlockPath(const ServerContext& server_context, std::vec
 	return false;
 }
 
-
-
-
 HttpRequest RequestParser::parse(const std::string& request, bool isChunked) {
     HttpRequest httpRequest;
     httpRequest.isCgi = false;
@@ -59,11 +56,12 @@ HttpRequest RequestParser::parse(const std::string& request, bool isChunked) {
 
     std::string header = request.substr(0, request.find("\r\n\r\n"));
     std::string body = request.substr(request.find("\r\n\r\n") + 4);
-    std::istringstream requestStream(header);
+    std::istringstream headerStream(header);
+    std::istringstream bodyStream(body);
 
 	ServerContext serverContext = _config->getServerContext("2000", "localhost"); //TODO FIX 動的に取得する
     // メソッドとURLを解析
-    requestStream >> httpRequest.method >> httpRequest.url >> httpRequest.protocol;
+    headerStream >> httpRequest.method >> httpRequest.url >> httpRequest.protocol;
 
     // 正しくない形式の場合は400を返す
     if (httpRequest.protocol.empty() || httpRequest.protocol.find("HTTP/1.1") == std::string::npos || httpRequest.url.empty() || httpRequest.method.empty()) {
@@ -113,9 +111,8 @@ HttpRequest RequestParser::parse(const std::string& request, bool isChunked) {
             return httpRequest;
         }
         char* buffer = new char[contentLength];
-        requestStream.read(buffer, contentLength);
+        bodyStream.read(buffer, contentLength);
         httpRequest.body = std::string(buffer, contentLength);
-
         delete[] buffer;
     }
     // ボディを解析 (Transfer-Encoding: chunkedが指定されていれば)

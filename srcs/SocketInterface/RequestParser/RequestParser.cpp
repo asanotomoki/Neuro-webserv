@@ -53,6 +53,7 @@ HttpRequest RequestParser::parse(const std::string& request, bool isChunked) {
     HttpRequest httpRequest;
     httpRequest.isCgi = false;
     httpRequest.statusCode = 200;
+
     std::string header = request.substr(0, request.find("\r\n\r\n"));
     std::string body = request.substr(request.find("\r\n\r\n") + 4);
     std::istringstream headerStream(header);
@@ -71,20 +72,24 @@ HttpRequest RequestParser::parse(const std::string& request, bool isChunked) {
     // ヘッダーを解析
     std::string headerLine;
     int contentLength = -1; // Content-Lengthを保存する変数
-    while (std::getline(headerStream, headerLine)) {
+    while (std::getline(requestStream, headerLine)) {
         std::istringstream headerStream(headerLine);
         std::string key;
         std::string value;
         std::getline(headerStream, key, ':');
         std::getline(headerStream, value);
         if (!value.empty() && value[0] == ' ') {
-            value = value.substr(1); // コロンの後のスペースをスキップ
+            value = value.substr(1); // 先頭のスペースを削除
         }
         httpRequest.headers[key] = value;
-
-        // Content-Lengthの取得
         if (key == "Content-Length") {
-            contentLength = std::stoi(value);
+            try {
+                contentLength = std::stoi(value);
+            } catch(std::exception& e) {
+                contentLength = 0;
+                httpRequest.statusCode = 400;
+                return httpRequest;
+            }
         }
     }
     if (httpRequest.method == "POST" && contentLength == -1 && !isChunked) {
@@ -92,16 +97,32 @@ HttpRequest RequestParser::parse(const std::string& request, bool isChunked) {
         httpRequest.statusCode = 411;
         return httpRequest;
     }
-    
+    // ボディを解析 (Content-Lengthが指定されていれば)
+    size_t maxBodySize = 0;
+    try {
+        maxBodySize = std::stoi(serverContext.getMaxBodySize()); 
+    } catch(std::exception& e) {
+        maxBodySize = 1000000;
+    }
     if (contentLength > 0) {
-        int maxBodySize = std::stoi(serverContext.getMaxBodySize()); //TODO FIX!!
-        if (contentLength > maxBodySize) {
-            contentLength = maxBodySize;
+        if (contentLength > (int)maxBodySize) {
+            std::cout << "413 Payload Too Large" << std::endl;
+            httpRequest.statusCode = 413;
+            return httpRequest;
         }
         char* buffer = new char[contentLength];
         bodyStream.read(buffer, contentLength);
         httpRequest.body = std::string(buffer, contentLength);
         delete[] buffer;
+    }
+    // ボディを解析 (Transfer-Encoding: chunkedが指定されていれば)
+    if (isChunked)
+    {
+        if (body.size() > maxBodySize) {
+            std::cout << "413 Payload Too Large" << std::endl;
+            httpRequest.statusCode = 413;
+            return httpRequest;
+        }
     }
     std::vector<std::string> tokens = split(httpRequest.url, '?');
 	if (tokens.size() == 0)

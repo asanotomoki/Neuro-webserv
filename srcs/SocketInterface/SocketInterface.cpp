@@ -124,7 +124,6 @@ int parseChunkedRequest(std::string body, RequestBuffer &client)
 		client.isRequestFinished = true;
 		return 200;
 	}
-	std::cout << "chunkedSize = " << client.chunkedBody.size() << std::endl;
 	if (client.chunkedBody.size() > (size_t)client.chunkedSize + 2)
 	{
 		client.isRequestFinished = false;
@@ -139,7 +138,6 @@ int parseChunkedRequest(std::string body, RequestBuffer &client)
 		body = client.chunkedBody.substr(client.chunkedSize + 2);
 		client.chunkedSize = -1;
 		client.chunkedBody = "";
-		// chunkedSizeの分だけ読み込んだ後は、chunkedSizeの分だけ読み込んだbodyをresponseに追加する
 		return parseChunkedRequest(body, client);
 	}
 	else
@@ -188,12 +186,16 @@ int SocketInterface::ReadRequest(int fd, RequestBuffer &client)
 		{
 			std::string contentLength = header.substr(header.find("Content-Length: ") + 16);
 			std::cout << "contentLength: " << contentLength << std::endl;
-			if (contentLength.empty() || contentLength.find("\r\n") != std::string::npos)
+			if (contentLength.empty())
 			{
 				return 411;
 			}
-			contentLength = contentLength.substr(0, contentLength.find("\r\n"));
-			size_t len = std::stoi(contentLength);
+			size_t len = 0;
+			try {
+				len = std::stoi(contentLength);
+			} catch (std::exception &e) {
+				return 400;
+			}
 			if (contentLength == "0")
 			{
 				client.isRequestFinished = true;
@@ -202,6 +204,9 @@ int SocketInterface::ReadRequest(int fd, RequestBuffer &client)
 			{
 				std::cout << "body.size(): " << body.size() << std::endl;
 				client.isRequestFinished = true;
+			} else {
+				client.isRequestFinished = false;
+				return 200;
 			}
 		}
 		client.isRequestFinished = true;
@@ -300,8 +305,14 @@ void SocketInterface::execWriteError(pollfd &pollFd, RequestBuffer &client, int 
 	{
 		response += "Bad Request";
 	}
-
+	response += "\r\n";
+	response += "Content-Length: 0";
+	response += "\r\n";
+	response += "Connection: close";
+	response += "\r\n";
+	response += "content-type: text/html";
 	response += "\r\n\r\n";
+
 	if (sendResponse(pollFd.fd, response) >= 0)
 	{
 		pollFd.events = POLLIN;

@@ -4,6 +4,7 @@
 #include <vector>
 #include <iostream>
 #include <dirent.h>
+#include <sys/stat.h>
 
 std::vector<std::string> split(const std::string &s, char delimiter) {
     std::vector<std::string> tokens;
@@ -23,9 +24,18 @@ std::vector<std::string> split(const std::string &s, char delimiter) {
     return tokens;
 }
 
-int isFile(std::string path)
+bool fileExists(const std::string& path) {
+
+  struct stat buffer;   
+  return (stat (path.c_str(), &buffer) == 0); 
+
+}
+
+int CoreHandler::isFile(const std::string& token, std::string fullpath)
 {
-	if (path.find('.') != std::string::npos)
+	if (token.find('.') != std::string::npos)
+		return 1;
+	else if (fullpath != "" && !fileExists(fullpath))
 		return 1;
 	return 0;
 }
@@ -107,35 +117,50 @@ ParseUrlResult getCgiPath(std::vector<std::string> tokens)
 	return result;
 }
 
-bool getIsAutoIndex(LocationContext &location_context, std::string path)
-{
-	bool autoindexEnabled = true;
-	bool res = true;
-	if (location_context.hasDirective("autoindex"))
-	{
-        autoindexEnabled = location_context.getDirective("autoindex") == "on";
+// bool getIsAutoIndex(LocationContext &location_context, std::string path)
+// {
+// 	bool autoindexEnabled = true;
+// 	bool res = true;
+// 	if (location_context.hasDirective("autoindex"))
+// 	{
+//         autoindexEnabled = location_context.getDirective("autoindex") == "on";
+// 	}
+// 	if (!isFile(path) && !autoindexEnabled)
+// 	{
+// 		res = false;
+// 	}
+// 	return res;
+// }
+
+bool CoreHandler::isFileIncluded(std::vector<std::string> tokens) {
+	//最後のトークン以外にファイルが含まれるか調べる
+	for (size_t i = 0; i < tokens.size() - 1 ; i++) {
+		if (isFile(tokens[i]))
+			return true;
 	}
-	if (!isFile(path) && !autoindexEnabled)
-	{
-		res = false;
-	}
-	return res;
+	return false;
 }
 
 std::string CoreHandler::getFile(std::vector<std::string> tokens, LocationContext &locationContext,
 								ParseUrlResult &result)
 {
-	std::cout << "reslt.fullpath: " << result.fullpath << std::endl;
 	std::string file;
-	if (isFile(tokens[tokens.size() - 1]))
-	{
+	if (isFile(tokens[tokens.size() - 1], result.fullpath)) {
 		file = tokens[tokens.size() - 1];
 	} else if (isDirectory_x(result.fullpath)) {
-		try {
+		if (locationContext.hasDirective("index"))
 			file = locationContext.getDirective("index");
-			std::cout << "file: " << file << std::endl;
-		} catch (const std::exception& e) {
-			file = "index.html";
+		else { //設計上、必ずautoindexディレクティブが存在する
+			if (locationContext.getDirective("autoindex") == "on") {
+				if (isFileIncluded(tokens))
+					result.errorflag = 1;
+				result.autoindex = 1;
+				file = "";
+			} else { //autoindexがoffの場合
+				locationContext = _serverContext.get403LocationContext();
+				file = locationContext.getDirective("index");
+				result.statusCode = 403;
+			}
 		}
 	} else {
 		locationContext = _serverContext.get404LocationContext();
@@ -161,19 +186,20 @@ ParseUrlResult parseHomeDirectory(std::string url, const ServerContext& server_c
 			result.file = "index.html";
 		}
 	}
-	
 	// alias.erase(alias.size() - 1, 1);
 	result.fullpath = alias + result.file;
+	std::cout << "result.fullpath: " << result.fullpath << std::endl;
 	// result.fullpath.erase(result.fullpath.size() - 1, 1);
 	// result.isAutoIndex = getIsAutoIndex(location_context, url);
 	return result;
 }
 
-
 ParseUrlResult CoreHandler::parseUrl(std::string url)
 {
 	ParseUrlResult result;
 	result.statusCode = 200;
+	result.autoindex = 0;
+	result.errorflag = 0;
 	std::vector<std::string> tokens = split(url, '?');
 	if (tokens.size() == 1) {
 		result.query = "";
@@ -185,6 +211,7 @@ ParseUrlResult CoreHandler::parseUrl(std::string url)
 	if (tokens[0] == "/") {
 		ParseUrlResult res = parseHomeDirectory(url, _serverContext);
 		res.query = result.query;
+		res.statusCode = result.statusCode;
 		return res;
 	}
 	tokens[0].erase(0, 1);
@@ -225,8 +252,19 @@ ParseUrlResult CoreHandler::parseUrl(std::string url)
 	result.fullpath = alias;
 	std::cout << "alias: " << alias << std::endl;
 	result.file = getFile(path_tokens, locationContext, result);
+	std::cout << "result.file: " << result.file << std::endl;
+	if (result.autoindex == 1 && result.file == "") {
+		std::cout << "debuuuuuuuug 1" << std::endl;
+		// 余計なパスや存在しないパスのため		
+		if (path_tokens.size() > 2 && validatePath(alias + path_tokens[path_tokens.size() - 1]) == -1
+			&& result.errorflag == 1) {
+			std::cout << "debuuuuuuuug 2" << std::endl;
+			result.statusCode = 404;
+			return result;
+		}
+		return result;
+	}
 	// result.isAutoIndex = getIsAutoIndex(location_context, path_tokens[path_tokens.size() - 1]);
-	std::cout << "HAHAHA: " << result.fullpath << std::endl;
 
 	result.fullpath.erase(result.fullpath.size() - 1, 1);
 	// size_t path_size = path_tokens.size() - isFile(path_tokens[path_tokens.size() - 1]);
@@ -235,7 +273,7 @@ ParseUrlResult CoreHandler::parseUrl(std::string url)
 	// 	result.fullpath += "/" + path_tokens[i];
 	// }
 	result.fullpath += "/" + result.file;
-	std::cout << "HIHIHI: " << result.fullpath << std::endl;
+	std::cout << "result.fullpath: " << result.fullpath << std::endl;
 	std::cout << "ステータスコード: " << result.statusCode << std::endl;
 	return result;
 }

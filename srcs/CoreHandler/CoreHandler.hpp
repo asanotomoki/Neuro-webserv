@@ -16,6 +16,8 @@ struct ParseUrlResult
     std::string pathInfo;
     int statusCode;
     std::string message;
+    int autoindex;
+    int errorflag;
 };
 
 struct ProcessResult
@@ -35,11 +37,15 @@ class CoreHandler
 private:
     ParseUrlResult parseUrl(std::string url);
     ServerContext _serverContext;
-    std::string getMethod(const std::string &fullpath, const LocationContext &locationContext);
+    std::string getMethod(const std::string &fullpath, const LocationContext &locationContext,
+                            const ParseUrlResult& result);
     std::string postMethod(std::string body);
     std::string deleteMethod(const std::string &filename);
     std::string getFile(std::vector<std::string> tokens, LocationContext &locationContext, ParseUrlResult &result);
     LocationContext determineLocationContext(ParseUrlResult &result);
+    int isFile(const std::string& token, std::string fullpath = "");
+    int validatePath(const std::string& path);
+    bool isFileIncluded(std::vector<std::string> tokens);
     CoreHandler();
 
 public:

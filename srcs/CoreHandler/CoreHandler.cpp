@@ -8,6 +8,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
+
 CoreHandler::CoreHandler()
 {
 	ServerContext serverContext;
@@ -48,12 +49,13 @@ std::string errorResponse(int statusCode, std::string message, const LocationCon
 	return response;
 }
 
-std::string CoreHandler::getMethod(const std::string &fullpath, const LocationContext &locationContext)
+std::string CoreHandler::getMethod(const std::string &fullpath, const LocationContext &locationContext, 
+									const ParseUrlResult& result)
 {
 	// 静的ファイルを提供する場合
 	StaticFileReader fileReader;
 
-	std::string fileContent = fileReader.readFile(fullpath, locationContext, _serverContext);
+	std::string fileContent = fileReader.readFile(fullpath, locationContext, _serverContext, result);
 	std::string response = successResponse(fileContent, "text/html");
 	return response;
 }
@@ -77,6 +79,16 @@ std::string CoreHandler::deleteMethod(const std::string &filename)
 		return errorResponse(404, "Not Found", locationContext);
 	}
 	return "HTTP/1.1 204 No Content\r\n\r\n"; // 成功のレスポンス
+}
+
+int CoreHandler::validatePath(const std::string &path)
+{
+	std::cout << "validatePath :: path: " << path << std::endl;
+	// 引数で与えらえれたファイルパスがサーバープログラムに存在するかどうかを確認する
+	struct stat buffer;
+	int ret = stat(path.c_str(), &buffer);
+	std::cout << "ret :" << ret << std::endl;
+	return ret;
 }
 
 LocationContext CoreHandler::determineLocationContext(ParseUrlResult& result)
@@ -120,12 +132,15 @@ std::string CoreHandler::processRequest(HttpRequest httpRequest)
 	{
 		httpRequest.url += '/';
 	}
-
 	ParseUrlResult parseUrlResult = parseUrl(httpRequest.url);
 	LocationContext locationContext = CoreHandler::determineLocationContext(parseUrlResult);
 	if (parseUrlResult.statusCode != 200) {
-		std::cout << "helooooooooooo" << std::endl;
 		return errorResponse(parseUrlResult.statusCode, parseUrlResult.message, locationContext);
+	} else if (validatePath(parseUrlResult.fullpath) == -1) {
+		locationContext = _serverContext.get404LocationContext();
+		return errorResponse(404, "Not found", locationContext);
+	} else if (parseUrlResult.autoindex == 1) {
+		return getMethod(parseUrlResult.fullpath, locationContext, parseUrlResult);
 	}
 	// if (parseUrlResult.statusCode >= 300 && parseUrlResult.statusCode < 400) {
 	//     std::string location = "http://" + hostPort.first + ":" + hostPort.second + parseUrlResult.fullpath;
@@ -138,7 +153,8 @@ std::string CoreHandler::processRequest(HttpRequest httpRequest)
 			locationContext = _serverContext.get405LocationContext();
 			return errorResponse(405, "Method Not Allowed", locationContext);
 		}
-		return getMethod(parseUrlResult.fullpath, locationContext);
+		std::cout << "parseUrlResult.fullpath: " << parseUrlResult.fullpath << std::endl;
+		return getMethod(parseUrlResult.fullpath, locationContext, parseUrlResult);
 	}
 	else if (httpRequest.method == "POST")
 	{

@@ -251,9 +251,10 @@ const LocationContext ConfigParser::setLocationContext()
 		else
 			locationContext.addDirective(_oneLine[0], _oneLine[1], _filepath, _lineNumber + 1);
 	}
-	if (!locationContext.hasDirective("alias") && !locationContext.hasDirective("return")) {
+	if (!locationContext.hasDirective("alias") && !locationContext.hasDirective("return"))
 		throw ConfigError(NEED_ALIAS, "location", _filepath, _lineNumber + 1);
-	}
+	if (!locationContext.hasDirective("return") && (!locationContext.hasDirective("autoindex") && !locationContext.hasDirective("index")))
+		throw ConfigError(NEED_INDEX, "location", _filepath, _lineNumber + 1);
 	// _pathPairにpathとaliasのペアを保存
 	if (locationContext.hasDirective("alias"))
 		locationContext.setPathPair(locationContext.getDirective("alias"), locationContext.getDirective("path"));

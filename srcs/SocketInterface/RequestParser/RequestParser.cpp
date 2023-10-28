@@ -49,65 +49,80 @@ bool RequestParser::isCgiBlockPath(const ServerContext& server_context, std::vec
 	return false;
 }
 
-HttpRequest RequestParser::parse(const std::string& request) {
+HttpRequest RequestParser::parse(const std::string& request, bool isChunked) {
     HttpRequest httpRequest;
     httpRequest.isCgi = false;
     httpRequest.statusCode = 200;
-    std::istringstream requestStream(request);
+
+    std::string header = request.substr(0, request.find("\r\n\r\n"));
+    std::string body = request.substr(request.find("\r\n\r\n") + 4);
+    std::istringstream headerStream(header);
+    std::istringstream bodyStream(body);
 
 	ServerContext serverContext = _config->getServerContext("2000", "localhost"); //TODO FIX 動的に取得する
     // メソッドとURLを解析
-    requestStream >> httpRequest.method >> httpRequest.url >> httpRequest.protocol;
+    headerStream >> httpRequest.method >> httpRequest.url >> httpRequest.protocol;
 
     // 正しくない形式の場合は400を返す
-    if (httpRequest.protocol.empty() || httpRequest.protocol.find("HTTP/") == std::string::npos || httpRequest.url.empty() || httpRequest.method.empty()) {
+    if (httpRequest.protocol.empty() || httpRequest.protocol.find("HTTP/1.1") == std::string::npos || httpRequest.url.empty() || httpRequest.method.empty()) {
+        std::cout << "400 Bad Request" << std::endl;
         httpRequest.statusCode = 400;
         return httpRequest;
     }
     // ヘッダーを解析
     std::string headerLine;
-    int contentLength = 0; // Content-Lengthを保存する変数
-    bool isCR = false;
+    int contentLength = -1; // Content-Lengthを保存する変数
     while (std::getline(requestStream, headerLine)) {
-        // ヘッダーの終了判定
-        if (headerLine == "\r" && isCR) {
-            break;
-        }
-        if (headerLine == "\r") {
-            isCR = true;
-            continue;
-        }
-        isCR = false;
         std::istringstream headerStream(headerLine);
         std::string key;
         std::string value;
         std::getline(headerStream, key, ':');
         std::getline(headerStream, value);
         if (!value.empty() && value[0] == ' ') {
-            value = value.substr(1); // コロンの後のスペースをスキップ
+            value = value.substr(1); // 先頭のスペースを削除
         }
         httpRequest.headers[key] = value;
-
-        // Content-Lengthの取得
         if (key == "Content-Length") {
-            contentLength = std::stoi(value);
+            try {
+                contentLength = std::stoi(value);
+            } catch(std::exception& e) {
+                contentLength = 0;
+                httpRequest.statusCode = 400;
+                return httpRequest;
+            }
         }
     }
-    // Method /path HTTP/1.1以外の場合はisRequestFinishedをfalseにする
-    if (httpRequest.method == "" &&  httpRequest.url == "") {
+    if (httpRequest.method == "POST" && contentLength == -1 && !isChunked) {
+        std::cout << "411 Length Required" << std::endl;
+        httpRequest.statusCode = 411;
         return httpRequest;
     }
     // ボディを解析 (Content-Lengthが指定されていれば)
+    size_t maxBodySize = 0;
+    try {
+        maxBodySize = std::stoi(serverContext.getMaxBodySize()); 
+    } catch(std::exception& e) {
+        maxBodySize = 1000000;
+    }
     if (contentLength > 0) {
-        int maxBodySize = std::stoi(serverContext.getMaxBodySize());
-        if (contentLength > maxBodySize) {
-            contentLength = maxBodySize;
+        if (contentLength > (int)maxBodySize) {
+            std::cout << "413 Payload Too Large" << std::endl;
+            httpRequest.statusCode = 413;
+            return httpRequest;
         }
         char* buffer = new char[contentLength];
-        requestStream.read(buffer, contentLength);
+        bodyStream.read(buffer, contentLength);
         httpRequest.body = std::string(buffer, contentLength);
-
         delete[] buffer;
+    }
+    // ボディを解析 (Transfer-Encoding: chunkedが指定されていれば)
+    if (isChunked)
+    {
+        if (body.size() > maxBodySize) {
+            std::cout << "413 Payload Too Large" << std::endl;
+            httpRequest.statusCode = 413;
+            return httpRequest;
+        }
     }
     std::vector<std::string> tokens = split(httpRequest.url, '?');
 	if (tokens.size() == 0)

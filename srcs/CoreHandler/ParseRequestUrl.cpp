@@ -267,9 +267,24 @@ ParseUrlResult CoreHandler::parseUrl(std::string url)
 		parseHomeDirectory(url, result);
 		return result;
 	}
+
 	LocationContext locationContext;
 	locationContext = _serverContext.getLocationContext(result.directory);
 	std::string alias = locationContext.getDirective("alias");
+
+// 	if (path_tokens.size() == 1 && isFile(path_tokens[0]))
+// 	{
+// 		ParseUrlResult res = parseHomeDirectory(url, _serverContext);
+// 		res.query = result.query;
+// 		return res;
+// 	}
+// 	LocationContext location_context;
+// 	location_context = _serverContext.getLocationContext(result.directory);
+// 	std::string alias = location_context.getDirective("alias");
+// 	result.file = getFile(path_tokens, location_context);
+// 	result.isAutoIndex = getIsAutoIndex(location_context, path_tokens[path_tokens.size() - 1]);
+
+	// fullpathの最後のスラッシュを削除
 	result.fullpath = alias;
 	std::cout << "alias: " << alias << std::endl;
 	result.file = getFile(path_tokens, locationContext, result);

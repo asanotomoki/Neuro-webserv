@@ -52,6 +52,8 @@ std::string errorResponse(int statusCode, std::string message, const LocationCon
 
 std::string getContentType(const std::string& filepath) {
     // MIMEタイプのマッピング
+
+	std::cout << "filepath: " << filepath << std::endl;
     static std::map<std::string, std::string> mimeTypes;
 	mimeTypes.insert(std::make_pair(".html", "text/html"));
 	mimeTypes.insert(std::make_pair(".css", "text/css"));
@@ -68,17 +70,18 @@ std::string getContentType(const std::string& filepath) {
 	mimeTypes.insert(std::make_pair(".tar", "application/x-tar"));
 	mimeTypes.insert(std::make_pair(".txt", "text/plain"));
 
+
     // ファイル名から最後のドットを検索して拡張子を取得
     size_t pos = filepath.find_last_of(".");
     if (pos == std::string::npos) {
-        return "application/octet-stream";  // 拡張子がない場合のデフォルトMIMEタイプ
+        return "text/html";
     }
 
     std::string ext = filepath.substr(pos);
     if (mimeTypes.find(ext) != mimeTypes.end()) {
         return mimeTypes[ext];
     } else {
-        return "application/octet-stream";  // 拡張子がマッピングにない場合のデフォルトMIMEタイプ
+        return "text/html";  // 拡張子がマッピングにない場合のデフォルトMIMEタイプ
     }
 }
 
@@ -91,7 +94,7 @@ std::string CoreHandler::getMethod(const std::string &fullpath, const LocationCo
 
 	// スラッシュが2個続く場合があるため取り除く
 	std::string fileContent = fileReader.readFile(fullpath, locationContext, _serverContext, result);
-  std::string contentType = getContentType(fullpath);
+  	std::string contentType = getContentType(fullpath);
 	std::cout << "contentType: " << contentType << "\n"; 
 	std::string response = successResponse(fileContent, contentType);
 

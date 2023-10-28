@@ -13,6 +13,8 @@
 struct CgiResult
 {
 	int fd;
+	int inputFd;
+	std::string body;
 	pid_t pid;
 };
 

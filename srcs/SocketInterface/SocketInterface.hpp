@@ -27,6 +27,7 @@ enum State
     WRITE_CGI,
     WAIT_CGI,
     WRITE_REQUEST_ERROR,
+    WRITE_CGI_BODY,
 };
 
 struct RequestBuffer
@@ -81,6 +82,7 @@ private:
     void execReadCgi(pollfd &pollFd, RequestBuffer &client);
     void execWriteCgi(pollfd &pollFd, RequestBuffer &client);
     void execWriteError(pollfd &pollFd, RequestBuffer &client, int index);
+    void execWriteCGIBody(pollfd &pollFd, RequestBuffer &client, int index);
     pollfd createClient(int fd, State state);
 };
 

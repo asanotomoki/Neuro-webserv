@@ -59,12 +59,12 @@ CgiResult Cgi::execCGI()
     {
         close(pipe_fd[1]);
         close(pipe_stdin[0]);
-        write(pipe_stdin[1], this->_request.body.c_str(), this->_request.body.size());
-        close(pipe_stdin[1]);
         delete [] env;
         delete [] args;
     }
     result.fd = pipe_fd[0];
+    result.inputFd = pipe_stdin[1];
+    result.body = this->_request.body;
     return result;
 }
 

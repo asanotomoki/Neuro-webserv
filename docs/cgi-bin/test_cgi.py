@@ -8,7 +8,7 @@ import os
 
 # CONTENT_LENGTHからデータの長さを取得
 request_method = os.environ['REQUEST_METHOD']
-
+time.sleep(1)
 if request_method == "POST":
 	content_length = int(os.environ['CONTENT_LENGTH'])
 	body = sys.stdin.read(content_length)
@@ -16,7 +16,6 @@ if request_method == "POST":
 print("HTTP/1.1 200 OK")
 print("Content-type: text/html\r\n\r\n")
 
-time.sleep(3)
 print("<html>")
 print("<head>")
 

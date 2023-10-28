@@ -202,7 +202,6 @@ int SocketInterface::ReadRequest(int fd, RequestBuffer &client)
 			}
 			else if (body.size() >= len)
 			{
-				std::cout << "body.size(): " << body.size() << std::endl;
 				client.isRequestFinished = true;
 			} else {
 				client.isRequestFinished = false;
@@ -236,7 +235,6 @@ void SocketInterface::execReadRequest(pollfd &pollfd, RequestBuffer &client)
 	if (client.isRequestFinished)
 	{
 		// Requestの解析
-		RequestParser parser(_config);
 		client.httpRequest = parseRequest(client.request, client);
 		if (client.httpRequest.statusCode != 200)
 		{
@@ -284,11 +282,20 @@ void SocketInterface::execCgi(pollfd &pollFd, RequestBuffer &client) // client�
 	Cgi Cgi(client.httpRequest);
 	CgiResult result = Cgi.execCGI(); // cgiのpipeのfd
 	int fd = result.fd;
-	pollfd cgi = createClient(fd, READ_CGI);
+	pollfd cgi = createClient(fd, WAIT_CGI);
 	_clients[fd].clientFd = pollFd.fd; // clientのpollFdをcgiに渡す
 	_clients[fd].cgiPid = result.pid;
 	client.cgiFd = cgi.fd; // 削除時にpollFdを削除するために必要
-	// cgiが終わったらresponseに書き込まれるので、終わり次第レスポンスとして送信する
+	int intputFd = result.inputFd;
+	if (intputFd != -1  && client.httpRequest.method == "POST")
+	{
+		std::cout << "body: " << client.httpRequest.body << std::endl;
+		createClient(intputFd, WRITE_CGI_BODY);
+		_clients[intputFd].request = client.httpRequest.body;
+	} else {
+		close(intputFd);
+		_clients[fd].state = READ_CGI;
+	}
 	pollFd.events = POLLOUT;
 	client.state = WAIT_CGI;
 }
@@ -320,6 +327,23 @@ void SocketInterface::execWriteError(pollfd &pollFd, RequestBuffer &client, int 
 	}
 	else
 	{
+		pollFd.events = POLLOUT;
+	}
+}
+
+void SocketInterface::execWriteCGIBody(pollfd &pollFd, RequestBuffer &client, int index)
+{
+	std::string response = client.request;
+	std::cout << "response: " << pollFd.fd << std::endl;
+	if (sendResponse(pollFd.fd, response) >= 0)
+	{
+		pollFd.events = POLLIN;
+		std::cout << "delete Fd" << pollFd.fd << std::endl;
+		pushDelPollFd(pollFd.fd, index);
+	}
+	else
+	{
+		std::cout << "send response error" << std::endl;
 		pollFd.events = POLLOUT;
 	}
 }
@@ -468,6 +492,8 @@ void SocketInterface::eventLoop()
 				else if (state == WRITE_REQUEST_ERROR)
 				{
 					execWriteError(_pollFds[i], _clients[_pollFds[i].fd], i);
+				} else if (state == WRITE_CGI_BODY) {
+					execWriteCGIBody(_pollFds[i], _clients[_pollFds[i].fd], i);
 				}
 			}
 			else if (_pollFds[i].revents & POLLIN)
@@ -517,7 +543,14 @@ pollfd SocketInterface::createClient(int fd, State state)
 {
 	pollfd pollFd;
 	pollFd.fd = fd;
-	pollFd.events |= POLLIN;
+	if (state == WRITE_CGI_BODY)
+	{
+		pollFd.events = POLLOUT;
+	}
+	else
+	{
+		pollFd.events = POLLIN;
+	}
 	_addPollFds.push_back(pollFd);
 	RequestBuffer client;
 	client.state = state;

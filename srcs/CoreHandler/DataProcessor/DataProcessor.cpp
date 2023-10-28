@@ -42,14 +42,11 @@ bool isDirectory(std::string path) {
     return false;
 }
 
-// bool isFile(std::string path) {
-//     std::ifstream file(path);
-//     if (file) {
-//         file.close();
-//         return true;
-//     }
-//     return false;
-// }
+bool isFile(std::string path) {
+    if (path.find('.') != std::string::npos)
+        return true;
+    return false;
+}
 
 std::string DataProcessor::getAutoIndexHtml(std::string path, const ServerContext& serverContext) {
 
@@ -69,13 +66,16 @@ std::string DataProcessor::getAutoIndexHtml(std::string path, const ServerContex
                 continue;
             }
             std::cout << "name: " << name << std::endl;
-            // std::cout << "path1: " << path << std::endl;
-            // pathが"./docs/"の場合はnameを追加
             std::string tempPath = path;
             std::string clientPath;
             if (path == "./docs/") {
-                path += name;
-                clientPath = serverContext.getClientPath(path);
+                if (isFile(name)) {
+                    clientPath = serverContext.getClientPath(path);
+                    clientPath += name;
+                } else {
+                    path += name;
+                    clientPath = serverContext.getClientPath(path);
+                }
             } else {
                 clientPath = serverContext.getClientPath(path);
                 clientPath += name;

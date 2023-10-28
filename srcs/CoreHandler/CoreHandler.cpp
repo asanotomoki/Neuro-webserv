@@ -81,10 +81,13 @@ std::string CoreHandler::deleteMethod(const std::string &filename)
 	return "HTTP/1.1 204 No Content\r\n\r\n"; // 成功のレスポンス
 }
 
-int CoreHandler::validatePath(const std::string &path)
+int CoreHandler::validatePath(std::string& path)
 {
 	std::cout << "validatePath :: path: " << path << std::endl;
 	// 引数で与えらえれたファイルパスがサーバープログラムに存在するかどうかを確認する
+	// もしpathが'/'で終わっている場合は、削除する
+	if (path[path.size() - 1] == '/')
+		path.erase(path.size() - 1, 1);
 	struct stat buffer;
 	int ret = stat(path.c_str(), &buffer);
 	std::cout << "ret :" << ret << std::endl;
@@ -136,7 +139,7 @@ std::string CoreHandler::processRequest(HttpRequest httpRequest)
 	LocationContext locationContext = CoreHandler::determineLocationContext(parseUrlResult);
 	if (parseUrlResult.statusCode != 200) {
 		return errorResponse(parseUrlResult.statusCode, parseUrlResult.message, locationContext);
-	} else if (validatePath(parseUrlResult.fullpath) == -1) {
+	} else if (validatePath(parseUrlResult.fullpath) == -1 && parseUrlResult.autoindex == 0) {
 		locationContext = _serverContext.get404LocationContext();
 		return errorResponse(404, "Not found", locationContext);
 	} else if (parseUrlResult.autoindex == 1) {

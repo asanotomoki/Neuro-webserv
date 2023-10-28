@@ -160,38 +160,64 @@ std::string CoreHandler::getFile(std::vector<std::string> tokens, LocationContex
 				locationContext = _serverContext.get403LocationContext();
 				file = locationContext.getDirective("index");
 				result.statusCode = 403;
+				result.message = "Forbidden";
 			}
 		}
 	} else {
 		locationContext = _serverContext.get404LocationContext();
 		file = locationContext.getDirective("index");
 		result.statusCode = 404;
+		result.message = "Not Found";
 	}
 	return file;
 }
 
-ParseUrlResult parseHomeDirectory(std::string url, const ServerContext& server_context)
+bool isExistingFile(std::string path) {
+	struct stat buffer;
+	int ret = stat(path.c_str(), &buffer);
+	if (ret == 0)
+		return true;
+	return false;
+}
+
+void CoreHandler::parseHomeDirectory(std::string url, ParseUrlResult& result)
 {
-	ParseUrlResult result;
-	LocationContext location_context = server_context.getLocationContext("/");
+	LocationContext location_context = _serverContext.getLocationContext("/");
 	result.directory = "/";
 	std::string alias = location_context.getDirective("alias");
+	std::cout << "url: " << url << std::endl;
 	if (url != "/")
-	{
 		result.file = url;
-	} else {
-		try {
+	else {
+		if (location_context.hasDirective("autoindex")) {
+			if (location_context.hasDirective("index")) {
+				result.file = location_context.getDirective("index");
+				if (location_context.getDirective("autoindex") == "on") {
+					if (!isExistingFile(alias + result.file))
+						result.autoindex = 1;
+				}
+			} else {
+				if (location_context.getDirective("autoindex") == "on") {
+					result.autoindex = 1;
+					result.file = "";
+				} else {
+					location_context = _serverContext.get403LocationContext();
+					result.file = location_context.getDirective("index");
+					result.statusCode = 403;
+					result.message = "Forbidden";
+				}
+				return ;
+			}
+		} else {
 			result.file = location_context.getDirective("index");
-		} catch (const std::exception& e) {
-			result.file = "index.html";
 		}
 	}
 	// alias.erase(alias.size() - 1, 1);
 	result.fullpath = alias + result.file;
-	std::cout << "result.fullpath: " << result.fullpath << std::endl;
+	std::cout << "result.fullpath HOME: " << result.fullpath << std::endl;
 	// result.fullpath.erase(result.fullpath.size() - 1, 1);
 	// result.isAutoIndex = getIsAutoIndex(location_context, url);
-	return result;
+	return;
 }
 
 ParseUrlResult CoreHandler::parseUrl(std::string url)
@@ -209,10 +235,8 @@ ParseUrlResult CoreHandler::parseUrl(std::string url)
 	}	
 	// home directory
 	if (tokens[0] == "/") {
-		ParseUrlResult res = parseHomeDirectory(url, _serverContext);
-		res.query = result.query;
-		res.statusCode = result.statusCode;
-		return res;
+		parseHomeDirectory(url, result);
+		return result;
 	}
 	tokens[0].erase(0, 1);
 	// cgi-bin
@@ -224,7 +248,6 @@ ParseUrlResult CoreHandler::parseUrl(std::string url)
 		else
 			break ;
 	}
-	std::cout << "result.directory1: " << result.directory << std::endl;
 	std::string redirectPath = _serverContext.getReturnPath(result.directory);
     if (!redirectPath.empty()) {
 		result.statusCode = 302;
@@ -241,12 +264,10 @@ ParseUrlResult CoreHandler::parseUrl(std::string url)
 	if (isCgiBlockPath(_serverContext, path_tokens))
 		return parseCgiBlock(path_tokens, _serverContext);
 	if (path_tokens.size() == 1 && isFile(path_tokens[0])) {
-		ParseUrlResult res = parseHomeDirectory(url, _serverContext);
-		res.query = result.query;
-		return res;
+		parseHomeDirectory(url, result);
+		return result;
 	}
 	LocationContext locationContext;
-	std::cout << "result.directory2: " << result.directory << std::endl;
 	locationContext = _serverContext.getLocationContext(result.directory);
 	std::string alias = locationContext.getDirective("alias");
 	result.fullpath = alias;
@@ -254,12 +275,11 @@ ParseUrlResult CoreHandler::parseUrl(std::string url)
 	result.file = getFile(path_tokens, locationContext, result);
 	std::cout << "result.file: " << result.file << std::endl;
 	if (result.autoindex == 1 && result.file == "") {
-		std::cout << "debuuuuuuuug 1" << std::endl;
-		// 余計なパスや存在しないパスのため		
-		if (path_tokens.size() > 2 && validatePath(alias + path_tokens[path_tokens.size() - 1]) == -1
-			&& result.errorflag == 1) {
-			std::cout << "debuuuuuuuug 2" << std::endl;
+		// 余計なパスや存在しないパスのため
+		std::string arg = alias + path_tokens[path_tokens.size() - 1];
+		if (path_tokens.size() > 2 && validatePath(arg) == -1 && result.errorflag == 1) {
 			result.statusCode = 404;
+			result.message = "Not Found";
 			return result;
 		}
 		return result;

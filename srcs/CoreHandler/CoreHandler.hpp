@@ -44,8 +44,9 @@ private:
     std::string getFile(std::vector<std::string> tokens, LocationContext &locationContext, ParseUrlResult &result);
     LocationContext determineLocationContext(ParseUrlResult &result);
     int isFile(const std::string& token, std::string fullpath = "");
-    int validatePath(const std::string& path);
+    int validatePath(std::string& path);
     bool isFileIncluded(std::vector<std::string> tokens);
+    void parseHomeDirectory(std::string url, ParseUrlResult& result);
     CoreHandler();
 
 public:

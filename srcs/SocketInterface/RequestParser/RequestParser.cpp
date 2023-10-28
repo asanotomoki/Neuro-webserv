@@ -72,7 +72,7 @@ HttpRequest RequestParser::parse(const std::string& request, bool isChunked) {
     // ヘッダーを解析
     std::string headerLine;
     int contentLength = -1; // Content-Lengthを保存する変数
-    while (std::getline(requestStream, headerLine)) {
+    while (std::getline(headerStream, headerLine)) {
         std::istringstream headerStream(headerLine);
         std::string key;
         std::string value;

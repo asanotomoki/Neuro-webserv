@@ -1,7 +1,9 @@
 #include "StaticFileReader.hpp"
+#include "DataProcessor.hpp"
 #include <fstream>
 #include <iterator>
 #include <iostream>
+#include <dirent.h>
 
 StaticFileReader::StaticFileReader() {
 }
@@ -37,17 +39,32 @@ std::string StaticFileReader::readErrorFile(const LocationContext& locationConte
                        std::istreambuf_iterator<char>());
 }
 
-std::string StaticFileReader::readFile(std::string fullpath, LocationContext locationContext,
-                                        const ServerContext& serverContext, bool isAutoIndex) {
-    
-    if (!isAutoIndex) {
-        locationContext = serverContext.get403LocationContext();
-        return readErrorFile(locationContext, 403);
+bool isDirectory_y(std::string path) {
+    DIR* dir = opendir(path.c_str());
+    if (dir) {
+        closedir(dir);
+        return true;
     }
+    return false;
+}
 
+std::string StaticFileReader::readFile(std::string fullpath, LocationContext locationContext,
+                                        const ServerContext& serverContext, const ParseUrlResult& result) {
+    
     // ファイルをバイナリモードで読み込み
     std::ifstream file(fullpath, std::ios::binary);
-    if (!file) {
+    if (!file || isDirectory_y(fullpath) || result.autoindex == 1) {
+        if (locationContext.hasDirective("autoindex")) {
+            if (locationContext.getDirective("autoindex") == "on") {
+                // autoindexがonの場合
+                // ディレクトリの中身を表示する
+                // std::string response = "HTTP/1.1 200 OK\r\n";
+                // response += "Content-Type: text/html; charset=UTF-8\r\n";
+                // response += "\r\n";
+                std::string response = DataProcessor::getAutoIndexHtml(locationContext.getDirective("alias"), serverContext);
+                return response;
+            }
+        }
         locationContext = serverContext.get404LocationContext();
         return readErrorFile(locationContext, 404);
     }

@@ -257,5 +257,20 @@ std::string ServerContext::getReturnPath(const std::string& path) const
     return "";
 }
 
+void ServerContext::addPathPair(const std::pair<std::string, std::string>& path_pair)
+{
+	_pathMap.insert(path_pair);
+}
+
+const std::string& ServerContext::getClientPath(const std::string& path) const
+{
+	// _pathMapからpathに対応するclient_pathを取得する
+	// pathはmapのpairの最初の要素
+	std::map<std::string, std::string>::const_iterator it = _pathMap.find(path);
+	if (it == _pathMap.end())
+		throw std::runtime_error("getClientPath :: path not found: " + path);
+	return it->second;
+}
+
 const std::string ServerContext::DEFAULT_LISTEN = "65535";
 const std::string ServerContext::DEFAULT_MAX_BODY_SIZE = "1048576";

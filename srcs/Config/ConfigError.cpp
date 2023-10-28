@@ -47,6 +47,9 @@ void ConfigError::setErrorMessage(const ErrorType errorType, const std::string& 
 		case NEED_ALIAS:
 			_errorMessage += "need alias directive" + _fileInfo;
 			break;
+		case NEED_INDEX:
+			_errorMessage += "need index or autoindex direcitve" + _fileInfo;
+			break;
 		case INVALID_RETURN:
 			_errorMessage += "invalid return directive" + _fileInfo;
 			break;

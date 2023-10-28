@@ -1,5 +1,9 @@
 #include "DataProcessor.hpp"
 #include <fstream>
+#include <iostream>
+#include <string>
+#include <vector>
+#include <dirent.h>
 
 ProcessResult DataProcessor::processPostData(const std::string& postData) {
     // ファイルデータの部分を解析
@@ -27,4 +31,65 @@ ProcessResult DataProcessor::processPostData(const std::string& postData) {
 
     ProcessResult result = ProcessResult("success", "File uploaded successfully.", 200);
     return result;
+}
+
+bool isDirectory(std::string path) {
+    DIR* dir = opendir(path.c_str());
+    if (dir) {
+        closedir(dir);
+        return true;
+    }
+    return false;
+}
+
+bool isFile(std::string path) {
+    if (path.find('.') != std::string::npos)
+        return true;
+    return false;
+}
+
+std::string DataProcessor::getAutoIndexHtml(std::string path, const ServerContext& serverContext) {
+
+    std::string html;
+    html += "<html><body><h1>Index of " + path + "</h1><ul>";
+
+    DIR* dir = opendir(path.c_str());
+    if (dir) {
+        struct dirent* entry;
+        while ((entry = readdir(dir)) != NULL) {
+            std::string name(entry->d_name);
+            if (entry->d_type == DT_DIR) {
+                name += "/";
+            }
+            // nameが"."で始まる場合は表示しない
+            if (name[0] == '.') {
+                continue;
+            }
+            std::cout << "name: " << name << std::endl;
+            std::string tempPath = path;
+            std::string clientPath;
+            if (path == "./docs/") {
+                if (isFile(name)) {
+                    clientPath = serverContext.getClientPath(path);
+                    clientPath += name;
+                } else {
+                    path += name;
+                    clientPath = serverContext.getClientPath(path);
+                }
+            } else {
+                clientPath = serverContext.getClientPath(path);
+                clientPath += name;
+            }
+            std::cout << "clientPath: " << clientPath << std::endl;
+            html += "<li><a href=\"" + clientPath + "\">" + name + "</a></li>";
+            if (path != tempPath) {
+                // pathからnameを削除
+                path = tempPath;
+            }
+            std::cout << "-----------------------" << std::endl;
+        }
+        closedir(dir);
+    }
+    html += "</ul></body></html>";
+    return html;
 }

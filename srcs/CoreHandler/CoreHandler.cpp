@@ -9,6 +9,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <map>
+
 CoreHandler::CoreHandler()
 {
 	ServerContext serverContext;
@@ -81,21 +82,19 @@ std::string getContentType(const std::string& filepath) {
     }
 }
 
-std::string CoreHandler::getMethod(const std::string &fullpath, const LocationContext &locationContext,
-					  bool isAutoIndex)
+std::string CoreHandler::getMethod(const std::string &fullpath, const LocationContext &locationContext, 
+									const ParseUrlResult& result)
 {
 	// 静的ファイルを提供する場合
 	StaticFileReader fileReader;
 	std::cout << "fullpath: " << fullpath << "\n";
 
 	// スラッシュが2個続く場合があるため取り除く
-
-	std::string fileContent = fileReader.readFile(fullpath, locationContext,
-												  _serverContext, isAutoIndex);
-																								  
-	std::string contentType = getContentType(fullpath);
+	std::string fileContent = fileReader.readFile(fullpath, locationContext, _serverContext, result);
+  std::string contentType = getContentType(fullpath);
 	std::cout << "contentType: " << contentType << "\n"; 
 	std::string response = successResponse(fileContent, contentType);
+
 	return response;
 }
 
@@ -120,6 +119,47 @@ std::string CoreHandler::deleteMethod(const std::string &filename)
 	return "HTTP/1.1 204 No Content\r\n\r\n"; // 成功のレスポンス
 }
 
+int CoreHandler::validatePath(std::string& path)
+{
+	std::cout << "validatePath :: path: " << path << std::endl;
+	// 引数で与えらえれたファイルパスがサーバープログラムに存在するかどうかを確認する
+	// もしpathが'/'で終わっている場合は、削除する
+	if (path[path.size() - 1] == '/')
+		path.erase(path.size() - 1, 1);
+	struct stat buffer;
+	int ret = stat(path.c_str(), &buffer);
+	std::cout << "ret :" << ret << std::endl;
+	return ret;
+}
+
+LocationContext CoreHandler::determineLocationContext(ParseUrlResult& result)
+{
+	LocationContext locationContext;
+	if (result.statusCode == 403) {
+		locationContext = _serverContext.get403LocationContext();
+		result.message = "Forbidden";
+	}
+	else if (result.statusCode == 404) {
+		locationContext = _serverContext.get404LocationContext();
+		result.message = "Not Found";
+	}
+	else if (result.statusCode == 405) {
+		locationContext = _serverContext.get405LocationContext();
+		result.message = "Method Not Allowed";
+	}
+	else if (result.statusCode == 500) {
+		locationContext = _serverContext.get500LocationContext();
+		result.message = "Internal Server Error";
+	}
+	else if (result.statusCode == 501) {
+		locationContext = _serverContext.get501LocationContext();
+		result.message = "Not Implemented";
+	}
+	else
+		locationContext = _serverContext.getLocationContext(result.directory);
+	return locationContext;
+}
+
 std::string CoreHandler::processRequest(HttpRequest httpRequest)
 {
 	if (httpRequest.url == "/favicon.ico")
@@ -134,13 +174,16 @@ std::string CoreHandler::processRequest(HttpRequest httpRequest)
 		httpRequest.url += '/';
 	}
 
-	std::cout << "httpRequest.url: " << httpRequest.url << "\n";
 	ParseUrlResult parseUrlResult = parseUrl(httpRequest.url);
-
-	LocationContext locationContext = _serverContext.getLocationContext(parseUrlResult.directory);
-
-	// directoryからLocationContextを取得
-	locationContext = _serverContext.getLocationContext(parseUrlResult.directory);
+	LocationContext locationContext = CoreHandler::determineLocationContext(parseUrlResult);
+	if (parseUrlResult.statusCode != 200) {
+		return errorResponse(parseUrlResult.statusCode, parseUrlResult.message, locationContext);
+	} else if (validatePath(parseUrlResult.fullpath) == -1 && parseUrlResult.autoindex == 0) {
+		locationContext = _serverContext.get404LocationContext();
+		return errorResponse(404, "Not found", locationContext);
+	} else if (parseUrlResult.autoindex == 1) {
+		return getMethod(parseUrlResult.fullpath, locationContext, parseUrlResult);
+	}
 	// if (parseUrlResult.statusCode >= 300 && parseUrlResult.statusCode < 400) {
 	//     std::string location = "http://" + hostPort.first + ":" + hostPort.second + parseUrlResult.fullpath;
 	//     return redirectResponse(location);
@@ -152,7 +195,8 @@ std::string CoreHandler::processRequest(HttpRequest httpRequest)
 			locationContext = _serverContext.get405LocationContext();
 			return errorResponse(405, "Method Not Allowed", locationContext);
 		}
-		return getMethod(parseUrlResult.fullpath, locationContext, parseUrlResult.isAutoIndex);
+		std::cout << "parseUrlResult.fullpath: " << parseUrlResult.fullpath << std::endl;
+		return getMethod(parseUrlResult.fullpath, locationContext, parseUrlResult);
 	}
 	else if (httpRequest.method == "POST")
 	{

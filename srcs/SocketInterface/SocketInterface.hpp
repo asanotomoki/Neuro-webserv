@@ -44,6 +44,7 @@ struct RequestBuffer
     std::string chunkedBody;
     ServerContext serverContext;
     std::string response;
+    Cgi cgi;
 };
 
 
@@ -72,6 +73,7 @@ private:
 
     void createSockets(const std::vector<std::string> &ports);
     void setupPoll();
+    void setCgiBody(RequestBuffer &client, std::string &body);
     HttpRequest parseRequest(std::string request, RequestBuffer &client);
     void deleteClient();
     int sendResponse(int fd, std::string response);

@@ -4,30 +4,27 @@
 #include <iostream>
 #include <unistd.h>
 #include <map>
-#include "RequestParser.hpp"
-#include "ServerContext.hpp"
-#include "CoreHandler.hpp"
 
 // CGIの実行結果を格納する構造体
 
 struct CgiResult
 {
 	int fd;
-	int inputFd;
 	std::string body;
 	pid_t pid;
 };
 
+#include "RequestParser.hpp"
 //CGIクラス
 class Cgi
 {
 	private:
 		// execveを実行するのに必要な変数
-		Cgi();
 		std::map<std::string, std::string> _env;
 		HttpRequest _request;
 		const char* _executable;
 		const char* _path;
+		int pipe_stdin[2];
 		std::vector<std::string> _args;
 
 		
@@ -36,6 +33,7 @@ class Cgi
 
 	public:
 		//Cgi(HttpRequest &request, std::string executable, ParseUrlResult &url);
+		Cgi();
 		Cgi(HttpRequest &request);
     	~Cgi();
 		
@@ -45,6 +43,7 @@ class Cgi
 		const std::map<std::string, std::string>& getEnv() const;
 		//void initEnv(HttpRequest &request, ParseUrlResult url);
 		void initEnv(HttpRequest &request);
+		int* getPipeStdin();
 };
 
 #endif

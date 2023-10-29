@@ -639,22 +639,5 @@ void SocketInterface::acceptConnection(int fd)
 	getsockname(clientFd, (sockaddr *)&clientAddr, &clientAddrSize);
 	// ポートを取得
 	_clients[clientFd].hostAndPort.second = itostr(ntohs(clientAddr.sin_port));
-	// int serverHost = ntohl(clientAddr.sin_addr.s_addr);
-
-	// unsigned char bytes[4];
-	// bytes[0] = serverHost & 0xFF;
-	// bytes[1] = (serverHost >> 8) & 0xFF;
-	// bytes[2] = (serverHost >> 16) & 0xFF;
-	// bytes[3] = (serverHost >> 24) & 0xFF;
-
-	// // 文字列に変換
-	// std::stringstream ss;
-	// ss << static_cast<int>(bytes[3]) << '.'
-	// << static_cast<int>(bytes[2]) << '.'
-	// << static_cast<int>(bytes[1]) << '.'
-	// << static_cast<int>(bytes[0]);
-	// std::string serverHostStr = ss.str();
-
-	// std::cout << "serverHost: " << serverHostStr << std::endl;
 	std::cout << "serverPort: " << _clients[clientFd].hostAndPort.second << std::endl;
 }

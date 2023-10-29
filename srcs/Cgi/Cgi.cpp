@@ -3,6 +3,7 @@
 #include <map>
 #include <sys/socket.h>
 #include "Cgi.hpp"
+#include "RequestParser.hpp"
 
 Cgi::Cgi()
 {
@@ -14,26 +15,29 @@ Cgi::Cgi(HttpRequest& req) :
 
     this->_args.push_back("/usr/bin/python3");
     this->_args.push_back("./docs/cgi-bin/test_cgi.py");
+    if (pipe(this->pipe_stdin) < 0)
+    {
+        std::cerr << "pipe error" << std::endl;
+    }
     initEnv(req);
     //initEnv(req, url);
+}
+
+
+int *Cgi::getPipeStdin()
+{
+    return this->pipe_stdin;
 }
 
 CgiResult Cgi::execCGI()
 {
     int pipe_fd[2];
-    int pipe_stdin[2];
     char **env = mapToChar(this->_env);
     char **args = vectorToChar(this->_args);
     CgiResult result;
     if (pipe(pipe_fd) < 0)
     {
         std::cerr << "pipe error" << std::endl;
-        std::exit(1);
-    }
-    if (pipe(pipe_stdin) < 0)
-    {
-        std::cerr << "pipe error" << std::endl;
-        std::exit(1);
     }
     if ((result.pid = fork()) < 0)
     {
@@ -46,9 +50,9 @@ CgiResult Cgi::execCGI()
         dup2(pipe_fd[1], 1);
         close(pipe_fd[1]);
 
-        close(pipe_stdin[1]);
-        dup2(pipe_stdin[0], 0);
-        close(pipe_stdin[0]);
+        close(this->pipe_stdin[1]);
+        dup2(this->pipe_stdin[0], 0);
+        close(this->pipe_stdin[0]);
         
         execve(this->_executable, args, env);
         std::cerr << "execve error" << std::endl;
@@ -59,12 +63,12 @@ CgiResult Cgi::execCGI()
     {
         close(pipe_fd[1]);
         close(pipe_stdin[0]);
-        write(pipe_stdin[1], this->_request.body.c_str(), this->_request.body.size());
         close(pipe_stdin[1]);
         delete [] env;
         delete [] args;
     }
     result.fd = pipe_fd[0];
+    result.body = this->_request.body;
     return result;
 }
 

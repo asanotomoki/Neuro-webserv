@@ -27,6 +27,7 @@ enum State
     WRITE_CGI,
     WAIT_CGI,
     WRITE_REQUEST_ERROR,
+    WRITE_CGI_BODY,
 };
 
 struct RequestBuffer
@@ -43,6 +44,7 @@ struct RequestBuffer
     std::string chunkedBody;
     ServerContext serverContext;
     std::string response;
+    Cgi cgi;
     std::pair<std::string, std::string> hostAndPort;
     bool isClosed;
 };
@@ -73,6 +75,7 @@ private:
 
     void createSockets(const std::vector<std::string> &ports);
     void setupPoll();
+    void setCgiBody(RequestBuffer &client, std::string &body);
     HttpRequest parseRequest(std::string request, RequestBuffer &client);
     void deleteClient();
     int sendResponse(int fd, std::string response);
@@ -83,6 +86,7 @@ private:
     void execReadCgi(pollfd &pollFd, RequestBuffer &client);
     void execWriteCgi(pollfd &pollFd, RequestBuffer &client);
     void execWriteError(pollfd &pollFd, RequestBuffer &client, int index);
+    void execWriteCGIBody(pollfd &pollFd, RequestBuffer &client, int index);
     pollfd createClient(int fd, State state);
 };
 

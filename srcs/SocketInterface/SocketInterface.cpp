@@ -212,7 +212,6 @@ int SocketInterface::ReadRequest(int fd, RequestBuffer &client)
 			}
 			else if (body.size() >= len)
 			{
-				std::cout << "body.size(): " << body.size() << std::endl;
 				client.isRequestFinished = true;
 			} else {
 				client.isRequestFinished = false;
@@ -231,6 +230,16 @@ HttpRequest SocketInterface::parseRequest(std::string request, RequestBuffer &cl
 	return req;
 }
 
+void SocketInterface::setCgiBody(RequestBuffer &client, std::string &body)
+{
+	int fd = client.cgi.getPipeStdin()[1];
+
+	createClient(fd, WRITE_CGI_BODY);
+	_clients[fd].request = body;
+	_clients[fd].isRequestFinished = true;
+	_clients[fd].clientFd = client.clientFd;
+}
+
 void SocketInterface::execReadRequest(pollfd &pollfd, RequestBuffer &client)
 {
 	int ret = ReadRequest(pollfd.fd, client);
@@ -246,7 +255,6 @@ void SocketInterface::execReadRequest(pollfd &pollfd, RequestBuffer &client)
 	if (client.isRequestFinished)
 	{
 		// Requestの解析
-		RequestParser parser(_config);
 		client.httpRequest = parseRequest(client.request, client);
 		client.hostAndPort.first = client.httpRequest.hostname;
 
@@ -260,7 +268,16 @@ void SocketInterface::execReadRequest(pollfd &pollfd, RequestBuffer &client)
 		}
 		if (client.httpRequest.isCgi)
 		{
-			client.state = EXEC_CGI;
+			Cgi cgi = Cgi(client.httpRequest);
+			client.cgi = cgi;
+			if (client.httpRequest.method == "POST")
+			{	
+				setCgiBody(client, client.httpRequest.body);
+				client.state = WAIT_CGI;
+			}
+			else {
+				client.state = EXEC_CGI;
+			}
 		}
 		else
 		{
@@ -298,14 +315,13 @@ void SocketInterface::execCoreHandler(pollfd &pollFd, RequestBuffer &client)
 void SocketInterface::execCgi(pollfd &pollFd, RequestBuffer &client) // clientのfd
 {
 	// clientはユーザー側 Cgiは今後pipeのfdでeventLoopを回す
-	Cgi Cgi(client.httpRequest);
-	CgiResult result = Cgi.execCGI(); // cgiのpipeのfd
+	CgiResult result = client.cgi.execCGI();
 	int fd = result.fd;
-	pollfd cgi = createClient(fd, READ_CGI);
+	pollfd cgi = createClient(fd, WAIT_CGI);
 	_clients[fd].clientFd = pollFd.fd; // clientのpollFdをcgiに渡す
 	_clients[fd].cgiPid = result.pid;
 	client.cgiFd = cgi.fd; // 削除時にpollFdを削除するために必要
-	// cgiが終わったらresponseに書き込まれるので、終わり次第レスポンスとして送信する
+	_clients[fd].state = READ_CGI;
 	pollFd.events = POLLOUT;
 	client.state = WAIT_CGI;
 }
@@ -337,6 +353,26 @@ void SocketInterface::execWriteError(pollfd &pollFd, RequestBuffer &client, int 
 	}
 	else
 	{
+		pollFd.events = POLLOUT;
+	}
+}
+
+void SocketInterface::execWriteCGIBody(pollfd &pollFd, RequestBuffer &client, int index)
+{
+	std::cout << "execWriteCGIBody" << std::endl;
+	std::string response = client.request;
+	std::cout << "response: " << pollFd.fd << std::endl;
+	int ret = sendResponse(pollFd.fd, response);
+	if (ret >= 0)
+	{
+		std::cout << "send response success" << std::endl;
+		pollFd.events = POLLHUP;
+		_clients[client.clientFd].state = EXEC_CGI;
+		std::cout << index << std::endl;
+	}
+	else
+	{
+		std::cout << "send response error" << std::endl;
 		pollFd.events = POLLOUT;
 	}
 }
@@ -489,6 +525,8 @@ void SocketInterface::eventLoop()
 				else if (state == WRITE_REQUEST_ERROR)
 				{
 					execWriteError(_pollFds[i], _clients[_pollFds[i].fd], i);
+				} else if (state == WRITE_CGI_BODY) {
+					execWriteCGIBody(_pollFds[i], _clients[_pollFds[i].fd], i);
 				}
 			}
 			else if (_pollFds[i].revents & POLLIN)
@@ -537,8 +575,16 @@ int SocketInterface::sendResponse(int fd, std::string response)
 pollfd SocketInterface::createClient(int fd, State state)
 {
 	pollfd pollFd;
+	fcntl(fd, F_SETFL, O_NONBLOCK);
 	pollFd.fd = fd;
-	pollFd.events = POLLIN;
+	if (state == WRITE_CGI_BODY)
+	{
+		pollFd.events = POLLOUT;
+	}
+	else
+	{
+		pollFd.events = POLLIN;
+	}
 	_addPollFds.push_back(pollFd);
 	RequestBuffer client;
 	client.state = state;
@@ -575,7 +621,6 @@ void SocketInterface::acceptConnection(int fd)
 		perror("accept");
 		return;
 	}
-	fcntl(clientFd, F_SETFL, O_NONBLOCK);
 	createClient(clientFd, READ_REQUEST);
 
 	// アクセスされたサーバーのhost名を取得する

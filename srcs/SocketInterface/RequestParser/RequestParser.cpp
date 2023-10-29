@@ -108,7 +108,7 @@ HttpRequest RequestParser::parse(const std::string& request, bool isChunked, con
     try {
         maxBodySize = std::stoi(serverContext.getMaxBodySize()); 
     } catch(std::exception& e) {
-        maxBodySize = 1000000;
+        maxBodySize = 8192;
     }
     if (contentLength > 0) {
         if (contentLength > (int)maxBodySize) {
@@ -118,6 +118,7 @@ HttpRequest RequestParser::parse(const std::string& request, bool isChunked, con
         }
         char* buffer = new char[contentLength];
         bodyStream.read(buffer, contentLength);
+        std::cout << "body: " << std::string(buffer, contentLength) << std::endl;
         httpRequest.body = std::string(buffer, contentLength);
         delete[] buffer;
     }

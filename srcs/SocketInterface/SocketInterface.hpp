@@ -15,6 +15,7 @@
 #include "ServerContext.hpp"
 #include "Cgi.hpp"
 #include "RequestParser.hpp"
+#include "utils.hpp"
 
 enum State
 {

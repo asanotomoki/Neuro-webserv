@@ -346,35 +346,15 @@ void SocketInterface::execCgi(pollfd &pollFd, RequestBuffer &client) // client„Å
 
 void SocketInterface::execWriteError(pollfd &pollFd, RequestBuffer &client, int index)
 {
-	std::string statusCode = std::to_string(client.httpRequest.statusCode);
-	std::string errorMessage;
-	if (client.httpRequest.statusCode == 411)
-		errorMessage = "Length Required";
-	else if (client.httpRequest.statusCode == 400)
-		errorMessage = "Bad Request";
-	else if (client.httpRequest.statusCode == 404)
-		errorMessage = "Not Found";
-	else if (client.httpRequest.statusCode == 405)
-		errorMessage = "Method Not Allowed";
-	else if (client.httpRequest.statusCode == 413)
-		errorMessage = "Payload Too Large";
-	else if (client.httpRequest.statusCode == 500)
-		errorMessage = "Internal Server Error";
-	else if (client.httpRequest.statusCode == 501)
-		errorMessage = "Not Implemented";
-	else
-		errorMessage = "Bad Request";
-	std::string errorBodyContent = "<!DOCTYPE html>\n<html>\n<head>\n<meta charset = 'UTF-8'>\n<meta name = 'viewport'>\n<title> Error " + statusCode + "</title>\n</head>\n<body>\n<h1> "+ statusCode + " " + errorMessage + "</h1>\n</body>\n</html>\n";
-	std::string response = "HTTP/1.1 " + statusCode + " " + errorMessage;
-	response += "\r\n";
-	response += "Content-Length: " + std::to_string(errorBodyContent.size());
-	response += "\r\n";
-	response += "Connection: close";
-	response += "\r\n";
-	response += "content-type: text/html";
-	response += "\r\n\r\n";
-	response += errorBodyContent;
+	ServerContext context = _config->getServerContext(client.hostAndPort.second, client.hostAndPort.first);
 
+	std::string response = "";
+	response += context.getErrorPage(std::to_string(client.httpRequest.statusCode));
+	if (response == "")
+	{
+		response = default_error_page(client.httpRequest.statusCode);
+
+	}
 	if (sendResponse(pollFd.fd, response) >= 0)
 	{
 		pollFd.events = POLLIN;

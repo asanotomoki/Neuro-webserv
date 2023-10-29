@@ -8,7 +8,7 @@ import os
 
 # CONTENT_LENGTHからデータの長さを取得
 request_method = os.environ['REQUEST_METHOD']
-time.sleep(3)
+time.sleep(10)
 if request_method == "POST":
 	body = sys.stdin.read(int(os.environ['CONTENT_LENGTH']))
 

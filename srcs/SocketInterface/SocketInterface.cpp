@@ -35,7 +35,8 @@ void SocketInterface::createSockets(const std::vector<std::string> &ports)
 	{
 		const std::string &port = *it;
 		// もしポート番号が重複していたら、continueする
-		if (usedPorts.find(port) != usedPorts.end()) {
+		if (usedPorts.find(port) != usedPorts.end())
+		{
 			std::cout << "Duplicate port " << port << " ignored." << std::endl;
 			_numPorts--;
 			continue;
@@ -201,9 +202,12 @@ int SocketInterface::ReadRequest(int fd, RequestBuffer &client)
 				return 411;
 			}
 			size_t len = 0;
-			try {
+			try
+			{
 				len = std::stoi(contentLength);
-			} catch (std::exception &e) {
+			}
+			catch (std::exception &e)
+			{
 				return 400;
 			}
 			if (contentLength == "0")
@@ -213,7 +217,9 @@ int SocketInterface::ReadRequest(int fd, RequestBuffer &client)
 			else if (body.size() >= len)
 			{
 				client.isRequestFinished = true;
-			} else {
+			}
+			else
+			{
 				client.isRequestFinished = false;
 				return 200;
 			}
@@ -271,11 +277,12 @@ void SocketInterface::execReadRequest(pollfd &pollfd, RequestBuffer &client)
 			Cgi cgi = Cgi(client.httpRequest);
 			client.cgi = cgi;
 			if (client.httpRequest.method == "POST")
-			{	
+			{
 				setCgiBody(client, client.httpRequest.body);
 				client.state = WAIT_CGI;
 			}
-			else {
+			else
+			{
 				client.state = EXEC_CGI;
 			}
 		}
@@ -291,8 +298,7 @@ void SocketInterface::execReadRequest(pollfd &pollfd, RequestBuffer &client)
 
 void SocketInterface::execCoreHandler(pollfd &pollFd, RequestBuffer &client)
 {
-	CoreHandler coreHandler(_config->getServerContext
-							(client.hostAndPort.second, client.hostAndPort.first));
+	CoreHandler coreHandler(_config->getServerContext(client.hostAndPort.second, client.hostAndPort.first));
 	std::string response = coreHandler.processRequest(client.httpRequest, client.hostAndPort);
 	if (sendResponse(pollFd.fd, response) >= 0)
 	{
@@ -329,22 +335,25 @@ void SocketInterface::execCgi(pollfd &pollFd, RequestBuffer &client) // client�
 void SocketInterface::execWriteError(pollfd &pollFd, RequestBuffer &client, int index)
 {
 	std::string statusCode = std::to_string(client.httpRequest.statusCode);
-	std::string response = "HTTP/1.1 " + statusCode + " ";
+	std::string errorMessage;
 	if (client.httpRequest.statusCode == 411)
 	{
-		response += "Length Required";
+		errorMessage = "Length Required";
 	}
 	else
 	{
-		response += "Bad Request";
-	}
+		errorMessage = "Bad Request";
+	} 
+	std::string errorBodyContent = "<!DOCTYPE html>\n<html>\n<head>\n<meta charset = 'UTF-8'>\n<meta name = 'viewport'>\n<title> Error " + statusCode + "</title>\n</head>\n<body>\n<h1> "+ statusCode + " " + errorMessage + "</h1>\n</body>\n</html>\n";
+	std::string response = "HTTP/1.1 " + statusCode + " " + errorMessage;
 	response += "\r\n";
-	response += "Content-Length: 0";
+	response += "Content-Length: " + std::to_string(errorBodyContent.size());
 	response += "\r\n";
 	response += "Connection: close";
 	response += "\r\n";
 	response += "content-type: text/html";
 	response += "\r\n\r\n";
+	response += errorBodyContent;
 
 	if (sendResponse(pollFd.fd, response) >= 0)
 	{
@@ -525,7 +534,9 @@ void SocketInterface::eventLoop()
 				else if (state == WRITE_REQUEST_ERROR)
 				{
 					execWriteError(_pollFds[i], _clients[_pollFds[i].fd], i);
-				} else if (state == WRITE_CGI_BODY) {
+				}
+				else if (state == WRITE_CGI_BODY)
+				{
 					execWriteCGIBody(_pollFds[i], _clients[_pollFds[i].fd], i);
 				}
 			}
@@ -602,10 +613,11 @@ pollfd SocketInterface::createClient(int fd, State state)
 	return pollFd;
 }
 
-std::string itostr(int num) {
-    std::stringstream ss;
-    ss << num;
-    return ss.str();
+std::string itostr(int num)
+{
+	std::stringstream ss;
+	ss << num;
+	return ss.str();
 }
 
 void SocketInterface::acceptConnection(int fd)

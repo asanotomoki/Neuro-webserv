@@ -45,6 +45,8 @@ struct RequestBuffer
     ServerContext serverContext;
     std::string response;
     Cgi cgi;
+    std::pair<std::string, std::string> hostAndPort;
+    bool isClosed;
 };
 
 

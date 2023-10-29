@@ -4,6 +4,7 @@
 #include "CoreHandler.hpp"
 #include "Cgi.hpp"
 #include <iostream>
+#include <sstream>
 // POLLRDHUPのinclude
 #include <poll.h>
 
@@ -28,9 +29,18 @@ SocketInterface::~SocketInterface()
 
 void SocketInterface::createSockets(const std::vector<std::string> &ports)
 {
+	std::set<std::string> usedPorts;
+
 	for (std::vector<std::string>::const_iterator it = ports.begin(); it != ports.end(); ++it)
 	{
 		const std::string &port = *it;
+		// もしポート番号が重複していたら、continueする
+		if (usedPorts.find(port) != usedPorts.end()) {
+			std::cout << "Duplicate port " << port << " ignored." << std::endl;
+			_numPorts--;
+			continue;
+		}
+		usedPorts.insert(port);
 		int sockfd = socket(AF_INET, SOCK_STREAM, 0);
 		if (sockfd < 0)
 		{
@@ -217,7 +227,7 @@ int SocketInterface::ReadRequest(int fd, RequestBuffer &client)
 HttpRequest SocketInterface::parseRequest(std::string request, RequestBuffer &client)
 {
 	RequestParser parser(_config);
-	HttpRequest req = parser.parse(request, client.isChunked);
+	HttpRequest req = parser.parse(request, client.isChunked, client.hostAndPort.second);
 	return req;
 }
 
@@ -238,6 +248,8 @@ void SocketInterface::execReadRequest(pollfd &pollfd, RequestBuffer &client)
 		// Requestの解析
 		RequestParser parser(_config);
 		client.httpRequest = parseRequest(client.request, client);
+		client.hostAndPort.first = client.httpRequest.hostname;
+
 		if (client.httpRequest.statusCode != 200)
 		{
 			client.state = WRITE_REQUEST_ERROR;
@@ -262,7 +274,8 @@ void SocketInterface::execReadRequest(pollfd &pollfd, RequestBuffer &client)
 
 void SocketInterface::execCoreHandler(pollfd &pollFd, RequestBuffer &client)
 {
-	CoreHandler coreHandler(_config->getServerContext("2000", "localhost"));
+	CoreHandler coreHandler(_config->getServerContext
+							(client.hostAndPort.second, client.hostAndPort.first));
 	std::string response = coreHandler.processRequest(client.httpRequest);
 	if (sendResponse(pollFd.fd, response) >= 0)
 	{
@@ -517,7 +530,7 @@ pollfd SocketInterface::createClient(int fd, State state)
 {
 	pollfd pollFd;
 	pollFd.fd = fd;
-	pollFd.events |= POLLIN;
+	pollFd.events = POLLIN;
 	_addPollFds.push_back(pollFd);
 	RequestBuffer client;
 	client.state = state;
@@ -534,12 +547,18 @@ pollfd SocketInterface::createClient(int fd, State state)
 	return pollFd;
 }
 
+std::string itostr(int num) {
+    std::stringstream ss;
+    ss << num;
+    return ss.str();
+}
+
 void SocketInterface::acceptConnection(int fd)
 {
-	// sockaddr_in clientAddr;
-	// socklen_t clientAddrSize = sizeof(clientAddr);
-	// int clientFd = accept(fd, (sockaddr *)&clientAddr, &clientAddrSize);
-	int clientFd = accept(fd, NULL, NULL);
+	sockaddr_in clientAddr;
+	socklen_t clientAddrSize = sizeof(clientAddr);
+	int clientFd = accept(fd, (sockaddr *)&clientAddr, &clientAddrSize);
+	// int clientFd = accept(fd, NULL, NULL);
 	std::cout << "acceptConnection " << clientFd << std::endl;
 	if (clientFd < 0)
 	{
@@ -551,11 +570,25 @@ void SocketInterface::acceptConnection(int fd)
 	createClient(clientFd, READ_REQUEST);
 
 	// アクセスされたサーバーのhost名を取得する
-	// getsockname(clientFd, (sockaddr *)&clientAddr, &clientAddrSize);
-	// int serverPort = ntohs(clientAddr.sin_port);
-	// char serverHost[1024];
-	// gethostname(serverHost, 1024);
+	getsockname(clientFd, (sockaddr *)&clientAddr, &clientAddrSize);
+	// ポートを取得
+	_clients[clientFd].hostAndPort.second = itostr(ntohs(clientAddr.sin_port));
+	// int serverHost = ntohl(clientAddr.sin_addr.s_addr);
 
-	// std::cout << "serverHost: " << serverHost << std::endl;
-	// std::cout << "serverPort: " << serverPort << std::endl;
+	// unsigned char bytes[4];
+	// bytes[0] = serverHost & 0xFF;
+	// bytes[1] = (serverHost >> 8) & 0xFF;
+	// bytes[2] = (serverHost >> 16) & 0xFF;
+	// bytes[3] = (serverHost >> 24) & 0xFF;
+
+	// // 文字列に変換
+	// std::stringstream ss;
+	// ss << static_cast<int>(bytes[3]) << '.'
+	// << static_cast<int>(bytes[2]) << '.'
+	// << static_cast<int>(bytes[1]) << '.'
+	// << static_cast<int>(bytes[0]);
+	// std::string serverHostStr = ss.str();
+
+	// std::cout << "serverHost: " << serverHostStr << std::endl;
+	std::cout << "serverPort: " << _clients[clientFd].hostAndPort.second << std::endl;
 }

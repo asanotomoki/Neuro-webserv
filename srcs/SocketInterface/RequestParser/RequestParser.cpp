@@ -49,7 +49,7 @@ bool RequestParser::isCgiBlockPath(const ServerContext& server_context, std::vec
 	return false;
 }
 
-HttpRequest RequestParser::parse(const std::string& request, bool isChunked) {
+HttpRequest RequestParser::parse(const std::string& request, bool isChunked, const std::string& port) {
     HttpRequest httpRequest;
     httpRequest.isCgi = false;
     httpRequest.statusCode = 200;
@@ -59,7 +59,6 @@ HttpRequest RequestParser::parse(const std::string& request, bool isChunked) {
     std::istringstream headerStream(header);
     std::istringstream bodyStream(body);
 
-	ServerContext serverContext = _config->getServerContext("2000", "localhost"); //TODO FIX 動的に取得する
     // メソッドとURLを解析
     headerStream >> httpRequest.method >> httpRequest.url >> httpRequest.protocol;
 
@@ -90,6 +89,12 @@ HttpRequest RequestParser::parse(const std::string& request, bool isChunked) {
                 httpRequest.statusCode = 400;
                 return httpRequest;
             }
+        } else if (key == "Host") {
+            //　文字列valueに：がある場合は、その前までをホスト名とする
+            if (value.find(":") != std::string::npos) {
+                value = value.substr(0, value.find(":"));
+            }
+            httpRequest.hostname = value;
         }
     }
     if (httpRequest.method == "POST" && contentLength == -1 && !isChunked) {
@@ -98,6 +103,7 @@ HttpRequest RequestParser::parse(const std::string& request, bool isChunked) {
         return httpRequest;
     }
     // ボディを解析 (Content-Lengthが指定されていれば)
+    ServerContext serverContext = _config->getServerContext(port, httpRequest.hostname);
     size_t maxBodySize = 0;
     try {
         maxBodySize = std::stoi(serverContext.getMaxBodySize()); 

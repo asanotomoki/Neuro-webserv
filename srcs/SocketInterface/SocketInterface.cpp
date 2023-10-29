@@ -321,7 +321,19 @@ void SocketInterface::execCoreHandler(pollfd &pollFd, RequestBuffer &client)
 void SocketInterface::execCgi(pollfd &pollFd, RequestBuffer &client) // clientのfd
 {
 	// clientはユーザー側 Cgiは今後pipeのfdでeventLoopを回す
-	CgiResult result = client.cgi.execCGI();
+	CgiResult result;
+	result.body = "";
+	result.statusCode = 200;
+	result.fd = -1;
+	result.pid = -1;
+	client.cgi.execCGI(result);
+	if (result.statusCode != 200)
+	{
+		client.httpRequest.statusCode = result.statusCode;
+		client.state = WRITE_REQUEST_ERROR;
+		pollFd.events = POLLOUT;
+		return;
+	}
 	int fd = result.fd;
 	pollfd cgi = createClient(fd, WAIT_CGI);
 	_clients[fd].clientFd = pollFd.fd; // clientのpollFdをcgiに渡す
@@ -337,13 +349,21 @@ void SocketInterface::execWriteError(pollfd &pollFd, RequestBuffer &client, int 
 	std::string statusCode = std::to_string(client.httpRequest.statusCode);
 	std::string errorMessage;
 	if (client.httpRequest.statusCode == 411)
-	{
 		errorMessage = "Length Required";
-	}
-	else
-	{
+	else if (client.httpRequest.statusCode == 400)
 		errorMessage = "Bad Request";
-	} 
+	else if (client.httpRequest.statusCode == 404)
+		errorMessage = "Not Found";
+	else if (client.httpRequest.statusCode == 405)
+		errorMessage = "Method Not Allowed";
+	else if (client.httpRequest.statusCode == 413)
+		errorMessage = "Payload Too Large";
+	else if (client.httpRequest.statusCode == 500)
+		errorMessage = "Internal Server Error";
+	else if (client.httpRequest.statusCode == 501)
+		errorMessage = "Not Implemented";
+	else
+		errorMessage = "Bad Request";
 	std::string errorBodyContent = "<!DOCTYPE html>\n<html>\n<head>\n<meta charset = 'UTF-8'>\n<meta name = 'viewport'>\n<title> Error " + statusCode + "</title>\n</head>\n<body>\n<h1> "+ statusCode + " " + errorMessage + "</h1>\n</body>\n</html>\n";
 	std::string response = "HTTP/1.1 " + statusCode + " " + errorMessage;
 	response += "\r\n";
@@ -403,8 +423,17 @@ std::string parseCgiResponse(std::string response)
 void SocketInterface::execReadCgi(pollfd &pollFd, RequestBuffer &client) // cgiのfd
 {
 	char buf[1024];
-	if (waitpid(client.cgiPid, NULL, WNOHANG) <= 0)
+	int status;
+	if (waitpid(client.cgiPid, &status, WNOHANG) <= 0)
 	{
+		return;
+	}
+	std::cout << "WIFEXITED " << status << std::endl;
+	if (status != 0)
+	{
+		std::cout << "WIFEXITED " << status << std::endl;
+		_clients.at(client.clientFd).state = WRITE_REQUEST_ERROR;
+		_clients.at(client.clientFd).httpRequest.statusCode = 500;
 		return;
 	}
 	int ret = read(pollFd.fd, buf, sizeof(buf) - 1);

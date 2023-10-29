@@ -12,6 +12,7 @@ struct CgiResult
 	int fd;
 	std::string body;
 	pid_t pid;
+	int statusCode;
 };
 
 
@@ -52,7 +53,7 @@ class Cgi
 		Cgi(HttpRequest &request, ServerContext &server_context);
     	~Cgi();
 		
-		CgiResult execCGI();
+		void execCGI(CgiResult &result);
 		void parseUrl(std::string url, ServerContext &server_context);
 		
 		// env

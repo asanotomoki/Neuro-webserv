@@ -1,11 +1,13 @@
+#include "Cgi.hpp"
+#include "RequestParser.hpp"
 #include <string>
 #include <vector>
 #include <map>
 #include <sys/socket.h>
-#include "Cgi.hpp"
-#include "RequestParser.hpp"
+#include <sys/stat.h>
 #include <iostream>
 #include <sstream>
+
 
 Cgi::Cgi()
 {
@@ -187,13 +189,26 @@ int *Cgi::getPipeStdin()
     return this->pipe_stdin;
 }
 
-CgiResult Cgi::execCGI()
+bool validatePath(std::string &path)
+{
+    struct stat buffer;
+    int ret = stat(path.c_str(), &buffer);
+    if (ret == 0)
+        return true;
+    return false;
+}
+
+void Cgi::execCGI(CgiResult& result)
 {
     int pipe_fd[2];
     char **env = mapToChar(this->_env);
     char **args = vectorToChar(this->_args);
-    CgiResult result;
     std::cerr << this->_parseUrlCgiResult.command << std::endl;
+    if (!validatePath(_parseUrlCgiResult.fullpath))
+    {
+        result.statusCode = 404;
+        return;
+    }
     if (pipe(pipe_fd) < 0)
     {
         std::cerr << "pipe error" << std::endl;
@@ -213,11 +228,12 @@ CgiResult Cgi::execCGI()
         dup2(this->pipe_stdin[0], 0);
         close(this->pipe_stdin[0]);
 
+
         execve(this->_parseUrlCgiResult.command.c_str(), args, env);
         std::cout << "exec: " << this->_executable << std::endl;
         std::cerr << "execve error" << std::endl;
         std::cout << "Status: 500 Internal Server Error" << std::endl;
-        perror("execve");
+        result.statusCode = 500;
         std::exit(1);
     }
     else
@@ -230,7 +246,7 @@ CgiResult Cgi::execCGI()
     }
     result.fd = pipe_fd[0];
     result.body = this->_request.body;
-    return result;
+    return;
 }
 
 Cgi::~Cgi()

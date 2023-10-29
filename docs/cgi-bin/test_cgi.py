@@ -15,6 +15,7 @@ if request_method == "POST":
 print("HTTP/1.1 200 OK")
 print("Content-type: text/html\r\n\r\n")
 
+time.sleep(10)
 print("<html>")
 print("<head>")
 

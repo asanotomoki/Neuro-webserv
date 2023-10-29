@@ -163,7 +163,8 @@ LocationContext CoreHandler::determineLocationContext(ParseUrlResult& result)
 	return locationContext;
 }
 
-std::string CoreHandler::processRequest(HttpRequest httpRequest)
+std::string CoreHandler::processRequest(HttpRequest httpRequest,
+									const std::pair<std::string, std::string>& hostPort)
 {
 	if (httpRequest.url == "/favicon.ico")
 	{
@@ -179,7 +180,11 @@ std::string CoreHandler::processRequest(HttpRequest httpRequest)
 
 	ParseUrlResult parseUrlResult = parseUrl(httpRequest.url);
 	LocationContext locationContext = CoreHandler::determineLocationContext(parseUrlResult);
-	if (parseUrlResult.statusCode != 200) {
+	
+	if (parseUrlResult.statusCode >= 300 && parseUrlResult.statusCode < 400) {
+	    std::string location = "http://" + hostPort.first + ":" + hostPort.second + parseUrlResult.fullpath;
+	    return redirectResponse(location);
+	} else if (parseUrlResult.statusCode != 200) {
 		return errorResponse(parseUrlResult.statusCode, parseUrlResult.message, locationContext);
 	} else if (validatePath(parseUrlResult.fullpath) == -1 && parseUrlResult.autoindex == 0) {
 		locationContext = _serverContext.get404LocationContext();
@@ -187,10 +192,7 @@ std::string CoreHandler::processRequest(HttpRequest httpRequest)
 	} else if (parseUrlResult.autoindex == 1) {
 		return getMethod(parseUrlResult.fullpath, locationContext, parseUrlResult);
 	}
-	// if (parseUrlResult.statusCode >= 300 && parseUrlResult.statusCode < 400) {
-	//     std::string location = "http://" + hostPort.first + ":" + hostPort.second + parseUrlResult.fullpath;
-	//     return redirectResponse(location);
-	// }
+
 	if (httpRequest.method == "GET")
 	{
 		if (!locationContext.isAllowedMethod("GET"))

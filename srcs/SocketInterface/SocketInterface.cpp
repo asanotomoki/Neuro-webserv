@@ -299,7 +299,7 @@ void SocketInterface::execReadRequest(pollfd &pollfd, RequestBuffer &client)
 void SocketInterface::execCoreHandler(pollfd &pollFd, RequestBuffer &client)
 {
 	CoreHandler coreHandler(_config->getServerContext(client.hostAndPort.second, client.hostAndPort.first));
-	std::string response = coreHandler.processRequest(client.httpRequest);
+	std::string response = coreHandler.processRequest(client.httpRequest, client.hostAndPort);
 	if (sendResponse(pollFd.fd, response) >= 0)
 	{
 		pollFd.events = POLLIN;

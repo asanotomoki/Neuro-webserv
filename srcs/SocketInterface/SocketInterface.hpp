@@ -43,6 +43,7 @@ struct RequestBuffer
     std::string chunkedBody;
     ServerContext serverContext;
     std::string response;
+    bool isClosed;
 };
 
 

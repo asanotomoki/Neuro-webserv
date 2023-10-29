@@ -270,6 +270,10 @@ void SocketInterface::execCoreHandler(pollfd &pollFd, RequestBuffer &client)
 		client.state = READ_REQUEST;
 		client.isChunked = false;
 		client.isRequestFinished = false;
+		if (client.httpRequest.headers["Connection"] == "close")
+		{
+			client.isClosed = true;
+		}
 	}
 	else
 	{
@@ -379,6 +383,10 @@ void SocketInterface::execWriteCgi(pollfd &pollFd, RequestBuffer &client) // cli
 		{
 			std::cerr << "close() failed" << std::endl;
 		}
+		if (client.httpRequest.headers["Connection"] == "close")
+		{
+			client.isClosed = true;
+		}
 		_clients[pollFd.fd].response = "";
 		_clients[pollFd.fd].request = "";
 		_clients[pollFd.fd].isRequestFinished = false;
@@ -404,7 +412,7 @@ void SocketInterface::deleteClient()
 	for (size_t i = 0; i < _pollFds.size(); ++i)
 	{
 		State state = _clients[_pollFds[i].fd].state;
-		if ((state != EXEC_CGI && state != READ_CGI) && _pollFds[i].revents & POLLHUP)
+		if (((state != EXEC_CGI && state != READ_CGI) && _pollFds[i].revents & POLLHUP) || _clients[_pollFds[i].fd].isClosed)
 		{
 			if (_clients[_pollFds[i].fd].cgiFd > 0)
 			{
@@ -529,6 +537,7 @@ pollfd SocketInterface::createClient(int fd, State state)
 	client.isRequestFinished = false;
 	client.cgiFd = -1;
 	client.clientFd = fd;
+	client.isClosed = false;
 	// pollFdのfdをキーにしてクライアントを管理する
 	_clients.insert(std::make_pair(fd, client));
 	return pollFd;

@@ -52,7 +52,7 @@ private:
 public:
     CoreHandler(const ServerContext &serverContext);
     ~CoreHandler();
-    std::string processRequest(HttpRequest httpRequest);
+    std::string processRequest(HttpRequest httpRequest, const std::pair<std::string, std::string> &hostPort);
 };
 
 #endif

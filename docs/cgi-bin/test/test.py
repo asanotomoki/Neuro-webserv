@@ -23,7 +23,7 @@ print("<head>")
 print("</head>")
 print("<body>")
 print("<h1> Hello World </h1>")
-print(datetime.datetime.strftime(datetime.datetime.now(), "<h1>  %H:%M:%S </h1>"))
+print(datetime.datetime.strftime(datetime.datetime.now(), "<h1>  %H:%M:%S %S </h1>"))
 print("<p>" + request_method + "</p>")
 print("<p>")
 if request_method == "POST":

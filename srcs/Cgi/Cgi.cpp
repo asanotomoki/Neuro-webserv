@@ -93,7 +93,8 @@ ParseUrlCgiResult getCgiPath(std::vector<std::string> tokens, ServerContext &ser
     std::cout << "command: " << result.command << std::endl;
     // ファイルが指定されていない場合
     bool isFile = false;
-    for (size_t i = 0; i < tokens.size(); i++)
+    size_t i = 0;
+    for (; i < tokens.size(); i++)
     {
         if (tokens[i].find(".") != std::string::npos)
         {
@@ -101,26 +102,32 @@ ParseUrlCgiResult getCgiPath(std::vector<std::string> tokens, ServerContext &ser
             break;
         }
     }
-    size_t i = 0;
     if (!isFile)
     {
         result.file = location_context.getDirective("index");
+        result.fullpath = "./docs/cgi-bin/" + result.file;
+        i = 1;
     }
     else
     {
+        i = 0;
         for (; i < tokens.size(); i++)
         {
+            result.file += "/" + tokens[i];
             if (tokens[i].find(".") != std::string::npos)
                 break;
-            result.file += "/" + tokens[i];
         }
+        i++;
+        result.fullpath = "./docs/" + result.file;
+        // "//"を"/"に変換
+        result.fullpath = result.fullpath.replace(result.fullpath.find("//"), 2, "/");
     }
     // その以降の要素がパスインフォ
+    
     for (size_t j = i; j < tokens.size(); j++)
     {
         result.pathInfo += "/" + tokens[j];
     }
-    result.fullpath = +"./docs/cgi-bin/" + result.file;
     return result;
 }
 

@@ -28,7 +28,7 @@ std::vector<std::string> RequestParser::split(const std::string &s, char delimit
 
 bool RequestParser::isCgiDir(std::vector<std::string> tokens)
 {
-    return tokens.size() >= 2 && tokens[1] == "cgi-bin";
+    return tokens.size() >= 1 && tokens[1] == "cgi-bin";
 }
 
 bool RequestParser::isCgiBlockPath(const ServerContext& server_context, std::vector<std::string> tokens)

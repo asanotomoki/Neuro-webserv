@@ -74,27 +74,18 @@ const ServerContext& Config::getServerContext(const std::string& port, const std
     // ポート番号が一致するServerブロックをすべて取得する
     const std::map<std::string, std::vector<ServerContext> >& servers = getServers();
     const std::vector<ServerContext>* serverContextsPtr;
-    if (servers.find(port) != servers.end()) {
+    if (servers.find(port) == servers.end()) {
         std::cerr<<  "getServerContext :: port not found! -> " << port <<  std::endl;
-        serverContextsPtr = &servers.at(port);
+        serverContextsPtr = &servers.begin()->second;
     } else {
-       serverContextsPtr = &servers.begin()->second;
+        serverContextsPtr = &servers.at(port);
     }
     const std::vector<ServerContext>& serverContexts = *serverContextsPtr;
-    try {
         // server_nameがhostヘッダーと一致する場合、そのserverブロックを返す
-        for (std::vector<ServerContext>::const_iterator it = serverContexts.begin(); it != serverContexts.end(); ++it) {
-            if (it->getServerName() == host) {
-                std::cout << "server_name: "<<  it->getServerName() << std::endl;
-                return *it;
-            }
+    for (std::vector<ServerContext>::const_iterator it = serverContexts.begin(); it != serverContexts.end(); ++it) {
+        if (it->getServerName() == host) {
+            return *it;
         }
-        // server_nameがhostヘッダーと一致しない場合、最初のserverブロックを返す
-        return serverContexts.at(0);
-    } catch (std::out_of_range& e) {
-        std::cerr <<  "Caught runtime_error: " << e.what()<< std::endl;
-        // // 一致するポート番号がない場合は上位に投げる
-        // throw std::runtime_error("port not found!");
     }
     return serverContexts.at(0);
 }

@@ -6,13 +6,13 @@
 #include <string>
 #include <map>
 
-
 struct HttpRequest {
     std::string method;
     std::string protocol; // HTTP/1.1
     std::string url;
     std::map<std::string, std::string> headers;
     std::string body;
+    std::string hostname;
     bool isCgi;
     int fd;
     int statusCode;
@@ -22,7 +22,7 @@ struct HttpRequest {
 class RequestParser
 {
 public:
-    HttpRequest parse(const std::string &request, bool isChunked);
+    HttpRequest parse(const std::string &request, bool isChunked, const std::string &client);
     RequestParser(Config *config);
     ~RequestParser();
 

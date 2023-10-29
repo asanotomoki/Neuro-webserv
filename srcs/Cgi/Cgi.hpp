@@ -14,6 +14,20 @@ struct CgiResult
 	pid_t pid;
 };
 
+
+struct ParseUrlCgiResult
+{
+    std::string file;
+    std::string directory;
+    std::string fullpath;
+    std::string query;
+    std::string pathInfo;
+	std::string command;
+    int statusCode;
+    std::string message;
+    int autoindex;
+    int errorflag;
+};
 #include "RequestParser.hpp"
 //CGIクラス
 class Cgi
@@ -24,6 +38,7 @@ class Cgi
 		HttpRequest _request;
 		const char* _executable;
 		const char* _path;
+		ParseUrlCgiResult _parseUrlCgiResult;
 		int pipe_stdin[2];
 		std::vector<std::string> _args;
 
@@ -34,10 +49,11 @@ class Cgi
 	public:
 		//Cgi(HttpRequest &request, std::string executable, ParseUrlResult &url);
 		Cgi();
-		Cgi(HttpRequest &request);
+		Cgi(HttpRequest &request, ServerContext &server_context);
     	~Cgi();
 		
 		CgiResult execCGI();
+		void parseUrl(std::string url, ServerContext &server_context);
 		
 		// env
 		const std::map<std::string, std::string>& getEnv() const;

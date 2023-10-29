@@ -274,8 +274,8 @@ void SocketInterface::execReadRequest(pollfd &pollfd, RequestBuffer &client)
 		}
 		if (client.httpRequest.isCgi)
 		{
-			Cgi cgi = Cgi(client.httpRequest);
-			client.cgi = cgi;
+			ServerContext context = _config->getServerContext(client.hostAndPort.second, client.hostAndPort.first);
+			client.cgi = Cgi(client.httpRequest, context);
 			if (client.httpRequest.method == "POST")
 			{
 				setCgiBody(client, client.httpRequest.body);

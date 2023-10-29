@@ -49,74 +49,6 @@ int isDirectory_x(std::string path) {
     }
     return 0;
 }
-
-bool isCgiBlockPath(const ServerContext& server_context, std::vector<std::string> tokens)
-{
-	if (!server_context.getIsCgi())
-		return false;
-	CGIContext cgi_context = server_context.getCGIContext();
-	std::string exe = cgi_context.getDirective("extension");
-	size_t i = 0;
-	while (i < tokens.size())
-	{
-		// 拡張子を取得
-		std::string ext = tokens[i].substr(tokens[i].find_last_of(".") + 1);
-		if (ext == exe)
-			return true;
-		i++;
-	}
-	return false;
-}
-
-ParseUrlResult parseCgiBlock(std::vector<std::string> tokens, const ServerContext& server_context)
-{
-	ParseUrlResult result;
-	result.directory = "/cgi-bin/";
-	CGIContext cgi_context = server_context.getCGIContext();
-	std::string exe = cgi_context.getDirective("extension");
-	size_t i = 0;
-	while (i < tokens.size())
-	{
-		result.file += "/" + tokens[i];
-		std::string ext = tokens[i].substr(tokens[i].find_last_of(".") + 1);
-		if (ext == exe)
-			break;
-		i++;
-	}
-	result.fullpath = "./docs/cgi-bin" + result.file;
-	result.pathInfo = "";
-	// それ以降がpathinfo
-	for (size_t j = i + 1; j < tokens.size(); j++)
-	{
-		result.pathInfo += "/" + tokens[j];
-	}
-	return result;
-}
-
-bool isCgiDir(std::vector<std::string> tokens)
-{
-	if (tokens.size() < 2)
-		return false;
-	if (tokens[0] == "cgi-bin")
-		return true;
-	return false;
-}
-
-ParseUrlResult getCgiPath(std::vector<std::string> tokens)
-{
-	ParseUrlResult result;
-	result.directory = "/cgi-bin/";
-	// 必ずcgi-binが含まれているので、その次の要素がファイル名
-	result.file = tokens[1];
-	// その以降の要素がパスインフォ
-	for (size_t i = 2; i < tokens.size(); i++)
-	{
-		result.pathInfo += "/" + tokens[i];
-	}
-	result.fullpath =  + "./docs/cgi-bin/" + result.file;
-	return result;
-}
-
 // bool getIsAutoIndex(LocationContext &location_context, std::string path)
 // {
 // 	bool autoindexEnabled = true;
@@ -259,12 +191,8 @@ ParseUrlResult CoreHandler::parseUrl(std::string url)
 		}
 		return result;
 	}
-	if (isCgiDir(path_tokens))
-		return getCgiPath(path_tokens);
-	if (isCgiBlockPath(_serverContext, path_tokens))
-		return parseCgiBlock(path_tokens, _serverContext);
 	if (path_tokens.size() == 1 && isFile(path_tokens[0])) {
-		parseHomeDirectory(url, result);
+		parseHomeDirectory(tokens[0], result);
 		return result;
 	}
 

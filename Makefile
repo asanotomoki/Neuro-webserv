@@ -15,7 +15,7 @@ SOURCES = srcs/main.cpp srcs/Config/Config.cpp srcs/SocketInterface/SocketInterf
 			srcs/CoreHandler/StaticFileReader/StaticFileReader.cpp \
 			srcs/CoreHandler/DataProcessor/DataProcessor.cpp \
 			srcs/Cgi/Cgi.cpp \
-			srcs/utils/defaultError.cpp
+			srcs/utils/defaultError.cpp srcs/utils/time.cpp
 OBJECTS_DIR = objs
 OBJECTS = $(addprefix $(OBJECTS_DIR)/, $(SOURCES:.cpp=.o))
 

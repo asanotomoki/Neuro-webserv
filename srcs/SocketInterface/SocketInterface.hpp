@@ -16,6 +16,9 @@
 #include "Cgi.hpp"
 #include "RequestParser.hpp"
 #include "utils.hpp"
+#include <ctime>
+
+#define TIMEOUT 10
 
 enum State
 {
@@ -48,6 +51,7 @@ struct RequestBuffer
     Cgi cgi;
     std::pair<std::string, std::string> hostAndPort;
     bool isClosed;
+    std::time_t lastAccessTime;
 };
 
 
@@ -79,6 +83,7 @@ private:
     void setCgiBody(RequestBuffer &client, std::string &body);
     HttpRequest parseRequest(std::string request, RequestBuffer &client);
     void deleteClient();
+    void monitorTimeout();
     int sendResponse(int fd, std::string response);
     int ReadRequest(int fd, RequestBuffer &client);
     void execReadRequest(pollfd &pollfd, RequestBuffer &client);
@@ -87,7 +92,7 @@ private:
     void execReadCgi(pollfd &pollFd, RequestBuffer &client);
     void execWriteCgi(pollfd &pollFd, RequestBuffer &client);
     void execWriteError(pollfd &pollFd, RequestBuffer &client, int index);
-    void execWriteCGIBody(pollfd &pollFd, RequestBuffer &client, int index);
+    void execWriteCGIBody(pollfd &pollFd, RequestBuffer &client);
     pollfd createClient(int fd, State state);
 };
 

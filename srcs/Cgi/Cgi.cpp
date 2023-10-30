@@ -80,7 +80,6 @@ bool isCgiDir(std::vector<std::string> tokens)
 {
     if (tokens.size() < 1)
         return false;
-    std::cout << "tokens[0]: " << tokens[0] << std::endl;
     if (tokens[0] == "cgi-bin")
         return true;
     return false;
@@ -88,11 +87,9 @@ bool isCgiDir(std::vector<std::string> tokens)
 
 ParseUrlCgiResult getCgiPath(std::vector<std::string> tokens, ServerContext &serverContext, ParseUrlCgiResult &result)
 {
-    std::cout << "getCgiPath" << std::endl;
     result.directory = "/cgi-bin/";
     LocationContext location_context = serverContext.getLocationContext("/cgi-bin/");
     result.command = location_context.getDirective("command");
-    std::cout << "command: " << result.command << std::endl;
     // ファイルが指定されていない場合
     bool isFile = false;
     size_t i = 0;
@@ -135,8 +132,6 @@ ParseUrlCgiResult getCgiPath(std::vector<std::string> tokens, ServerContext &ser
 
 void Cgi::parseUrl(std::string url, ServerContext &serverContext)
 {
-    std::cout << "url: " << url << std::endl;
-
     ParseUrlCgiResult result;
     result.statusCode = 200;
     result.autoindex = 0;
@@ -154,10 +149,8 @@ void Cgi::parseUrl(std::string url, ServerContext &serverContext)
     tokens[0].erase(0, 1);
     // cgi-bin
     std::vector<std::string> path_tokens = splitCgi(tokens[0], '/');
-    std::cout << " tokens" << path_tokens[0] << std::endl;
     if (isCgiDir(path_tokens))
     {
-        std::cout << "isCgiDir" << std::endl;
         getCgiPath(path_tokens, serverContext, result);
     }
     else if (isCgiBlockPath(serverContext, path_tokens))
@@ -171,8 +164,6 @@ Cgi::Cgi(HttpRequest &req, ServerContext &server_context) : _request(req)
     parseUrl(req.url, server_context);
     std::string exec = this->_parseUrlCgiResult.command;
     this->_executable = exec.c_str();
-    std::cout << "executable: " << this->_executable << std::endl;
-    std::cout << "fullpath: " << this->_parseUrlCgiResult.fullpath << std::endl;
     this->_args.push_back(this->_executable);
     this->_args.push_back(this->_parseUrlCgiResult.fullpath.c_str());
     if (pipe(this->pipe_stdin) < 0)
@@ -180,8 +171,6 @@ Cgi::Cgi(HttpRequest &req, ServerContext &server_context) : _request(req)
         std::cerr << "pipe error" << std::endl;
     }
     initEnv(req);
-    std::cout << "exec: " << this->_executable << std::endl;
-    // initEnv(req, url);
 }
 
 int *Cgi::getPipeStdin()
@@ -203,7 +192,6 @@ void Cgi::execCGI(CgiResult& result)
     int pipe_fd[2];
     char **env = mapToChar(this->_env);
     char **args = vectorToChar(this->_args);
-    std::cerr << this->_parseUrlCgiResult.command << std::endl;
     if (!validatePath(_parseUrlCgiResult.fullpath))
     {
         result.statusCode = 404;
@@ -213,12 +201,13 @@ void Cgi::execCGI(CgiResult& result)
     {
         std::cerr << "pipe error" << std::endl;
     }
-    if ((result.pid = fork()) < 0)
+    pid_t pid = fork();
+    if (pid < 0)
     {
         std::cerr << "fork error" << std::endl;
         std::exit(1);
     }
-    else if (result.pid == 0)
+    else if (pid == 0)
     {
         close(pipe_fd[0]);
         dup2(pipe_fd[1], 1);
@@ -230,9 +219,7 @@ void Cgi::execCGI(CgiResult& result)
 
 
         execve(this->_parseUrlCgiResult.command.c_str(), args, env);
-        std::cout << "exec: " << this->_executable << std::endl;
         std::cerr << "execve error" << std::endl;
-        std::cout << "Status: 500 Internal Server Error" << std::endl;
         result.statusCode = 500;
         std::exit(1);
     }
@@ -246,6 +233,8 @@ void Cgi::execCGI(CgiResult& result)
     }
     result.fd = pipe_fd[0];
     result.body = this->_request.body;
+    std::cout << "pid: " << pid << std::endl;
+    result.pid = pid;
     return;
 }
 

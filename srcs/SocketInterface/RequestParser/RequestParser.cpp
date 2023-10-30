@@ -64,7 +64,6 @@ HttpRequest RequestParser::parse(const std::string& request, bool isChunked, con
 
     // 正しくない形式の場合は400を返す
     if (httpRequest.protocol.empty() || httpRequest.protocol.find("HTTP/1.1") == std::string::npos || httpRequest.url.empty() || httpRequest.method.empty()) {
-        std::cout << "400 Bad Request" << std::endl;
         httpRequest.statusCode = 400;
         return httpRequest;
     }
@@ -98,7 +97,6 @@ HttpRequest RequestParser::parse(const std::string& request, bool isChunked, con
         }
     }
     if (httpRequest.method == "POST" && contentLength == -1 && !isChunked) {
-        std::cout << "411 Length Required" << std::endl;
         httpRequest.statusCode = 411;
         return httpRequest;
     }
@@ -112,13 +110,11 @@ HttpRequest RequestParser::parse(const std::string& request, bool isChunked, con
     }
     if (contentLength > 0) {
         if (contentLength > (int)maxBodySize) {
-            std::cout << "413 Payload Too Large" << std::endl;
             httpRequest.statusCode = 413;
             return httpRequest;
         }
         char* buffer = new char[contentLength];
         bodyStream.read(buffer, contentLength);
-        std::cout << "body: " << std::string(buffer, contentLength) << std::endl;
         httpRequest.body = std::string(buffer, contentLength);
         delete[] buffer;
     }
@@ -126,7 +122,7 @@ HttpRequest RequestParser::parse(const std::string& request, bool isChunked, con
     if (isChunked)
     {
         if (body.size() > maxBodySize) {
-            std::cout << "413 Payload Too Large" << std::endl;
+
             httpRequest.statusCode = 413;
             return httpRequest;
         }

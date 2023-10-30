@@ -41,7 +41,6 @@ int CoreHandler::isFile(const std::string& token, std::string fullpath)
 }
 
 int isDirectory_x(std::string path) {
-	std::cout << "isdir path: " << path << std::endl;
     DIR* dir = opendir(path.c_str());
     if (dir) {
         closedir(dir);
@@ -117,7 +116,6 @@ void CoreHandler::parseHomeDirectory(std::string url, ParseUrlResult& result)
 	LocationContext location_context = _serverContext.getLocationContext("/");
 	result.directory = "/";
 	std::string alias = location_context.getDirective("alias");
-	std::cout << "url: " << url << std::endl;
 	if (url != "/")
 		result.file = url;
 	else {
@@ -144,11 +142,7 @@ void CoreHandler::parseHomeDirectory(std::string url, ParseUrlResult& result)
 			result.file = location_context.getDirective("index");
 		}
 	}
-	// alias.erase(alias.size() - 1, 1);
 	result.fullpath = alias + result.file;
-	std::cout << "result.fullpath HOME: " << result.fullpath << std::endl;
-	// result.fullpath.erase(result.fullpath.size() - 1, 1);
-	// result.isAutoIndex = getIsAutoIndex(location_context, url);
 	return;
 }
 
@@ -200,23 +194,9 @@ ParseUrlResult CoreHandler::parseUrl(std::string url)
 	locationContext = _serverContext.getLocationContext(result.directory);
 	std::string alias = locationContext.getDirective("alias");
 
-// 	if (path_tokens.size() == 1 && isFile(path_tokens[0]))
-// 	{
-// 		ParseUrlResult res = parseHomeDirectory(url, _serverContext);
-// 		res.query = result.query;
-// 		return res;
-// 	}
-// 	LocationContext location_context;
-// 	location_context = _serverContext.getLocationContext(result.directory);
-// 	std::string alias = location_context.getDirective("alias");
-// 	result.file = getFile(path_tokens, location_context);
-// 	result.isAutoIndex = getIsAutoIndex(location_context, path_tokens[path_tokens.size() - 1]);
-
 	// fullpathの最後のスラッシュを削除
 	result.fullpath = alias;
-	std::cout << "alias: " << alias << std::endl;
 	result.file = getFile(path_tokens, locationContext, result);
-	std::cout << "result.file: " << result.file << std::endl;
 	if (result.autoindex == 1 && result.file == "") {
 		// 余計なパスや存在しないパスのため
 		std::string arg = alias + path_tokens[path_tokens.size() - 1];
@@ -236,7 +216,5 @@ ParseUrlResult CoreHandler::parseUrl(std::string url)
 	// 	result.fullpath += "/" + path_tokens[i];
 	// }
 	result.fullpath += "/" + result.file;
-	std::cout << "result.fullpath: " << result.fullpath << std::endl;
-	std::cout << "ステータスコード: " << result.statusCode << std::endl;
 	return result;
 }

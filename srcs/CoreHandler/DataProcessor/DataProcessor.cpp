@@ -65,7 +65,6 @@ std::string DataProcessor::getAutoIndexHtml(std::string path, const ServerContex
             if (name[0] == '.') {
                 continue;
             }
-            std::cout << "name: " << name << std::endl;
             std::string tempPath = path;
             std::string clientPath;
             if (path == "./docs/") {
@@ -80,13 +79,12 @@ std::string DataProcessor::getAutoIndexHtml(std::string path, const ServerContex
                 clientPath = serverContext.getClientPath(path);
                 clientPath += name;
             }
-            std::cout << "clientPath: " << clientPath << std::endl;
-            html += "<li><a href=\"" + clientPath + "\">" + name + "</a></li>";
+            html += "<li><a href=\"" + clientPath + "\">" + name + "</a></li>\n";
             if (path != tempPath) {
                 // pathからnameを削除
                 path = tempPath;
             }
-            std::cout << "-----------------------" << std::endl;
+
         }
         closedir(dir);
     }

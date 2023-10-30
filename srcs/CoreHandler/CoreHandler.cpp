@@ -52,8 +52,6 @@ std::string errorResponse(int statusCode, std::string message, const LocationCon
 
 std::string getContentType(const std::string& filepath) {
     // MIMEタイプのマッピング
-
-	std::cout << "filepath: " << filepath << std::endl;
     static std::map<std::string, std::string> mimeTypes;
 	mimeTypes.insert(std::make_pair(".html", "text/html"));
 	mimeTypes.insert(std::make_pair(".css", "text/css"));
@@ -90,12 +88,10 @@ std::string CoreHandler::getMethod(const std::string &fullpath, const LocationCo
 {
 	// 静的ファイルを提供する場合
 	StaticFileReader fileReader;
-	std::cout << "fullpath: " << fullpath << "\n";
 
 	// スラッシュが2個続く場合があるため取り除く
 	std::string fileContent = fileReader.readFile(fullpath, locationContext, _serverContext, result);
   	std::string contentType = getContentType(fullpath);
-	std::cout << "contentType: " << contentType << "\n"; 
 	std::string response = successResponse(fileContent, contentType);
 
 	return response;
@@ -111,7 +107,6 @@ std::string CoreHandler::postMethod(std::string body)
 
 std::string CoreHandler::deleteMethod(const std::string &filename)
 {
-	std::cout << "deleteMethod :: filename: " << filename << "\n";
 	if (std::remove(("./docs/upload/" + filename).c_str()) != 0)
 	{
 		std::cerr << "deleteMethod :: ERROR: File not found or delete failed.\n";
@@ -124,14 +119,10 @@ std::string CoreHandler::deleteMethod(const std::string &filename)
 
 int CoreHandler::validatePath(std::string& path)
 {
-	std::cout << "validatePath :: path: " << path << std::endl;
-	// 引数で与えらえれたファイルパスがサーバープログラムに存在するかどうかを確認する
-	// もしpathが'/'で終わっている場合は、削除する
 	if (path[path.size() - 1] == '/')
 		path.erase(path.size() - 1, 1);
 	struct stat buffer;
 	int ret = stat(path.c_str(), &buffer);
-	std::cout << "ret :" << ret << std::endl;
 	return ret;
 }
 
@@ -168,7 +159,6 @@ std::string CoreHandler::processRequest(HttpRequest httpRequest,
 {
 	if (httpRequest.url == "/favicon.ico")
 	{
-		std::cout << "WARNING: favicon.ico request, ignoring\n";
 		return "";
 	}
 
@@ -200,7 +190,6 @@ std::string CoreHandler::processRequest(HttpRequest httpRequest,
 			locationContext = _serverContext.get405LocationContext();
 			return errorResponse(405, "Method Not Allowed", locationContext);
 		}
-		std::cout << "parseUrlResult.fullpath: " << parseUrlResult.fullpath << std::endl;
 		return getMethod(parseUrlResult.fullpath, locationContext, parseUrlResult);
 	}
 	else if (httpRequest.method == "POST")

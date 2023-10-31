@@ -185,6 +185,7 @@ std::string CoreHandler::processRequest(HttpRequest httpRequest,
 
 	if (httpRequest.method == "GET")
 	{
+		std::cout << "process get method" << std::endl;
 		if (!locationContext.isAllowedMethod("GET"))
 		{
 			locationContext = _serverContext.get405LocationContext();
@@ -194,6 +195,7 @@ std::string CoreHandler::processRequest(HttpRequest httpRequest,
 	}
 	else if (httpRequest.method == "POST")
 	{
+		std::cout << "process post method" << std::endl;
 		if (!locationContext.isAllowedMethod("POST"))
 		{
 			locationContext = _serverContext.get405LocationContext();

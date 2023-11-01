@@ -257,9 +257,24 @@ std::string ServerContext::getReturnPath(const std::string& path) const
     return "";
 }
 
-void ServerContext::addPathPair(const std::pair<std::string, std::string>& path_pair)
+void ServerContext::addPathPair(const std::pair<std::string, std::string>& pathPair)
 {
-	_pathMap.insert(path_pair);
+	_pathMap.insert(pathPair);
+}
+
+void ServerContext::addServerPathPair(const std::pair<std::string, std::string>& pathPair)
+{
+	_serverPathMap.insert(pathPair);
+}
+
+const std::string& ServerContext::getServerPath(const std::string& path) const
+{
+	// _pathMapからpathに対応するserver_pathを取得する
+	// pathはmapのpairの1つ目の要素
+	std::map<std::string, std::string>::const_iterator it = _serverPathMap.find(path);
+	if (it == _serverPathMap.end())
+		throw std::runtime_error("getServerPath :: path not found: " + path);
+	return it->second;
 }
 
 const std::string& ServerContext::getClientPath(const std::string& path) const

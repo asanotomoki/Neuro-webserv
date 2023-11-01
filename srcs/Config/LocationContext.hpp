@@ -18,8 +18,10 @@ class LocationContext
 		bool getIsCgi() const;
 		std::map<std::string, std::string> getDirectives() const;
 		bool hasDirective(const std::string& directive);
-		void setPathPair(const std::string& path, const std::string& alias);
+		void setPathPair(const std::string& alias, const std::string& path);
+		void setPathPairRev(const std::string& path, const std::string& alias);
 		std::pair<std::string, std::string> _pathPair;
+		std::pair<std::string, std::string> _pathPairRev;
 		
 	private:
 		std::set<std::string> _allowedMethods;

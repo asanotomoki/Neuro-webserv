@@ -39,9 +39,12 @@ class ServerContext
         std::string getReturnPath(const std::string& path) const;
         void verifyReturnLocations();
         void addPathPair(const std::pair<std::string, std::string>& path_pair);
+        void addServerPathPair(const std::pair<std::string, std::string>& path_pair);
+        const std::string& getServerPath(const std::string& path) const;
         const std::string& getClientPath(const std::string& path) const;
         // クライアントのパスとサーバーのパスのマップ
         std::map<std::string, std::string> _pathMap;
+        std::map<std::string, std::string> _serverPathMap;
 
     private:
         std::string _listen;

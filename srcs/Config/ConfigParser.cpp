@@ -8,6 +8,7 @@
 #include <string>
 #include <iostream>
 #include <cstdlib>
+#include <map>
 
 ConfigParser::ConfigParser(Config& config):
 	_config(config),
@@ -198,6 +199,8 @@ const ServerContext ConfigParser::setServerContext()
 			LocationContext locationContext = setLocationContext();
 			serverContext.addLocationContext(locationContext);
 			serverContext.addPathPair(locationContext._pathPair);
+			// pathpairを出力
+			std::cout << "pathpair: " << locationContext._pathPair.first << ", " << locationContext._pathPair.second << std::endl;
 		}
 		else if (_directiveType == CGI) {
 			CGIContext cgiContext = setCGIContext();
@@ -256,8 +259,10 @@ const LocationContext ConfigParser::setLocationContext()
 	if (!locationContext.hasDirective("return") && (!locationContext.hasDirective("autoindex") && !locationContext.hasDirective("index")))
 		throw ConfigError(NEED_INDEX, "location", _filepath, _lineNumber + 1);
 	// _pathPairにpathとaliasのペアを保存
-	if (locationContext.hasDirective("alias"))
+	if (locationContext.hasDirective("alias")) {
 		locationContext.setPathPair(locationContext.getDirective("alias"), locationContext.getDirective("path"));
+		locationContext.setPathPairRev(locationContext.getDirective("path"), locationContext.getDirective("alias"));
+	}
 	return locationContext;
 }
 

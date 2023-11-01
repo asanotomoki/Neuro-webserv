@@ -136,7 +136,7 @@ void CoreHandler::parseHomeDirectory(std::string url, ParseUrlResult& result)
 					result.statusCode = 403;
 					result.message = "Forbidden";
 				}
-				return ;
+				return;
 			}
 		} else {
 			result.file = location_context.getDirective("index");

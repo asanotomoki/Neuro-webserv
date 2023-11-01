@@ -97,10 +97,11 @@ std::string CoreHandler::getMethod(const std::string &fullpath, const LocationCo
 	return response;
 }
 
-std::string CoreHandler::postMethod(const std::string& body, const std::string& url)
+std::string CoreHandler::postMethod(const std::string& body, const std::string& url,
+									const ServerContext& serverContext)
 {
 	DataProcessor dataProcessor;
-	ProcessResult result = dataProcessor.processPostData(body, url);
+	ProcessResult result = dataProcessor.processPostData(body, url, serverContext);
 	std::string response = successResponse(result.message, "text/html", "201");
 	return response;
 }
@@ -227,7 +228,7 @@ std::string CoreHandler::processRequest(HttpRequest httpRequest,
 			return errorResponse(405, "Method Not Allowed", locationContext);
 		}
 		std::cout << "===== process post method =====" << std::endl;
-		return postMethod(httpRequest.body, parseUrlResult.directory);
+		return postMethod(httpRequest.body, parseUrlResult.directory, _serverContext);
 	}
 	else if (httpRequest.method == "DELETE")
 	{

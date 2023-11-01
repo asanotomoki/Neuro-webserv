@@ -6,19 +6,24 @@
 #include <dirent.h>
 #include <sys/stat.h>
 
-ProcessResult DataProcessor::processPostData(const std::string& body, const std::string& url) {
+ProcessResult DataProcessor::processPostData(const std::string& body, const std::string& url, 
+                                                const ServerContext& serverContext)
+{
 
     // ファイルデータの部分を解析
     size_t fileDataStart = body.find("\r\n") + 1;
     size_t fileDataEnd = body.find("\r\n", fileDataStart);
     std::string fileData = body.substr(fileDataStart, fileDataEnd - fileDataStart);
 
+    std::string directoryPath = serverContext.getServerPath(url);
+    std::cout << "directoryPath: " << directoryPath << std::endl;
     // 指定されたディレクトリが存在するか確認
     struct stat st;
-    std::string fullDirPath = "./" + url;
+    std::string fullDirPath = "./" + directoryPath;
     if (stat(fullDirPath.c_str(), &st) == -1) {
-        // ディレクトリが存在しない場合、作成する
-        mkdir(fullDirPath.c_str(), 0755);
+        // ディレクトリが存在しない場合、４０４エラーを返す
+        ProcessResult result = ProcessResult("error", "Not found.", 404);
+        return result;
     }
     // インデックスを見つけてファイル名を生成
     int index = 1;

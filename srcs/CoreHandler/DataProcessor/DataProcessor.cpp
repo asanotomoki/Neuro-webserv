@@ -15,6 +15,7 @@ ProcessResult DataProcessor::processPostData(const std::string& body, const std:
     size_t fileDataEnd = body.find("\r\n", fileDataStart);
     std::string fileData = body.substr(fileDataStart, fileDataEnd - fileDataStart);
 
+    std::cout << "url: " << url << std::endl;
     std::string directoryPath = serverContext.getServerPath(url);
     std::cout << "directoryPath: " << directoryPath << std::endl;
     // 指定されたディレクトリが存在するか確認

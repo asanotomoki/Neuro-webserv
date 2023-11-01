@@ -169,7 +169,7 @@ void ConfigParser::parseLines()
 		setDirectiveType(_oneLine[0]);
 		if (!isAllowedDirective())
 			throw ConfigError(NOT_ALLOWED_DIRECTIVE, _oneLine[0], _filepath, _lineNumber + 1);
-		else if (_directiveType == SERVER){
+		else if (_directiveType == SERVER) {
 			ServerContext serverContext = setServerContext();
 			_config.addServerContext(serverContext);
 		}
@@ -199,8 +199,7 @@ const ServerContext ConfigParser::setServerContext()
 			LocationContext locationContext = setLocationContext();
 			serverContext.addLocationContext(locationContext);
 			serverContext.addPathPair(locationContext._pathPair);
-			// pathpairを出力
-			std::cout << "pathpair: " << locationContext._pathPair.first << ", " << locationContext._pathPair.second << std::endl;
+			serverContext.addServerPathPair(locationContext._pathPairRev);
 		}
 		else if (_directiveType == CGI) {
 			CGIContext cgiContext = setCGIContext();

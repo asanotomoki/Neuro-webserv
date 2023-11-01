@@ -273,7 +273,7 @@ const std::string& ServerContext::getServerPath(const std::string& path) const
 	// pathはmapのpairの1つ目の要素
 	std::map<std::string, std::string>::const_iterator it = _serverPathMap.find(path);
 	if (it == _serverPathMap.end())
-		throw std::runtime_error("getServerPath :: path not found: " + path);
+		return path;
 	return it->second;
 }
 

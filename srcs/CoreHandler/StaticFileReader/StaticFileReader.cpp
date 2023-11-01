@@ -1,5 +1,6 @@
 #include "StaticFileReader.hpp"
 #include "DataProcessor.hpp"
+#include "utils.hpp"
 #include <fstream>
 #include <iterator>
 #include <iostream>
@@ -21,18 +22,7 @@ std::string StaticFileReader::readErrorFile(const LocationContext& locationConte
     std::string filePath = alias + filename;
 
     if (!isFileExist(filePath)) {
-        if (statusCode == 403)
-            filePath = "./docs/error_page/default/403.html";
-        else if (statusCode == 404)
-            filePath = "./docs/error_page/default/404.html";
-        else if (statusCode == 405)
-            filePath = "./docs/error_page/default/405.html";
-        else if (statusCode == 500)
-            filePath = "./docs/error_page/default/500.html";
-        else if (statusCode == 501)
-            filePath = "./docs/error_page/default/501.html";
-        else
-            filePath = "./docs/error_page/default/404.html";
+        return default_error_page(statusCode);
     }
     std::ifstream file(filePath, std::ios::binary);
     return std::string(std::istreambuf_iterator<char>(file),
@@ -56,11 +46,6 @@ std::string StaticFileReader::readFile(std::string fullpath, LocationContext loc
     if (!file || isDirectory_y(fullpath) || result.autoindex == 1) {
         if (locationContext.hasDirective("autoindex")) {
             if (locationContext.getDirective("autoindex") == "on") {
-                // autoindexがonの場合
-                // ディレクトリの中身を表示する
-                // std::string response = "HTTP/1.1 200 OK\r\n";
-                // response += "Content-Type: text/html; charset=UTF-8\r\n";
-                // response += "\r\n";
                 std::string response = DataProcessor::getAutoIndexHtml(locationContext.getDirective("alias"), serverContext);
                 return response;
             }

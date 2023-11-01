@@ -97,11 +97,18 @@ std::string CoreHandler::getMethod(const std::string &fullpath, const LocationCo
 	return response;
 }
 
-std::string CoreHandler::postMethod(const std::string& body, const std::string& url,
-									const ServerContext& serverContext)
+std::string CoreHandler::postMethod(const std::string& body, const std::string& url)
 {
 	DataProcessor dataProcessor;
-	ProcessResult result = dataProcessor.processPostData(body, url, serverContext);
+	ProcessResult result = dataProcessor.processPostData(body, url, _serverContext);
+	if (result.statusCode != 200) {
+		LocationContext locationContext;
+		if (result.statusCode == 404)
+			locationContext = _serverContext.get404LocationContext();
+		else if (result.statusCode == 500)
+			locationContext = _serverContext.get500LocationContext();
+		return errorResponse(result.statusCode, result.message, locationContext);
+	}
 	std::string response = successResponse(result.message, "text/html", "201");
 	return response;
 }
@@ -228,7 +235,7 @@ std::string CoreHandler::processRequest(HttpRequest httpRequest,
 			return errorResponse(405, "Method Not Allowed", locationContext);
 		}
 		std::cout << "===== process post method =====" << std::endl;
-		return postMethod(httpRequest.body, parseUrlResult.directory, _serverContext);
+		return postMethod(httpRequest.body, parseUrlResult.directory);
 	}
 	else if (httpRequest.method == "DELETE")
 	{

@@ -463,7 +463,7 @@ void SocketInterface::execWriteCgi(pollfd &pollFd, RequestBuffer &client) // cli
 void SocketInterface::pushDelPollFd(int fd, int index)
 {
 	_delIndex.push_back(index);
-	close (fd);
+	close(fd);
 	_clients.erase(fd);
 }
 
@@ -471,16 +471,16 @@ void SocketInterface::monitorTimeout()
 {
 	for (size_t i = _numPorts; i < _pollFds.size(); ++i)
 	{
-		std::cout <<  _pollFds[i].fd  << " : " << _clients[_pollFds[i].fd].lastAccessTime << std::endl;
+		std::cout << _pollFds[i].fd << " : " << _clients[_pollFds[i].fd].lastAccessTime << std::endl;
 		if (_clients[_pollFds[i].fd].lastAccessTime != 0 && isTimeout(_clients[_pollFds[i].fd].lastAccessTime, TIMEOUT))
 		{
-			
+
 			_clients[_pollFds[i].fd].httpRequest.statusCode = 504;
 			_clients[_pollFds[i].fd].state = WRITE_REQUEST_ERROR;
 			_pollFds[i].events = POLLOUT;
 			if (_clients[_pollFds[i].fd].cgiFd > 0)
 			{
-				for (size_t j = i; j < _pollFds.size(); ++j)
+				for (size_t j = 0; j < _pollFds.size(); ++j)
 				{
 					if (_pollFds[j].fd == _clients[_pollFds[i].fd].cgiFd)
 					{
@@ -492,7 +492,7 @@ void SocketInterface::monitorTimeout()
 					}
 				}
 			}
-			//pushDelPollFd(_pollFds[i].fd, i);
+			// pushDelPollFd(_pollFds[i].fd, i);
 		}
 	}
 }
@@ -511,8 +511,9 @@ void SocketInterface::deleteClient()
 				{
 					if (_pollFds[j].fd == _clients[_pollFds[i].fd].cgiFd)
 					{
-						if (_clients[_pollFds[i].fd].cgiPid > 0)
-							kill(_clients[_pollFds[i].fd].cgiPid, SIGKILL);
+						std::cout << "kill cgi" << _clients[_pollFds[i].fd].cgiPid << std::endl;
+						kill(_clients[_pollFds[i].fd].cgiPid, SIGKILL);
+						waitpid(_clients[i].cgiPid, NULL, 0); 
 						pushDelPollFd(_pollFds[j].fd, j);
 						break;
 					}
@@ -660,7 +661,7 @@ void SocketInterface::acceptConnection(int fd)
 	sockaddr_in clientAddr;
 	socklen_t clientAddrSize = sizeof(clientAddr);
 	int clientFd = accept(fd, (sockaddr *)&clientAddr, &clientAddrSize);
-	
+
 	if (clientFd < 0)
 	{
 		std::cerr << "accept() failed" << std::endl;

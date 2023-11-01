@@ -216,5 +216,6 @@ ParseUrlResult CoreHandler::parseUrl(std::string url)
 	// 	result.fullpath += "/" + path_tokens[i];
 	// }
 	result.fullpath += "/" + result.file;
+	std::cout << "fullpath: " << result.fullpath << std::endl;
 	return result;
 }

@@ -35,7 +35,7 @@ clean:
 	rm -rf $(OBJECTS_DIR)
 
 fclean:
-	rm -rf $(OBJECTS_DIR) $(NAME) ./docs/upload/*.txt
+	rm -rf $(OBJECTS_DIR) $(NAME)
 
 re: fclean all
 

@@ -6,46 +6,16 @@
 #include <dirent.h>
 #include <sys/stat.h>
 
-std::string parseDirectoryFromPostData(const std::string& postData) {
-    std::string directoryField = "directory=";
-    size_t startPos = postData.find(directoryField);
+ProcessResult DataProcessor::processPostData(const std::string& body, const std::string& url) {
 
-    if (startPos == std::string::npos) {
-        // "directory="が見つからない場合、空の文字列を返す
-        std::cerr << "directory= not found" << std::endl;
-        return "";
-    }
-
-    startPos += directoryField.length(); // "directory="の長さを足して、値のスタート位置を見つける
-    size_t endPos = postData.find('&', startPos); // 次のパラメータの開始位置を見つける
-
-    // パラメータが最後である場合、endPosはstd::string::nposになる
-    if (endPos == std::string::npos) {
-        endPos = postData.length();
-    }
-
-    // 部分文字列を取得
-    std::string directoryValue = postData.substr(startPos, endPos - startPos);
-  
-    // 必要ならURLデコードを行う
-    // ここでは省略
-
-    return directoryValue;
-}
-
-ProcessResult DataProcessor::processPostData(const std::string& postData) {
-    std::cout << "postData: " << postData << std::endl;
     // ファイルデータの部分を解析
-    size_t fileDataStart = postData.find("\r\n") + 1;
-    size_t fileDataEnd = postData.find("\r\n", fileDataStart);
-    std::string fileData = postData.substr(fileDataStart, fileDataEnd - fileDataStart);
-
-    std::string directory = parseDirectoryFromPostData(postData);
-    std::cout << "directory: " << directory << std::endl;
+    size_t fileDataStart = body.find("\r\n") + 1;
+    size_t fileDataEnd = body.find("\r\n", fileDataStart);
+    std::string fileData = body.substr(fileDataStart, fileDataEnd - fileDataStart);
 
     // 指定されたディレクトリが存在するか確認
     struct stat st;
-    std::string fullDirPath = "./docs/" + directory;
+    std::string fullDirPath = "./" + url;
     if (stat(fullDirPath.c_str(), &st) == -1) {
         // ディレクトリが存在しない場合、作成する
         mkdir(fullDirPath.c_str(), 0755);

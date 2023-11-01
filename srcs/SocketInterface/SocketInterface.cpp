@@ -556,6 +556,7 @@ void SocketInterface::eventLoop()
 				State state = _clients[_pollFds[i].fd].state;
 				if (state == WRITE_RESPONSE)
 				{
+					std::cout << "EXEC CORE HANDLER" << std::endl;
 					execCoreHandler(_pollFds[i], _clients[_pollFds[i].fd]);
 				}
 				else if (state == EXEC_CGI)

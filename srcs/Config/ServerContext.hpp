@@ -52,8 +52,6 @@ class ServerContext
         std::string::size_type getMaxPrefixLength(const std::string& str1, const std::string& str2) const;
         // returnディレクティブの値を保持
         std::map<std::string, std::string> _returnLocations;
-        // // クライアントのパスとサーバーのパスのマップ
-        // std::map<std::string, std::string> _pathMap;
 
         // default values
         static const std::string DEFAULT_LISTEN;

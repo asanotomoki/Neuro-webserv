@@ -147,7 +147,7 @@ const LocationContext& ServerContext::getLocationContext(const std::string& path
 	}
 	if (!isMatched)
 	{
-		return *matched; //To do fix?
+		throw std::runtime_error("getLocationContext :: location not found: " + path);
 	}
 	return *matched;
 }

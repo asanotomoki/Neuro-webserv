@@ -48,20 +48,6 @@ int isDirectory_x(std::string path) {
     }
     return 0;
 }
-// bool getIsAutoIndex(LocationContext &location_context, std::string path)
-// {
-// 	bool autoindexEnabled = true;
-// 	bool res = true;
-// 	if (location_context.hasDirective("autoindex"))
-// 	{
-//         autoindexEnabled = location_context.getDirective("autoindex") == "on";
-// 	}
-// 	if (!isFile(path) && !autoindexEnabled)
-// 	{
-// 		res = false;
-// 	}
-// 	return res;
-// }
 
 bool CoreHandler::isFileIncluded(std::vector<std::string> tokens) {
 	//最後のトークン以外にファイルが含まれるか調べる
@@ -111,7 +97,14 @@ bool isExistingFile(std::string path) {
 
 void CoreHandler::parseHomeDirectory(std::string url, ParseUrlResult& result)
 {
-	LocationContext location_context = _serverContext.getLocationContext("/");
+	LocationContext location_context;
+	try {
+		location_context = _serverContext.getLocationContext("/");
+	} catch (std::exception& e) {
+		result.statusCode = 404;
+		result.message = "Not Found";
+		return;
+	}
 	result.directory = "/";
 	std::string alias = location_context.getDirective("alias");
 	if (url != "/")
@@ -157,7 +150,7 @@ ParseUrlResult CoreHandler::parseUrl(std::string url)
 		result.query.erase(result.query.size() - 1, 1);
 	}	
 	// home directory
-	if (tokens[0] == "/") {
+	if (tokens[0] == "/" && tokens.size() == 1) {
 		parseHomeDirectory(url, result);
 		return result;
 	}
@@ -171,7 +164,14 @@ ParseUrlResult CoreHandler::parseUrl(std::string url)
 		else
 			break ;
 	}
-	std::string redirectPath = _serverContext.getReturnPath(result.directory);
+	std::string redirectPath;
+	try {
+		redirectPath = _serverContext.getReturnPath(result.directory);
+	} catch (std::exception& e) {
+		result.statusCode = 404;
+		result.message = "Not Found";
+		return result;
+	}
     if (!redirectPath.empty()) {
 		result.statusCode = 302;
 		result.fullpath = redirectPath;
@@ -188,7 +188,13 @@ ParseUrlResult CoreHandler::parseUrl(std::string url)
 	}
 
 	LocationContext locationContext;
-	locationContext = _serverContext.getLocationContext(result.directory);
+	try {
+		locationContext = _serverContext.getLocationContext(result.directory);
+	} catch (std::exception& e) {
+		result.statusCode = 404;
+		result.message = "Not Found";
+		return result;
+	}
 	std::string alias = locationContext.getDirective("alias");
 
 	// fullpathの最後のスラッシュを削除
@@ -204,14 +210,8 @@ ParseUrlResult CoreHandler::parseUrl(std::string url)
 		}
 		return result;
 	}
-	// result.isAutoIndex = getIsAutoIndex(location_context, path_tokens[path_tokens.size() - 1]);
 
 	result.fullpath.erase(result.fullpath.size() - 1, 1);
-	// size_t path_size = path_tokens.size() - isFile(path_tokens[path_tokens.size() - 1]);
-	// for (size_t i = 1; i < path_size; i++)
-	// {
-	// 	result.fullpath += "/" + path_tokens[i];
-	// }
 	result.fullpath += "/" + result.file;
 	std::cout << "fullpath: " << result.fullpath << std::endl;
 	return result;

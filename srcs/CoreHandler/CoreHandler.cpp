@@ -166,7 +166,12 @@ std::string CoreHandler::processRequest(HttpRequest httpRequest,
 	// 	locationContext = _serverContext.get404LocationContext();
 	// 	return errorResponse(404, "Not found", locationContext);
 	// }
-	LocationContext locationContext = _serverContext.getLocationContext(parseUrlResult.directory);
+	LocationContext locationContext;
+	try {
+		locationContext = _serverContext.getLocationContext(parseUrlResult.directory);
+	} catch (std::exception& e) {
+		return errorResponse(404, "Not found", _serverContext);
+	}
 	if (httpRequest.method == "GET")
 	{
 		if (parseUrlResult.statusCode >= 300 && parseUrlResult.statusCode < 400) {

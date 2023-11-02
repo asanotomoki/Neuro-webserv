@@ -77,3 +77,8 @@ void LocationContext::setPathPair(const std::string& alias, const std::string& p
 {
 	_pathPair = std::make_pair(alias, path);
 }
+
+void LocationContext::setPathPairRev(const std::string& path, const std::string& alias)
+{
+	_pathPairRev = std::make_pair(path, alias);
+}

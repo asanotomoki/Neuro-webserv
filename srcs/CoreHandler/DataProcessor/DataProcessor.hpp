@@ -7,7 +7,8 @@
 //
 class DataProcessor {
 	public:
-    	ProcessResult processPostData(const std::string& postData);
+    	ProcessResult processPostData(const std::string& body, const std::string& url, 
+										const ServerContext& serverContext);
 		static std::string getAutoIndexHtml(std::string path, const ServerContext& serverContext);
 };
 

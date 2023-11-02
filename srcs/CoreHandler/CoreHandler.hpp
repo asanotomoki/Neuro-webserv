@@ -39,8 +39,8 @@ private:
     ServerContext _serverContext;
     std::string getMethod(const std::string &fullpath, const LocationContext &locationContext,
                             const ParseUrlResult& result);
-    std::string postMethod(std::string body);
-    std::string deleteMethod(const std::string &filename);
+    std::string postMethod(const std::string& body, const std::string& url);
+    std::string deleteMethod(const std::string& directory, const std::string& file);
     std::string getFile(std::vector<std::string> tokens, LocationContext &locationContext, ParseUrlResult &result);
     LocationContext determineLocationContext(ParseUrlResult &result);
     int isFile(const std::string& token, std::string fullpath = "");

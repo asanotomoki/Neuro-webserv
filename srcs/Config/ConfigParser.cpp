@@ -8,6 +8,7 @@
 #include <string>
 #include <iostream>
 #include <cstdlib>
+#include <map>
 
 ConfigParser::ConfigParser(Config& config):
 	_config(config),
@@ -168,7 +169,7 @@ void ConfigParser::parseLines()
 		setDirectiveType(_oneLine[0]);
 		if (!isAllowedDirective())
 			throw ConfigError(NOT_ALLOWED_DIRECTIVE, _oneLine[0], _filepath, _lineNumber + 1);
-		else if (_directiveType == SERVER){
+		else if (_directiveType == SERVER) {
 			ServerContext serverContext = setServerContext();
 			_config.addServerContext(serverContext);
 		}
@@ -198,6 +199,7 @@ const ServerContext ConfigParser::setServerContext()
 			LocationContext locationContext = setLocationContext();
 			serverContext.addLocationContext(locationContext);
 			serverContext.addPathPair(locationContext._pathPair);
+			serverContext.addServerPathPair(locationContext._pathPairRev);
 		}
 		else if (_directiveType == CGI) {
 			CGIContext cgiContext = setCGIContext();
@@ -211,12 +213,16 @@ const ServerContext ConfigParser::setServerContext()
 				serverContext.setServerName(_oneLine[1]);
 			else if (_directiveType == MAX_BODY_SIZE)
 				serverContext.setMaxBodySize(_oneLine[1]);
-			else if (_directiveType == ERROR_PAGE)
-				serverContext.setErrorPage(_oneLine[1], _oneLine[2]);
+			else if (_directiveType == ERROR_PAGE) {
+				try {
+					serverContext.setErrorPage(std::stoi(_oneLine[1]), _oneLine[2]);
+				} catch (std::exception& e) {
+					throw ConfigError(INVALID_ERROR_PAGE, _oneLine[1], _filepath, _lineNumber + 1);
+				}
+			}
 		}
 	}
 	serverContext.verifyReturnLocations();
-	serverContext.setErrorPages();
 	return serverContext;
 }
 
@@ -256,8 +262,10 @@ const LocationContext ConfigParser::setLocationContext()
 	if (!locationContext.hasDirective("return") && (!locationContext.hasDirective("autoindex") && !locationContext.hasDirective("index")))
 		throw ConfigError(NEED_INDEX, "location", _filepath, _lineNumber + 1);
 	// _pathPairにpathとaliasのペアを保存
-	if (locationContext.hasDirective("alias"))
+	if (locationContext.hasDirective("alias")) {
 		locationContext.setPathPair(locationContext.getDirective("alias"), locationContext.getDirective("path"));
+		locationContext.setPathPairRev(locationContext.getDirective("path"), locationContext.getDirective("alias"));
+	}
 	return locationContext;
 }
 

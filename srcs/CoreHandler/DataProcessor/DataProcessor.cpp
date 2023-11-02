@@ -4,18 +4,33 @@
 #include <string>
 #include <vector>
 #include <dirent.h>
+#include <sys/stat.h>
 
-ProcessResult DataProcessor::processPostData(const std::string& postData) {
+ProcessResult DataProcessor::processPostData(const std::string& body, const std::string& url, 
+                                                const ServerContext& serverContext)
+{
+
     // ファイルデータの部分を解析
-    size_t fileDataStart = postData.find("\r\n") + 1;
-    size_t fileDataEnd = postData.find("\r\n", fileDataStart);
-    std::string fileData = postData.substr(fileDataStart, fileDataEnd - fileDataStart);
+    size_t fileDataStart = body.find("\r\n") + 1;
+    size_t fileDataEnd = body.find("\r\n", fileDataStart);
+    std::string fileData = body.substr(fileDataStart, fileDataEnd - fileDataStart);
 
+    std::cout << "url: " << url << std::endl;
+    std::string directoryPath = serverContext.getServerPath(url);
+    std::cout << "directoryPath: " << directoryPath << std::endl;
+    // 指定されたディレクトリが存在するか確認
+    struct stat st;
+    std::string fullDirPath = "./" + directoryPath;
+    if (stat(fullDirPath.c_str(), &st) == -1) {
+        // ディレクトリが存在しない場合、４０４エラーを返す
+        ProcessResult result = ProcessResult("error", "Not found.", 404);
+        return result;
+    }
     // インデックスを見つけてファイル名を生成
     int index = 1;
     std::string filePath;
     do {
-        filePath = "./docs/upload/uploaded_file_" + std::to_string(index) + ".txt";
+        filePath = fullDirPath + "/uploaded_file_" + std::to_string(index) + ".txt";
         index++;
     } while (std::ifstream(filePath)); // 既存ファイルがある場合、インデックスを増やす
 

@@ -88,15 +88,13 @@ std::string CoreHandler::getFile(std::vector<std::string> tokens, LocationContex
 				result.autoindex = 1;
 				file = "";
 			} else { //autoindexがoffの場合
-				locationContext = _serverContext.get403LocationContext();
-				file = locationContext.getDirective("index");
+				file = _serverContext.getErrorPage(403);
 				result.statusCode = 403;
 				result.message = "Forbidden";
 			}
 		}
 	} else {
-		locationContext = _serverContext.get404LocationContext();
-		file = locationContext.getDirective("index");
+		file = _serverContext.getErrorPage(404);
 		result.statusCode = 404;
 		result.message = "Not Found";
 	}
@@ -131,8 +129,7 @@ void CoreHandler::parseHomeDirectory(std::string url, ParseUrlResult& result)
 					result.autoindex = 1;
 					result.file = "";
 				} else {
-					location_context = _serverContext.get403LocationContext();
-					result.file = location_context.getDirective("index");
+					result.file = _serverContext.getErrorPage(403);
 					result.statusCode = 403;
 					result.message = "Forbidden";
 				}

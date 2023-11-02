@@ -349,7 +349,7 @@ void SocketInterface::execWriteError(pollfd &pollFd, RequestBuffer &client, int 
 	ServerContext context = _config->getServerContext(client.hostAndPort.second, client.hostAndPort.first);
 
 	std::string response = "";
-	response += context.getErrorPage(std::to_string(client.httpRequest.statusCode));
+	response += context.getErrorPage(client.httpRequest.statusCode);
 	if (response == "")
 	{
 		response = default_error_page(client.httpRequest.statusCode);

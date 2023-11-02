@@ -213,12 +213,16 @@ const ServerContext ConfigParser::setServerContext()
 				serverContext.setServerName(_oneLine[1]);
 			else if (_directiveType == MAX_BODY_SIZE)
 				serverContext.setMaxBodySize(_oneLine[1]);
-			else if (_directiveType == ERROR_PAGE)
-				serverContext.setErrorPage(_oneLine[1], _oneLine[2]);
+			else if (_directiveType == ERROR_PAGE) {
+				try {
+					serverContext.setErrorPage(std::stoi(_oneLine[1]), _oneLine[2]);
+				} catch (std::exception& e) {
+					throw ConfigError(INVALID_ERROR_PAGE, _oneLine[1], _filepath, _lineNumber + 1);
+				}
+			}
 		}
 	}
 	serverContext.verifyReturnLocations();
-	serverContext.setErrorPages();
 	return serverContext;
 }
 

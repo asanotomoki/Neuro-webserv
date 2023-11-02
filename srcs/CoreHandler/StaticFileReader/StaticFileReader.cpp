@@ -15,12 +15,9 @@ bool isFileExist(const std::string& name) {
     return file.is_open();
 }
 
-std::string StaticFileReader::readErrorFile(const LocationContext& locationContext, int statusCode) {
+std::string StaticFileReader::readErrorFile(int statusCode, const ServerContext& serverContext) {
 
-    std::string alias = locationContext.getDirective("alias");
-    std::string filename = locationContext.getDirective("index");
-    std::string filePath = alias + filename;
-
+    std::string filePath = serverContext.getErrorPage(statusCode);
     if (!isFileExist(filePath)) {
         return default_error_page(statusCode);
     }
@@ -50,8 +47,7 @@ std::string StaticFileReader::readFile(std::string fullpath, LocationContext loc
                 return response;
             }
         }
-        locationContext = serverContext.get404LocationContext();
-        return readErrorFile(locationContext, 404);
+        return readErrorFile(404, serverContext);
     }
     return std::string(std::istreambuf_iterator<char>(file),
                        std::istreambuf_iterator<char>());

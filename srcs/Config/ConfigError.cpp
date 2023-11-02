@@ -38,6 +38,9 @@ void ConfigError::setErrorMessage(const ErrorType errorType, const std::string& 
 		case INVALID_LISTEN:
 			_errorMessage += "invalid listen directive \"" + errorWord + "\"" + _fileInfo;
 			break;
+		case INVALID_ERROR_PAGE:
+			_errorMessage += "invalid error_page directive \"" + errorWord + "\"" + _fileInfo;
+			break;
 		case INVALID_PATH:
 			_errorMessage += "invalid path \"" + errorWord + "\"" + _fileInfo;
 			break;

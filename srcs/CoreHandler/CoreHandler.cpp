@@ -195,7 +195,7 @@ std::string CoreHandler::processRequest(HttpRequest httpRequest,
 	}
 	else if (httpRequest.method == "POST")
 	{
-		if (locationContext.hasDirective("limit_except") && !locationContext.isAllowedMethod("POST"))//To do fix!
+		if (locationContext.hasDirective("limit_except") && !locationContext.isAllowedMethod("POST"))
 		{
 			std::cout << "===== process 405 =====" << std::endl;
 			return errorResponse(405, "Method Not Allowed", _serverContext);

@@ -8,7 +8,6 @@ import os
 
 # CONTENT_LENGTHからデータの長さを取得
 request_method = os.environ['REQUEST_METHOD']
-time.sleep(20)
 if request_method == "POST":
 	body = sys.stdin.read(int(os.environ['CONTENT_LENGTH']))
 
@@ -30,6 +29,11 @@ if request_method == "POST":
 	print("body: " + body)
 print("</p>")
 
+
 print("<p> path info" + path_info + "</p>")
 print("</body>")
 print("</html>")
+# 無限ループ
+while True:
+	print("<p> " + datetime.datetime.strftime(datetime.datetime.now(), "%H:%M:%S") + "</p>")
+	

@@ -103,28 +103,25 @@ HttpRequest RequestParser::parse(const std::string &request, bool isChunked, con
     if (header.find("Host:") != std::string::npos)
     {
         std::string value = httpRequest.headers["Host"];
-        std::cerr << "thisisvalue: " << value << "|" << std::endl;
-        // 　文字列valueに：がある場合は、その前までをホスト名とする
-        if (value.find(":") != std::string::npos)
+        // 不要なホワイトスペースをトリムする
+        value.erase(0, value.find_first_not_of(" \n\r\t"));
+        value.erase(value.find_last_not_of(" \n\r\t") + 1);
+        std::cerr << "this is value: |" << value << "|" << std::endl;
+
+        // ホスト名の取得
+        size_t pos = value.find(":");
+        if (pos != std::string::npos)
         {
-            httpRequest.hostname = value.substr(0, value.find(":"));
-        }
-        else if (value.find("\01") != std::string::npos)
-        {
-            std::cout << "thisisvalueeeeeeeee: " << value << "|"
-                      << "\n";
-            httpRequest.hostname = value.substr(0, value.find("\01"));
+            httpRequest.hostname = value.substr(0, pos);
         }
         else
         {
-            std::cout << "thisisvaluzzzzzzzzz: " << value << "|"
-                      << "\n";
             httpRequest.hostname = value;
         }
+        std::cout << "|" << httpRequest.hostname << "|" << std::endl;
         std::cout << httpRequest.hostname.compare("server2") << std::endl;
     }
-    std::cout << "portooooooooooo: " << port << "|" << std::endl;
-    std::cout << "hostnameeeeeeee: " << httpRequest.hostname << "|" << std::endl;
+
     ServerContext serverContext = _config->getServerContext(port, httpRequest.hostname);
     std::cout << "server_name ha!: " << serverContext.getServerName() << std::endl;
     if (httpRequest.method == "POST" && contentLength == -1 && !isChunked)

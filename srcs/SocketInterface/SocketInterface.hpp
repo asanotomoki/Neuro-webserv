@@ -15,10 +15,13 @@
 #include "ServerContext.hpp"
 #include "Cgi.hpp"
 #include "RequestParser.hpp"
+#include "CgiParser.hpp"
 #include "utils.hpp"
 #include <ctime>
-
-#define TIMEOUT 10
+#include <fstream>
+#include <iterator>
+#include <dirent.h>
+#define TIMEOUT 30
 
 enum State
 {
@@ -28,10 +31,12 @@ enum State
     WITE_TO_CGI,
     CLOSE_CONNECTION,
     EXEC_CGI,
+    EXEC_CORE_HANDLER,
     WRITE_CGI,
     WAIT_CGI,
     WRITE_REQUEST_ERROR,
     WRITE_CGI_BODY,
+    WAIT_CGI_CHILD,
 };
 
 struct RequestBuffer
@@ -85,15 +90,19 @@ private:
     void deleteClient();
     void monitorTimeout();
     int sendResponse(int fd, std::string response);
-    int ReadRequest(int fd, RequestBuffer &client);
     void execReadRequest(pollfd &pollfd, RequestBuffer &client);
+    void execParseRequest(pollfd &pollfd, RequestBuffer &client);
     void execCoreHandler(pollfd &pollfd, RequestBuffer &client);
     void execCgi(pollfd &pollfd, RequestBuffer &client);
     void execReadCgi(pollfd &pollFd, RequestBuffer &client);
+    void execWaitCgiChild(pollfd &pollFd, RequestBuffer &client);
     void execWriteCgi(pollfd &pollFd, RequestBuffer &client);
     void execWriteError(pollfd &pollFd, RequestBuffer &client, int index);
     void execWriteCGIBody(pollfd &pollFd, RequestBuffer &client);
+    void execWriteResponse(pollfd &pollFd, RequestBuffer &client);
     pollfd createClient(int fd, State state);
+
+    std::string getErrorPage(int status, const  std::pair<std::string, std::string> &hostAndPort);
 };
 
 #endif

@@ -46,7 +46,7 @@ std::string StaticFileReader::readFile(std::string fullpath, LocationContext loc
     
     // ファイルをバイナリモードで読み込み
     std::ifstream file(fullpath, std::ios::binary);
-    if (!file || isDirectory_y(fullpath) || result.autoindex == 1) {
+    if (!file || result.autoindex == 1) {
         if (locationContext.hasDirective("autoindex")) {
             if (locationContext.getDirective("autoindex") == "on") {
                 std::string response = DataProcessor::getAutoIndexHtml(locationContext.getDirective("alias"), serverContext);

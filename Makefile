@@ -1,12 +1,13 @@
 NAME := webserv
 CC = g++
 INC	= -I ./srcs/Config/ -I ./srcs/SocketInterface/ -I ./srcs/CoreHandler/ \
-		-I ./srcs/SocketInterface/RequestParser/ -I ./srcs/CoreHandler/StaticFileReader/ \
+		-I ./srcs/SocketInterface/RequestParser/ -I ./srcs/SocketInterface/CgiParser -I ./srcs/CoreHandler/StaticFileReader/ \
 		-I ./srcs/CoreHandler/DataProcessor -I ./srcs/Cgi/ -I ./srcs/utils/
 CFLAGS = -Wall -Wextra -Werror -g -fsanitize=address -std=c++98 $(INC)
 LDFLAGS =
 SOURCES = srcs/main.cpp srcs/Config/Config.cpp srcs/SocketInterface/SocketInterface.cpp \
 			srcs/SocketInterface/RequestParser/RequestParser.cpp \
+			srcs/SocketInterface/CgiParser/CgiParser.cpp \
 			srcs/CoreHandler/CoreHandler.cpp \
 			srcs/CoreHandler/ParseRequestUrl.cpp \
 			srcs/Config/ConfigError.cpp srcs/Config/ConfigParser.cpp \

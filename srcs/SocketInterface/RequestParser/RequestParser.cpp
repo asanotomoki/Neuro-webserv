@@ -2,6 +2,8 @@
 #include <sstream>
 #include <iostream>
 
+#include <string.h> // TODO: remove this
+
 RequestParser::RequestParser(Config* config) : _config(config) {
 };
 
@@ -88,20 +90,34 @@ HttpRequest RequestParser::parse(const std::string& request, bool isChunked, con
                 httpRequest.statusCode = 400;
                 return httpRequest;
             }
-        } else if (key == "Host") {
+        } 
+    }
+    if (header.find("Host:") != std::string::npos) {
+            std::string value = httpRequest.headers["Host"];
+            std::cerr << "thisisvalue: " << value << "|" << std::endl;
             //　文字列valueに：がある場合は、その前までをホスト名とする
             if (value.find(":") != std::string::npos) {
-                value = value.substr(0, value.find(":"));
+                httpRequest.hostname = value.substr(0, value.find(":"));
             }
-            httpRequest.hostname = value;
-        }
+            else if (value.find("\01") != std::string::npos)
+            {
+                std::cout << "thisisvalueeeeeeeee: " << value << "|" << "\n";
+                httpRequest.hostname = value.substr(0, value.find("\01"));
+            } else {
+                std::cout << "thisisvaluzzzzzzzzz: " << value << "|" << "\n";
+                httpRequest.hostname = value;
+            }
+            std::cout << httpRequest.hostname.compare("") << "\n";
     }
+    std::cout << "portooooooooooo: " << port <<  "|" << std::endl;
+    std::cout << "hostnameeeeeeee: " << httpRequest.hostname << "|" << std::endl;
+    ServerContext serverContext = _config->getServerContext(port, httpRequest.hostname);
+    std::cout << "server_name ha!: " << serverContext.getServerName() << std::endl;
     if (httpRequest.method == "POST" && contentLength == -1 && !isChunked) {
         httpRequest.statusCode = 411;
         return httpRequest;
     }
     // ボディを解析 (Content-Lengthが指定されていれば)
-    ServerContext serverContext = _config->getServerContext(port, httpRequest.hostname);
     size_t maxBodySize = 0;
     try {
         maxBodySize = std::stoi(serverContext.getMaxBodySize()); 
@@ -141,3 +157,4 @@ HttpRequest RequestParser::parse(const std::string& request, bool isChunked, con
     }
     return httpRequest;
 }
+

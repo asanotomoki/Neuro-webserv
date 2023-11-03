@@ -150,7 +150,7 @@ ParseUrlResult CoreHandler::parseUrl(std::string url)
 		result.query.erase(result.query.size() - 1, 1);
 	}	
 	// home directory
-	if (tokens[0] == "/" && tokens.size() == 1) {
+	if (tokens[0] == "/") {
 		parseHomeDirectory(url, result);
 		return result;
 	}
@@ -163,6 +163,13 @@ ParseUrlResult CoreHandler::parseUrl(std::string url)
 			result.directory += path_tokens[i] + "/";
 		else
 			break ;
+	}
+	if (isFile(result.directory)) {
+		result.file = result.directory.substr(1, result.directory.size());
+		result.directory = "/";
+		LocationContext location_context = _serverContext.getLocationContext("/");
+		result.fullpath = location_context.getDirective("alias") + result.file;
+		return result;
 	}
 	std::string redirectPath;
 	try {

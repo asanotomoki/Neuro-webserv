@@ -131,17 +131,13 @@ int CoreHandler::validatePath(std::string& path)
 std::string CoreHandler::processRequest(HttpRequest httpRequest,
 									const std::pair<std::string, std::string>& hostPort)
 {
-	if (httpRequest.url == "/favicon.ico")
-	{
-		return "";
-	}
+
 
 	// httpRequest.urlが"/"で終わっていない場合に、"/"を追加
 	if (httpRequest.url[httpRequest.url.size() - 1] != '/')
 	{
 		httpRequest.url += '/';
 	}
-
 	std::cout << "----------------------------------" << std::endl;
 	std::cout << "Request URL: ";
 	std::cout << httpRequest.url << std::endl;

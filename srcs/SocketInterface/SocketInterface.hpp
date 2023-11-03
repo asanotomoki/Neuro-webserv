@@ -15,12 +15,13 @@
 #include "ServerContext.hpp"
 #include "Cgi.hpp"
 #include "RequestParser.hpp"
+#include "CgiParser.hpp"
 #include "utils.hpp"
 #include <ctime>
 #include <fstream>
 #include <iterator>
 #include <dirent.h>
-#define TIMEOUT 10
+#define TIMEOUT 30
 
 enum State
 {
@@ -35,6 +36,7 @@ enum State
     WAIT_CGI,
     WRITE_REQUEST_ERROR,
     WRITE_CGI_BODY,
+    WAIT_CGI_CHILD,
 };
 
 struct RequestBuffer
@@ -93,6 +95,7 @@ private:
     void execCoreHandler(pollfd &pollfd, RequestBuffer &client);
     void execCgi(pollfd &pollfd, RequestBuffer &client);
     void execReadCgi(pollfd &pollFd, RequestBuffer &client);
+    void execWaitCgiChild(pollfd &pollFd, RequestBuffer &client);
     void execWriteCgi(pollfd &pollFd, RequestBuffer &client);
     void execWriteError(pollfd &pollFd, RequestBuffer &client, int index);
     void execWriteCGIBody(pollfd &pollFd, RequestBuffer &client);

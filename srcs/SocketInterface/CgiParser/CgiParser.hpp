@@ -19,7 +19,7 @@ class CgiParser
 {
 public:
 	CgiParser();
-	CgiParser(std::string header, std::string body);
+	CgiParser(std::string header, std::string body, std::string method);
 	~CgiParser();
 	std::string generateCgiResponse();
 
@@ -34,6 +34,7 @@ private:
 	int _statusCode;
 	std::string _statusMessage;
 	std::string _location;
+	std::string _method;
 
 	CgiResponseType setCgiResponseType(); 
 	void setHeaders(std::string header);

@@ -426,17 +426,48 @@ void SocketInterface::execWriteCGIBody(pollfd &pollFd, RequestBuffer &client)
 	}
 }
 
-std::string parseCgiResponse(std::string response)
+std::string SocketInterface::parseCgiResponse(std::string response, std::string method, RequestBuffer &client) // client はユーザー側
 {
 	std::string header = response.substr(0, response.find("\r\n\r\n"));
 	std::string body = response.substr(response.find("\r\n\r\n") + 4);
-	CgiParser parser(header, body);
+	CgiParser parser(header, body, method);
 	std::string cgiResponse = parser.generateCgiResponse();
-	// location Redirectの場合
-	if (parser.getCgiResponseType() == Server_Redirect) // TODO: Server_Redirectの実装
+	if (parser.getCgiResponseType() == Server_Redirect) 
 	{
-		std::cout << "location Redirect" << std::endl;
+		client.cgiLocalRedirectCount++;
+		if (client.cgiLocalRedirectCount > MAX_LOCAL_REDIRECT_COUNT)
+		{
+			client.httpRequest.statusCode = 500;
+			client.response = getErrorPage(500, client.hostAndPort);
+			client.state = WRITE_REQUEST_ERROR;
+			return client.response;
+		}
+		client.isChunked = false;
+		client.isRequestFinished = false;
+		client.chunkedSize = 0;
+		client.response = "";
+		client.httpRequest.statusCode = 200;
+		client.httpRequest.headers.clear();
+		client.cgiFd = -1;
+		client.cgiPid = -1;
+		client.chunkedBody = "";
+		client.request = cgiResponse; // リクエストの形式でcgiResponseを保存
+		for (int i = 0; i < _numClients + _numPorts; ++i) {
+			if (_pollFds[i].fd == client.clientFd) {
+				_pollFds[i].events = POLLOUT;
+				execParseRequest(_pollFds[i], _clients[client.clientFd]);
+				break;
+			}
+		}
+	} else if (parser.getCgiResponseType() == Client_Redirect) {
+		client.httpRequest.statusCode = 302;
+		client.response = cgiResponse;
+		client.state = WRITE_CGI;
+	} else {
+		client.response = cgiResponse;
+		client.state = WRITE_CGI;
 	}
+	std::cout << "cgiResponse: " << cgiResponse << std::endl;
 	return cgiResponse;
 }
 
@@ -480,8 +511,8 @@ void SocketInterface::execReadCgi(pollfd &pollFd, RequestBuffer &client) // cgi�
 	{
 		client.state = WAIT_CGI;
 		pollFd.events = 0;
-		_clients.at(client.clientFd).response = parseCgiResponse(client.response);
-		_clients.at(client.clientFd).state = WRITE_CGI;
+		std::cout << "method " << client.httpRequest.method << std::endl;
+		parseCgiResponse(client.response, _clients.at(client.clientFd).httpRequest.method, _clients.at(client.clientFd));
 		return;
 	}
 	client.response += response;
@@ -681,6 +712,8 @@ pollfd SocketInterface::createClient(int fd, State state)
 	client.clientFd = fd;
 	client.isClosed = false;
 	client.lastAccessTime = getNowTime();
+	client.cgiPid = -1;
+	client.cgiLocalRedirectCount = 0;
 	// pollFdのfdをキーにしてクライアントを管理する
 	_clients.insert(std::make_pair(fd, client));
 	return pollFd;

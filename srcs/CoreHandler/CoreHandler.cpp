@@ -183,6 +183,7 @@ std::string CoreHandler::processRequest(HttpRequest httpRequest,
 			return errorResponse(404, "Not found", _serverContext);
 		} if (parseUrlResult.autoindex == 1) {
 			std::cout << "===== process autoindex =====" << std::endl;
+			std::cout << "parseUrlResult.fullpath: " << parseUrlResult.fullpath << std::endl;
 			return getMethod(parseUrlResult.fullpath, locationContext, parseUrlResult);
 		}
 		if (!locationContext.isAllowedMethod("GET"))

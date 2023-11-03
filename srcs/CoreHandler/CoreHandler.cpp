@@ -154,18 +154,6 @@ std::string CoreHandler::processRequest(HttpRequest httpRequest,
 	if (parseUrlResult.statusCode != 200)
 		return errorResponse(parseUrlResult.statusCode, parseUrlResult.message, _serverContext);
 
-	// if (parseUrlResult.statusCode >= 300 && parseUrlResult.statusCode < 400) {
-	// 	std::cout << "===== process redirect =====" << std::endl;
-	//     std::string location = "http://" + hostPort.first + ":" + hostPort.second + parseUrlResult.fullpath;
-	//     return redirectResponse(location);
-	// } else if (parseUrlResult.statusCode != 200) {
-	// 	std::cout << "===== process error =====" << std::endl;
-	// 	return errorResponse(parseUrlResult.statusCode, parseUrlResult.message, locationContext);
-	// } else if (validatePath(parseUrlResult.fullpath) == -1 && parseUrlResult.autoindex == 0) {
-	// 	std::cout << "===== process 404 =====" << std::endl;
-	// 	locationContext = _serverContext.get404LocationContext();
-	// 	return errorResponse(404, "Not found", locationContext);
-	// }
 	LocationContext locationContext;
 	try {
 		locationContext = _serverContext.getLocationContext(parseUrlResult.directory);

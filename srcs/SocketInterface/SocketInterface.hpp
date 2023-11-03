@@ -17,7 +17,9 @@
 #include "RequestParser.hpp"
 #include "utils.hpp"
 #include <ctime>
-
+#include <fstream>
+#include <iterator>
+#include <dirent.h>
 #define TIMEOUT 10
 
 enum State
@@ -28,6 +30,7 @@ enum State
     WITE_TO_CGI,
     CLOSE_CONNECTION,
     EXEC_CGI,
+    EXEC_CORE_HANDLER,
     WRITE_CGI,
     WAIT_CGI,
     WRITE_REQUEST_ERROR,
@@ -93,7 +96,10 @@ private:
     void execWriteCgi(pollfd &pollFd, RequestBuffer &client);
     void execWriteError(pollfd &pollFd, RequestBuffer &client, int index);
     void execWriteCGIBody(pollfd &pollFd, RequestBuffer &client);
+    void execWriteResponse(pollfd &pollFd, RequestBuffer &client);
     pollfd createClient(int fd, State state);
+
+    std::string getErrorPage(int status, const  std::pair<std::string, std::string> &hostAndPort);
 };
 
 #endif

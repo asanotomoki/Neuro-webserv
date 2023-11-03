@@ -157,3 +157,4 @@ HttpRequest RequestParser::parse(const std::string& request, bool isChunked, con
     }
     return httpRequest;
 }
+

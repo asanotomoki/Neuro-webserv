@@ -22,9 +22,16 @@ CoreHandler::CoreHandler(const ServerContext &serverContext) : _serverContext(co
 
 std::string redirectResponse(std::string location)
 {
-	std::string response = "HTTP/1.1 302 Moved Permanently\r\n";
-	response += "Location: " + location + "\r\n";
-	response += "\r\n";
+	std::string response;
+	if (location[0] == '/') {
+		response = "HTTP/1.1 302 Moved Temporarily\r\n";
+		response += "Location: " + location + "\r\n";
+		response += "\r\n";
+	} else
+		// リダイレクト先が外部のURLの場合
+		response = "HTTP/1.1 302 Moved Temporarily\r\n";
+		response += "Location: http://" + location + "\r\n";
+		response += "\r\n";
 	return response;
 }
 
@@ -147,21 +154,18 @@ std::string CoreHandler::processRequest(HttpRequest httpRequest,
 	ParseUrlResult parseUrlResult = parseUrl(httpRequest.url);
 	std::cout << "parseUrlResult.statusCode: " << parseUrlResult.statusCode << std::endl;
 	std::cout << "parseUrlResult.directory: " << parseUrlResult.directory << std::endl;
-	if (parseUrlResult.statusCode != 200)
+	if (parseUrlResult.statusCode >= 300 && parseUrlResult.statusCode < 400) {
+		std::cout << "===== process redirect =====" << std::endl;
+		std::string location;
+		if (parseUrlResult.fullpath[0] == '/')
+			location = "http://" + hostPort.first + ":" + hostPort.second + parseUrlResult.fullpath;
+		else
+			location = parseUrlResult.fullpath;
+		std::cout << "location: " << location << std::endl;
+		return redirectResponse(location);
+	} else if (parseUrlResult.statusCode != 200)
 		return errorResponse(parseUrlResult.statusCode, parseUrlResult.message, _serverContext);
 
-	// if (parseUrlResult.statusCode >= 300 && parseUrlResult.statusCode < 400) {
-	// 	std::cout << "===== process redirect =====" << std::endl;
-	//     std::string location = "http://" + hostPort.first + ":" + hostPort.second + parseUrlResult.fullpath;
-	//     return redirectResponse(location);
-	// } else if (parseUrlResult.statusCode != 200) {
-	// 	std::cout << "===== process error =====" << std::endl;
-	// 	return errorResponse(parseUrlResult.statusCode, parseUrlResult.message, locationContext);
-	// } else if (validatePath(parseUrlResult.fullpath) == -1 && parseUrlResult.autoindex == 0) {
-	// 	std::cout << "===== process 404 =====" << std::endl;
-	// 	locationContext = _serverContext.get404LocationContext();
-	// 	return errorResponse(404, "Not found", locationContext);
-	// }
 	LocationContext locationContext;
 	try {
 		locationContext = _serverContext.getLocationContext(parseUrlResult.directory);
@@ -170,18 +174,12 @@ std::string CoreHandler::processRequest(HttpRequest httpRequest,
 	}
 	if (httpRequest.method == "GET")
 	{
-		if (parseUrlResult.statusCode >= 300 && parseUrlResult.statusCode < 400) {
-			std::cout << "===== process redirect =====" << std::endl;
-			std::string location = "http://" + hostPort.first + ":" + hostPort.second + parseUrlResult.fullpath;
-			return redirectResponse(location);
-		} if (parseUrlResult.statusCode != 200) {
-			std::cout << "===== process error =====" << std::endl;
-			return errorResponse(parseUrlResult.statusCode, parseUrlResult.message, _serverContext);
-		} if (validatePath(parseUrlResult.fullpath) == -1 && parseUrlResult.autoindex == 0) {
+		if (validatePath(parseUrlResult.fullpath) == -1 && parseUrlResult.autoindex == 0) {
 			std::cout << "===== process 404 =====" << std::endl;
 			return errorResponse(404, "Not found", _serverContext);
 		} if (parseUrlResult.autoindex == 1) {
 			std::cout << "===== process autoindex =====" << std::endl;
+			std::cout << "parseUrlResult.fullpath: " << parseUrlResult.fullpath << std::endl;
 			return getMethod(parseUrlResult.fullpath, locationContext, parseUrlResult);
 		}
 		if (!locationContext.isAllowedMethod("GET"))

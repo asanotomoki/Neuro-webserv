@@ -69,6 +69,9 @@ std::string getContentType(const std::string& filepath) {
 	mimeTypes.insert(std::make_pair(".zip", "application/zip"));
 	mimeTypes.insert(std::make_pair(".tar", "application/x-tar"));
 	mimeTypes.insert(std::make_pair(".txt", "text/plain"));
+	mimeTypes.insert(std::make_pair(".mp3", "audio/mpeg"));
+	mimeTypes.insert(std::make_pair(".mp4", "video/mp4"));
+	mimeTypes.insert(std::make_pair(".ico", "image/x-icon"));
 
 
     // ファイル名から最後のドットを検索して拡張子を取得

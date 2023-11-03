@@ -103,17 +103,14 @@ std::string CgiParser::generateCgiResponse()
 {
 	if (_cgiResponseType == Document)
 	{
-		std::cout << "Document" << std::endl;
 		return generateDocumentResponse();
 	}
 	if (_cgiResponseType == Client_Redirect)
 	{
-		std::cout << "Client Redirect" << std::endl;
 		return generateClientRedirectResponse();
 	}
 	if (_cgiResponseType == Server_Redirect)
 	{
-		std::cout << "Server Redirect" << std::endl;
 		return generateServerRedirectResponse();
 	}
 	return ""; // ここには来ないはず

@@ -164,7 +164,6 @@ ParseUrlResult CoreHandler::parseUrl(std::string url)
 		else
 			break ;
 	}
-	std::string redirectPath;
 	if (isFile(result.directory)) {
 		result.file = result.directory.substr(1, result.directory.size());
 		result.directory = "/";
@@ -172,6 +171,7 @@ ParseUrlResult CoreHandler::parseUrl(std::string url)
 		result.fullpath = location_context.getDirective("alias") + result.file;
 		return result;
 	}
+	std::string redirectPath;
 	try {
 		redirectPath = _serverContext.getReturnPath(result.directory);
 	} catch (std::exception& e) {

@@ -41,12 +41,7 @@ std::string successResponse(std::string fileContent, std::string contentType, co
 std::string errorResponse(int statusCode, std::string message, const ServerContext &serverContext)
 {
 	StaticFileReader fileReader;
-	std::string fileContent = fileReader.readErrorFile(statusCode, serverContext);
-	std::string response = "HTTP/1.1 " + std::to_string(statusCode) + " " + message + "\r\n";
-	response += "Content-Type: text/html\r\n";
-	response += "Content-Length: " + std::to_string(fileContent.size()) + "\r\n";
-	response += "\r\n";
-	response += fileContent;
+	std::string response =fileReader.readErrorFile(statusCode, serverContext, message);
 	return response;
 }
 

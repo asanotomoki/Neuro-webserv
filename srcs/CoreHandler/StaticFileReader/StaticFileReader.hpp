@@ -16,7 +16,7 @@ public:
     StaticFileReader();
     std::string readFile(std::string filename, LocationContext locationContext,
                         const ServerContext &serverContext, const ParseUrlResult& result);
-    std::string readErrorFile(int statusCode, const ServerContext& serverContext);
+    std::string readErrorFile(int statusCode, const ServerContext& serverContext, std::string message);
     ~StaticFileReader();
 };
 

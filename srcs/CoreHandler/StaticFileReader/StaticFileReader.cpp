@@ -15,15 +15,21 @@ bool isFileExist(const std::string& name) {
     return file.is_open();
 }
 
-std::string StaticFileReader::readErrorFile(int statusCode, const ServerContext& serverContext) {
+std::string StaticFileReader::readErrorFile(int statusCode, const ServerContext& serverContext, std::string message) {
 
     std::string filePath = serverContext.getErrorPage(statusCode);
     if (!isFileExist(filePath)) {
         return default_error_page(statusCode);
     }
     std::ifstream file(filePath, std::ios::binary);
-    return std::string(std::istreambuf_iterator<char>(file),
+    std::string fileContent = std::string(std::istreambuf_iterator<char>(file),
                        std::istreambuf_iterator<char>());
+    std::string response = "HTTP/1.1 " + std::to_string(statusCode) + " " + message + "\r\n";
+	response += "Content-Type: text/html\r\n";
+	response += "Content-Length: " + std::to_string(fileContent.size()) + "\r\n";
+	response += "\r\n";
+    response += fileContent;
+    return response;
 }
 
 bool isDirectory_y(std::string path) {
@@ -47,7 +53,7 @@ std::string StaticFileReader::readFile(std::string fullpath, LocationContext loc
                 return response;
             }
         }
-        return readErrorFile(404, serverContext);
+        return readErrorFile(404, serverContext, "Not Found");
     }
     return std::string(std::istreambuf_iterator<char>(file),
                        std::istreambuf_iterator<char>());

@@ -202,7 +202,8 @@ std::string CoreHandler::processRequest(HttpRequest httpRequest,
 			return errorResponse(405, "Method Not Allowed", _serverContext);
 		return deleteMethod(parseUrlResult.directory, parseUrlResult.file);
 	}
-	return errorResponse(501, "Not Implemented", _serverContext);
+	std::cerr << "ERROR: Invalid method." << std::endl;
+	return errorResponse(405, "Method Not Allowed", _serverContext);
 }
 
 CoreHandler::~CoreHandler()

@@ -5,7 +5,10 @@
   <meta charset="UTF-8">
 </head>
 <body>
-  <form id="myForm">
+  <form 
+  id="myForm"
+  action="http://localhost:2000/"
+   >
     <!-- フォームの内容 -->
     <label for="username">ユーザー名:</label>
     <input type="text" id="username" name="username">
@@ -32,7 +35,7 @@
       textData = textData.slice(0, -1);  // 末尾の&を削除
       
       // PUTリクエストを送信
-      fetch('/docs/upload/uploaded_file_3.txt', {
+      fetch('/', {
         method: 'PUT',
         headers: {
           'Content-Type': 'text/plain'

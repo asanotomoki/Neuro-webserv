@@ -25,9 +25,10 @@ struct ProcessResult
     std::string status;
     std::string message;
     int statusCode;
+    std::string location;
 
-    ProcessResult(const std::string s, const std::string m, int c)
-        : status(s), message(m), statusCode(c) {}
+    ProcessResult(const std::string s, const std::string m, int c, const std::string l)
+        : status(s), message(m), statusCode(c), location(l) {}
 };
 
 #include "DataProcessor.hpp"
@@ -42,7 +43,6 @@ private:
     std::string postMethod(const std::string& body, const std::string& url);
     std::string deleteMethod(const std::string& directory, const std::string& file);
     std::string getFile(std::vector<std::string> tokens, LocationContext &locationContext, ParseUrlResult &result);
-    LocationContext determineLocationContext(ParseUrlResult &result);
     int isFile(const std::string& token, std::string fullpath = "");
     int validatePath(std::string& path);
     bool isFileIncluded(std::vector<std::string> tokens);

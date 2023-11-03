@@ -15,17 +15,16 @@ ProcessResult DataProcessor::processPostData(const std::string& body, const std:
     size_t fileDataEnd = body.find("\r\n", fileDataStart);
     std::string fileData = body.substr(fileDataStart, fileDataEnd - fileDataStart);
 
-    std::cout << "url: " << url << std::endl;
     std::string directoryPath = serverContext.getServerPath(url);
-    std::cout << "directoryPath: " << directoryPath << std::endl;
     // 指定されたディレクトリが存在するか確認
     struct stat st;
-    std::string fullDirPath = "./" + directoryPath;
+    std::string fullDirPath = directoryPath;
     if (stat(fullDirPath.c_str(), &st) == -1) {
         // ディレクトリが存在しない場合、４０４エラーを返す
-        ProcessResult result = ProcessResult("error", "Not found.", 404);
+        ProcessResult result = ProcessResult("error", "Not found.", 404, fullDirPath);
         return result;
     }
+    std::cout << "fullDirPath: " << fullDirPath << std::endl;
     // インデックスを見つけてファイル名を生成
     int index = 1;
     std::string filePath;
@@ -37,14 +36,14 @@ ProcessResult DataProcessor::processPostData(const std::string& body, const std:
     // 指定のディレクトリにファイルを保存
     std::ofstream file(filePath, std::ios::binary);
     if (!file) {
-        ProcessResult result = ProcessResult("error", "Failed to create file.", 500);
+        ProcessResult result = ProcessResult("error", "Failed to create file.", 500, filePath);
         return result;
     }
 
     file.write(fileData.c_str(), fileData.size());
     file.close();
 
-    ProcessResult result = ProcessResult("success", "File uploaded successfully.", 200);
+    ProcessResult result = ProcessResult("success", "File uploaded successfully.", 200, filePath);
     return result;
 }
 

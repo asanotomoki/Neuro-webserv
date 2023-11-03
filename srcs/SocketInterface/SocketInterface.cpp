@@ -175,27 +175,55 @@ int parseChunkedRequest(std::string body, RequestBuffer &client)
 	}
 }
 
-int SocketInterface::ReadRequest(int fd, RequestBuffer &client)
+void SocketInterface::execReadRequest(pollfd &pollfd, RequestBuffer &client)
 {
 	char buf[1024];
 
-	int ret = read(fd, buf, sizeof(buf) - 1);
+	int ret = read(pollfd.fd, buf, sizeof(buf) - 1);
+	std::cout << "read() : " << pollfd.fd << " : " << ret << std::endl;
+	buf[ret] = '\0';
+	std::string request(buf);
+	client.request += request;
 	if (ret < 0)
 	{
 		std::cerr << "read() failed" << std::endl;
-		return 200;
+		client.httpRequest.statusCode = 500;
+		client.state = WRITE_REQUEST_ERROR;
+		return;
 	}
-	buf[ret] = '\0';
-	std::string request(buf);
-	if (client.request.empty() && request == "\r\n")
+	pollfd.events = POLLIN;
+	execParseRequest(pollfd, client);
+	std::cout << "read() : " << pollfd.fd << " : \n" << client.request << std::endl;
+}
+
+HttpRequest SocketInterface::parseRequest(std::string request, RequestBuffer &client)
+{
+	RequestParser parser(_config);
+	HttpRequest req = parser.parse(request, client.isChunked, client.hostAndPort.second);
+	return req;
+}
+
+void SocketInterface::setCgiBody(RequestBuffer &client, std::string &body)
+{
+	int fd = client.cgi.getPipeStdin()[1];
+
+	createClient(fd, WRITE_CGI_BODY);
+	_clients[fd].request = body;
+	_clients[fd].isRequestFinished = true;
+	_clients[fd].clientFd = client.clientFd;
+}
+
+int parseLine(RequestBuffer &client)
+{
+	std::cout  << "parseLine() : " << client.request << std::endl;
+
+	if (client.request.empty() && client.request == "\r\n")
 	{
 		return 200;
 	}
-	client.request += request;
-	std::cout << "request : " << client.request << std::endl;
 	if (client.isChunked)
 	{
-		return parseChunkedRequest(request, client);
+		return parseChunkedRequest(client.request, client);
 	}
 	if (client.request.find("\r\n\r\n") != std::string::npos)
 	{
@@ -243,26 +271,10 @@ int SocketInterface::ReadRequest(int fd, RequestBuffer &client)
 	return 200;
 }
 
-HttpRequest SocketInterface::parseRequest(std::string request, RequestBuffer &client)
+void SocketInterface::execParseRequest(pollfd &pollfd, RequestBuffer &client)
 {
-	RequestParser parser(_config);
-	HttpRequest req = parser.parse(request, client.isChunked, client.hostAndPort.second);
-	return req;
-}
-
-void SocketInterface::setCgiBody(RequestBuffer &client, std::string &body)
-{
-	int fd = client.cgi.getPipeStdin()[1];
-
-	createClient(fd, WRITE_CGI_BODY);
-	_clients[fd].request = body;
-	_clients[fd].isRequestFinished = true;
-	_clients[fd].clientFd = client.clientFd;
-}
-
-void SocketInterface::execReadRequest(pollfd &pollfd, RequestBuffer &client)
-{
-	int ret = ReadRequest(pollfd.fd, client);
+	std::cout << "parseLine() : "  << std::endl;
+	int ret = parseLine(client);
 	if (ret != 200)
 	{
 		client.httpRequest.statusCode = ret;
@@ -275,6 +287,7 @@ void SocketInterface::execReadRequest(pollfd &pollfd, RequestBuffer &client)
 	}
 	if (client.isRequestFinished)
 	{
+		std::cout << "parseLine() : " << "PARSE REQUEST" << std::endl;
 		// Requestの解析
 		client.httpRequest = parseRequest(client.request, client);
 		client.hostAndPort.first = client.httpRequest.hostname;
@@ -311,7 +324,7 @@ void SocketInterface::execReadRequest(pollfd &pollfd, RequestBuffer &client)
 		client.request = "";
 		pollfd.events = POLLOUT;
 		client.lastAccessTime = getNowTime();
-	}
+	} 
 }
 
 void SocketInterface::execWriteResponse(pollfd &pollFd, RequestBuffer &client)
@@ -389,7 +402,7 @@ void SocketInterface::execWriteError(pollfd &pollFd, RequestBuffer &client, int 
 	pollFd.events = POLLOUT;
 	if (ret == 0)
 	{
-		pollFd.events = POLLHUP;
+		pollFd.events = 0;
 		pushDelPollFd(pollFd.fd, index);
 		return;
 	}
@@ -409,7 +422,7 @@ void SocketInterface::execWriteCGIBody(pollfd &pollFd, RequestBuffer &client)
 	int ret = sendResponse(pollFd.fd, response);
 	if (ret == 0)
 	{
-		pollFd.events = POLLHUP;
+		pollFd.events = 0;
 		_clients[client.clientFd].state = EXEC_CGI;
 	}
 	else if (ret > 0)
@@ -429,6 +442,11 @@ std::string parseCgiResponse(std::string response)
 	std::string body = response.substr(response.find("\r\n\r\n") + 4);
 	CgiParser parser(header, body);
 	std::string cgiResponse = parser.generateCgiResponse();
+	// location Redirectの場合
+	if (parser.getCgiResponseType() == Server_Redirect)
+	{
+		std::cout << "location Redirect" << std::endl;
+	}
 	return cgiResponse;
 }
 
@@ -472,7 +490,7 @@ void SocketInterface::execReadCgi(pollfd &pollFd, RequestBuffer &client) // cgi�
 	if (ret == 0)
 	{
 		client.state = WAIT_CGI;
-		pollFd.events = POLLHUP;
+		pollFd.events = 0;
 		_clients.at(client.clientFd).response = parseCgiResponse(client.response);
 		std::cout << "response : " << _clients.at(client.clientFd).response << std::endl;
 		_clients.at(client.clientFd).state = WRITE_CGI;
@@ -574,9 +592,9 @@ void SocketInterface::eventLoop()
 			std::cerr << "poll() failed" << std::endl;
 			continue;
 		}
-
 		for (int i = 0; i < _numPorts + _numClients; ++i)
 		{
+			std::cout << "fd : " << _pollFds[i].fd << " : " << _pollFds[i].events << " : "  << _pollFds[i].revents << std::endl;
 			if (_pollFds[i].revents & POLLOUT)
 			{
 				State state = _clients[_pollFds[i].fd].state;
@@ -607,6 +625,7 @@ void SocketInterface::eventLoop()
 			}
 			else if (_pollFds[i].revents & POLLIN)
 			{
+				std::cout << "fd : " << _pollFds[i].fd << std::endl;
 				if (i < _numPorts)
 				{
 					acceptConnection(_pollFds[i].fd);
@@ -616,6 +635,7 @@ void SocketInterface::eventLoop()
 					State state = _clients[_pollFds[i].fd].state;
 					if (state == READ_REQUEST) // Client sockets
 					{
+						std::cout << "read request" << std::endl;
 						execReadRequest(_pollFds[i], _clients[_pollFds[i].fd]);
 					}
 					else if (state == WAIT_CGI_CHILD)
@@ -643,7 +663,7 @@ void SocketInterface::eventLoop()
 int SocketInterface::sendResponse(int fd, std::string response)
 {
 	int ret = write(fd, response.c_str(), response.size());
-	
+
 	if (ret < 0)
 	{
 		std::cerr << "write() failed" << std::endl;

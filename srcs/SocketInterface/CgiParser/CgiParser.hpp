@@ -24,6 +24,7 @@ public:
 	std::string generateCgiResponse();
 
 	CgiResponseType getCgiResponseType() const;
+	
 
 private:
 	CgiResponseType _cgiResponseType;
@@ -45,6 +46,7 @@ private:
 	std::string generateDocumentResponse();
 	std::string generateClientRedirectResponse();
 	std::string generateServerRedirectResponse();
+
 };
 
 #endif 

@@ -90,8 +90,8 @@ private:
     void deleteClient();
     void monitorTimeout();
     int sendResponse(int fd, std::string response);
-    int ReadRequest(int fd, RequestBuffer &client);
     void execReadRequest(pollfd &pollfd, RequestBuffer &client);
+    void execParseRequest(pollfd &pollfd, RequestBuffer &client);
     void execCoreHandler(pollfd &pollfd, RequestBuffer &client);
     void execCgi(pollfd &pollfd, RequestBuffer &client);
     void execReadCgi(pollfd &pollFd, RequestBuffer &client);

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <!-- <title>PUTメソッドでファイルを上書き</title> -->
+  <meta charset="UTF-8">
+</head>
+<body>
+  <form 
+  id="myForm"
+  action="http://localhost:2000/"
+   >
+    <!-- フォームの内容 -->
+    <label for="username">ユーザー名:</label>
+    <input type="text" id="username" name="username">
+    <br>
+    <label for="password">パスワード:</label>
+    <input type="password" id="password" name="password">
+    <br>
+    <button type="submit">送信</button>
+  </form>
+
+  <script>
+    document.getElementById('myForm').addEventListener('submit', function(event) {
+      // 通常のフォーム送信を止める
+      event.preventDefault();
+      
+      // フォームのデータを取得
+      const formData = new FormData(event.target);
+      
+      // FormDataをテキスト形式に変換
+      let textData = '';
+      formData.forEach((value, key) => {
+        textData += `${key}=${value}&`;
+      });
+      textData = textData.slice(0, -1);  // 末尾の&を削除
+      
+      // PUTリクエストを送信
+      fetch('/', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'text/plain'
+        },
+        body: textData
+      })
+      .then(response => {
+                if (response.ok) {
+                    return response.json();
+                } else {
+                    return response.text();
+                }
+            })
+        .then(data =>  {
+            if (typeof data === 'string') {
+                // レスポンスがHTML（エラーページ）の場合、その内容でページを上書きします。
+                document.documentElement.innerHTML = data;
+            } else {
+                console.log(data);  // JSONデータをそのまま出力
+            }
+        })
+        .catch(error => console.error('An error occurred:', error));
+    });
+  </script>
+</body>
+</html>

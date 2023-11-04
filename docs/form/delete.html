@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DELETE Test</title>
+    <script>
+        function deleteResource() {
+            fetch('http://localhost:2000/form/uploaded_file_1.txt', {
+                method: 'DELETE',
+            })
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                } else {
+                    return response.text();
+                }
+            })
+            .then(data =>  {
+                if (typeof data === 'string') {
+                    // レスポンスがHTML（エラーページ）の場合、その内容でページを上書きします。
+                    document.documentElement.innerHTML = data;
+                } else {
+                    console.log(data);  // JSONデータをそのまま出力
+                }
+            })
+            .catch(error => console.error('An error occurred:', error));
+        }
+    </script>
+</head>
+<body>
+    <h1>DELETE Test</h1>
+    <p>削除するファイル名: ./docs/form/uploaded_file_1.txt</p>
+    <button onclick="deleteResource()">削除</button>
+</body>
+</html>

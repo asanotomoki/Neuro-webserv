@@ -171,7 +171,14 @@ void CgiParser::setStatusCode()
 		}
 		catch (std::invalid_argument e)
 		{
-			_statusCode = 200;
+			if (_method == "POST")
+			{
+				_statusCode = 201;
+			}
+			else
+			{
+				_statusCode = 200;
+			}
 		}
 	}
 	else

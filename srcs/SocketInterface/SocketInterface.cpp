@@ -376,7 +376,7 @@ void SocketInterface::execCgi(pollfd &pollFd, RequestBuffer &client) // client„Å
 	result.fd = -1;
 	result.pid = -1;
 	client.cgi.execCGI(result);
-	client, lastAccessTime = getNowTime();
+	client.lastAccessTime = getNowTime();
 	if (result.statusCode != 200)
 	{
 		client.httpRequest.statusCode = result.statusCode;

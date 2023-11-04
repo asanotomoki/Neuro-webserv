@@ -120,7 +120,6 @@ std::string SocketInterface::getErrorPage(int status, const std::pair<std::strin
 
 int parseChunkedRequest(std::string body, RequestBuffer &client)
 {
-	client.lastAccessTime = getNowTime();
 	if (body.empty())
 	{
 		client.isRequestFinished = false;
@@ -319,7 +318,6 @@ void SocketInterface::execParseRequest(pollfd &pollfd, RequestBuffer &client, st
 		client.isRequestFinished = false;
 		client.request = "";
 		pollfd.events = POLLOUT;
-		client.lastAccessTime = getNowTime();
 	}  else {
 		pollfd.events = POLLIN;
 		client.state = READ_REQUEST;
@@ -329,6 +327,7 @@ void SocketInterface::execParseRequest(pollfd &pollfd, RequestBuffer &client, st
 void SocketInterface::execWriteResponse(pollfd &pollFd, RequestBuffer &client)
 {
 	int res = sendResponse(pollFd.fd, client.response);
+	client.lastAccessTime = getNowTime();
 	if (res == 0)
 	{
 		pollFd.events = POLLIN;
@@ -343,7 +342,6 @@ void SocketInterface::execWriteResponse(pollfd &pollFd, RequestBuffer &client)
 		{
 			client.isClosed = true;
 		}
-		client.lastAccessTime = getNowTime();
 	}
 	else if (res > 0)
 	{
@@ -363,6 +361,7 @@ void SocketInterface::execWriteResponse(pollfd &pollFd, RequestBuffer &client)
 void SocketInterface::execCoreHandler(pollfd &pollFd, RequestBuffer &client)
 {
 	CoreHandler coreHandler(_config->getServerContext(client.hostAndPort.second, client.hostAndPort.first));
+	client.lastAccessTime = getNowTime();
 	client.response = coreHandler.processRequest(client.httpRequest, client.hostAndPort);
 	pollFd.events = POLLOUT;
 	client.state = WRITE_RESPONSE;
@@ -377,6 +376,7 @@ void SocketInterface::execCgi(pollfd &pollFd, RequestBuffer &client) // client�
 	result.fd = -1;
 	result.pid = -1;
 	client.cgi.execCGI(result);
+	client, lastAccessTime = getNowTime();
 	if (result.statusCode != 200)
 	{
 		client.httpRequest.statusCode = result.statusCode;
@@ -420,6 +420,7 @@ void SocketInterface::execWriteError(pollfd &pollFd, RequestBuffer &client, int 
 void SocketInterface::execWriteCGIBody(pollfd &pollFd, RequestBuffer &client)
 {
 	std::string response = client.request;
+	client.lastAccessTime = getNowTime();
 	int ret = sendResponse(pollFd.fd, response);
 	if (ret == 0)
 	{
@@ -533,6 +534,7 @@ void SocketInterface::execWriteCgi(pollfd &pollFd, RequestBuffer &client) // cli
 {
 	// レスポンスを送信する
 	int ret = sendResponse(pollFd.fd, client.response);
+	client.lastAccessTime = getNowTime();
 	if (ret == 0)
 	{
 		close(_clients[pollFd.fd].cgiFd);
@@ -546,7 +548,6 @@ void SocketInterface::execWriteCgi(pollfd &pollFd, RequestBuffer &client) // cli
 		_clients[pollFd.fd].cgiFd = -1;
 		_clients[pollFd.fd].state = READ_REQUEST;
 		pollFd.events = POLLIN;
-		client.lastAccessTime = getNowTime();
 	}
 	else if (ret > 0)
 	{

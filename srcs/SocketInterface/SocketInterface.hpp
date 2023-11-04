@@ -21,7 +21,9 @@
 #include <fstream>
 #include <iterator>
 #include <dirent.h>
-#define TIMEOUT 30
+#define TIMEOUT 15
+#define MAX_LOCAL_REDIRECT_COUNT 10
+
 
 enum State
 {
@@ -45,6 +47,7 @@ struct RequestBuffer
     int clientFd; // CGIの場合のみ使用 (CGIの結果を返すため)
     int cgiFd;    // CGIの場合のみ使用 (CGIを削除するため)
     pid_t cgiPid; // CGIの場合のみ使用 (CGIを削除するため)
+    int cgiLocalRedirectCount;
     State state;
     bool isRequestFinished;
     HttpRequest httpRequest;
@@ -88,12 +91,12 @@ private:
     void setCgiBody(RequestBuffer &client, std::string &body);
     HttpRequest parseRequest(std::string request, RequestBuffer &client);
     void deleteClient();
-    void monitorTimeout();
     int sendResponse(int fd, std::string response);
     void execReadRequest(pollfd &pollfd, RequestBuffer &client);
-    void execParseRequest(pollfd &pollfd, RequestBuffer &client);
+    void execParseRequest(pollfd &pollfd, RequestBuffer &client, std::string request);
     void execCoreHandler(pollfd &pollfd, RequestBuffer &client);
     void execCgi(pollfd &pollfd, RequestBuffer &client);
+    std::string parseCgiResponse(std::string response, std::string method, RequestBuffer &client);
     void execReadCgi(pollfd &pollFd, RequestBuffer &client);
     void execWaitCgiChild(pollfd &pollFd, RequestBuffer &client);
     void execWriteCgi(pollfd &pollFd, RequestBuffer &client);

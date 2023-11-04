@@ -8,7 +8,6 @@
 #include <iostream>
 #include <sstream>
 
-
 Cgi::Cgi()
 {
 }
@@ -122,7 +121,7 @@ ParseUrlCgiResult getCgiPath(std::vector<std::string> tokens, ServerContext &ser
         result.fullpath = result.fullpath.replace(result.fullpath.find("//"), 2, "/");
     }
     // その以降の要素がパスインフォ
-    
+
     for (size_t j = i; j < tokens.size(); j++)
     {
         result.pathInfo += "/" + tokens[j];
@@ -181,13 +180,24 @@ int *Cgi::getPipeStdin()
 bool validatePath(std::string &path)
 {
     struct stat buffer;
-    int ret = stat(path.c_str(), &buffer);
-    if (ret == 0)
+    stat(path.c_str(), &buffer);
+    // isFile
+    if (S_ISREG(buffer.st_mode))
         return true;
+    if (access(path.c_str(), X_OK) == -1)
+    {
+        std::cerr << "access error Not X_OK  : " << path << std::endl;
+    }
+    else if (access(path.c_str(), F_OK) == -1) // ない場合は404
+    {
+        std::cerr << "access error" << std::endl;
+        //result.statusCode = 404;
+        //std::exit(1);
+    }
     return false;
 }
 
-void Cgi::execCGI(CgiResult& result)
+void Cgi::execCGI(CgiResult &result)
 {
     int pipe_fd[2];
     char **env = mapToChar(this->_env);
@@ -217,7 +227,6 @@ void Cgi::execCGI(CgiResult& result)
         dup2(this->pipe_stdin[0], 0);
         close(this->pipe_stdin[0]);
 
-
         execve(this->_parseUrlCgiResult.command.c_str(), args, env);
         std::cerr << "execve error" << std::endl;
         result.statusCode = 500;
@@ -233,7 +242,6 @@ void Cgi::execCGI(CgiResult& result)
     }
     result.fd = pipe_fd[0];
     result.body = this->_request.body;
-    std::cout << "pid: " << pid << std::endl;
     result.pid = pid;
     return;
 }

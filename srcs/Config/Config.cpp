@@ -84,7 +84,7 @@ const ServerContext& Config::getServerContext(const std::string& port, const std
     // server_nameがhostヘッダーと一致する場合、そのserverブロックを返す
     for (std::vector<ServerContext>::const_iterator it = serverContexts.begin(); it != serverContexts.end(); ++it) {
         if (it->getServerName() == host) {
-            std::cout << "getServerContext :: server_name found! -> " << it->getServerName() << std::endl;
+            std::cerr << "getServerContext :: server_name found! -> " << it->getServerName() << std::endl;
             return *it;
         }
     }

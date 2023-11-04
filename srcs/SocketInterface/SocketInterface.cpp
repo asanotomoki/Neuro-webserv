@@ -104,21 +104,23 @@ std::string SocketInterface::getErrorPage(int status, const std::pair<std::strin
 	ServerContext serverContext = _config->getServerContext(hostAndPort.second, hostAndPort.first);
 	std::string errorPage = "";
 	errorPage = serverContext.getErrorPage(status);
+	std::string page;
 	if (errorPage == "")
 	{
-		return default_error_page(status);
+		return (default_error_page(status));
 	}
 	else
 	{
 		std::ifstream file(errorPage, std::ios::binary);
-		return std::string(std::istreambuf_iterator<char>(file),
+		page =  std::string(std::istreambuf_iterator<char>(file),
 						   std::istreambuf_iterator<char>());
 	}
-	return errorPage;
+	return error_page(status, page);
 }
 
 int parseChunkedRequest(std::string body, RequestBuffer &client)
 {
+	client.lastAccessTime = getNowTime();
 	if (body.empty())
 	{
 		client.isRequestFinished = false;
@@ -138,7 +140,6 @@ int parseChunkedRequest(std::string body, RequestBuffer &client)
 			client.chunkedSize = -1;
 			return 400;
 		}
-		client.chunkedBody = body.substr(body.find("\r\n") + 2);
 	}
 	else
 	{
@@ -162,10 +163,9 @@ int parseChunkedRequest(std::string body, RequestBuffer &client)
 		// chunkedSizeの分だけ読み込んだら、chunkedSizeを-1に戻して、chunkedSizeの分だけ読み込んだbodyをresponseに追加する
 		client.request += client.chunkedBody.substr(0, client.chunkedSize);
 		// bodyに読み込んでいない部分を残す
-		body = client.chunkedBody.substr(client.chunkedSize + 2);
 		client.chunkedSize = -1;
 		client.chunkedBody = "";
-		return parseChunkedRequest(body, client);
+		return 200;
 	}
 	else
 	{
@@ -182,7 +182,6 @@ void SocketInterface::execReadRequest(pollfd &pollfd, RequestBuffer &client)
 	int ret = read(pollfd.fd, buf, sizeof(buf) - 1);
 	buf[ret] = '\0';
 	std::string request(buf);
-	client.request += request;
 	if (ret < 0)
 	{
 		std::cerr << "read() failed" << std::endl;
@@ -191,7 +190,7 @@ void SocketInterface::execReadRequest(pollfd &pollfd, RequestBuffer &client)
 		return;
 	}
 	pollfd.events = POLLIN;
-	execParseRequest(pollfd, client);
+	execParseRequest(pollfd, client, request);
 }
 
 HttpRequest SocketInterface::parseRequest(std::string request, RequestBuffer &client)
@@ -211,16 +210,18 @@ void SocketInterface::setCgiBody(RequestBuffer &client, std::string &body)
 	_clients[fd].clientFd = client.clientFd;
 }
 
-int parseLine(RequestBuffer &client)
+int parseLine(RequestBuffer &client, std::string request)
 {
-	if (client.request.empty() && client.request == "\r\n")
+	// requestが空の場合またはCRLFは、200を返す
+	if (client.request.empty() && request == "\r\n" && client.isChunked == false)
 	{
 		return 200;
 	}
 	if (client.isChunked)
 	{
-		return parseChunkedRequest(client.request, client);
+		return parseChunkedRequest(request, client);
 	}
+	client.request += request;
 	if (client.request.find("\r\n\r\n") != std::string::npos)
 	{
 		std::string header = client.request.substr(0, client.request.find("\r\n\r\n"));
@@ -267,9 +268,11 @@ int parseLine(RequestBuffer &client)
 	return 200;
 }
 
-void SocketInterface::execParseRequest(pollfd &pollfd, RequestBuffer &client)
+void SocketInterface::execParseRequest(pollfd &pollfd, RequestBuffer &client, std::string request)
 {
-	int ret = parseLine(client);
+	client.lastAccessTime = getNowTime();
+	int ret = parseLine(client, request);
+
 	if (ret != 200)
 	{
 		client.httpRequest.statusCode = ret;
@@ -285,7 +288,6 @@ void SocketInterface::execParseRequest(pollfd &pollfd, RequestBuffer &client)
 		// Requestの解析
 		client.httpRequest = parseRequest(client.request, client);
 		client.hostAndPort.first = client.httpRequest.hostname;
-
 		if (client.httpRequest.statusCode != 200)
 		{
 			client.state = WRITE_REQUEST_ERROR;
@@ -318,7 +320,10 @@ void SocketInterface::execParseRequest(pollfd &pollfd, RequestBuffer &client)
 		client.request = "";
 		pollfd.events = POLLOUT;
 		client.lastAccessTime = getNowTime();
-	} 
+	}  else {
+		pollfd.events = POLLIN;
+		client.state = READ_REQUEST;
+	}
 }
 
 void SocketInterface::execWriteResponse(pollfd &pollFd, RequestBuffer &client)
@@ -330,6 +335,10 @@ void SocketInterface::execWriteResponse(pollfd &pollFd, RequestBuffer &client)
 		client.state = READ_REQUEST;
 		client.isChunked = false;
 		client.isRequestFinished = false;
+		client.request = "";
+		client.response = "";
+		client.cgiLocalRedirectCount = 0;
+		client.cgiPid = -1;
 		if (client.httpRequest.headers["Connection"] == "close")
 		{
 			client.isClosed = true;
@@ -390,6 +399,7 @@ void SocketInterface::execCgi(pollfd &pollFd, RequestBuffer &client) // client�
 void SocketInterface::execWriteError(pollfd &pollFd, RequestBuffer &client, int index)
 {
 	int ret = sendResponse(pollFd.fd, client.response);
+
 	pollFd.events = POLLOUT;
 	if (ret == 0)
 	{
@@ -401,7 +411,7 @@ void SocketInterface::execWriteError(pollfd &pollFd, RequestBuffer &client, int 
 	{
 		client.response = client.response.substr(ret);
 	}
-	else
+	else if (ret < 0)
 	{
 		pushDelPollFd(pollFd.fd, index);
 	}
@@ -426,17 +436,48 @@ void SocketInterface::execWriteCGIBody(pollfd &pollFd, RequestBuffer &client)
 	}
 }
 
-std::string parseCgiResponse(std::string response)
+std::string SocketInterface::parseCgiResponse(std::string response, std::string method, RequestBuffer &client) // client はユーザー側
 {
 	std::string header = response.substr(0, response.find("\r\n\r\n"));
 	std::string body = response.substr(response.find("\r\n\r\n") + 4);
-	CgiParser parser(header, body);
+	CgiParser parser(header, body, method);
 	std::string cgiResponse = parser.generateCgiResponse();
-	// location Redirectの場合
-	if (parser.getCgiResponseType() == Server_Redirect) // TODO: Server_Redirectの実装
+	if (parser.getCgiResponseType() == Server_Redirect) 
 	{
-		std::cout << "location Redirect" << std::endl;
+		client.cgiLocalRedirectCount++;
+		if (client.cgiLocalRedirectCount > MAX_LOCAL_REDIRECT_COUNT)
+		{
+			client.httpRequest.statusCode = 500;
+			client.response = getErrorPage(500, client.hostAndPort);
+			client.state = WRITE_REQUEST_ERROR;
+			return client.response;
+		}
+		client.isChunked = false;
+		client.isRequestFinished = false;
+		client.chunkedSize = 0;
+		client.response = "";
+		client.httpRequest.statusCode = 200;
+		client.httpRequest.headers.clear();
+		client.cgiFd = -1;
+		client.cgiPid = -1;
+		client.chunkedBody = "";
+		client.request = ""; // リクエストの形式でcgiResponseを保存
+		for (int i = 0; i < _numClients + _numPorts; ++i) {
+			if (_pollFds[i].fd == client.clientFd) {
+				_pollFds[i].events = POLLOUT;
+				execParseRequest(_pollFds[i], _clients[client.clientFd], cgiResponse);
+				break;
+			}
+		}
+	} else if (parser.getCgiResponseType() == Client_Redirect) {
+		client.httpRequest.statusCode = 302;
+		client.response = cgiResponse;
+		client.state = WRITE_CGI;
+	} else {
+		client.response = cgiResponse;
+		client.state = WRITE_CGI;
 	}
+
 	return cgiResponse;
 }
 
@@ -480,8 +521,7 @@ void SocketInterface::execReadCgi(pollfd &pollFd, RequestBuffer &client) // cgi�
 	{
 		client.state = WAIT_CGI;
 		pollFd.events = 0;
-		_clients.at(client.clientFd).response = parseCgiResponse(client.response);
-		_clients.at(client.clientFd).state = WRITE_CGI;
+		parseCgiResponse(client.response, _clients.at(client.clientFd).httpRequest.method, _clients.at(client.clientFd));
 		return;
 	}
 	client.response += response;
@@ -495,10 +535,7 @@ void SocketInterface::execWriteCgi(pollfd &pollFd, RequestBuffer &client) // cli
 	int ret = sendResponse(pollFd.fd, client.response);
 	if (ret == 0)
 	{
-		if (close(_clients[pollFd.fd].cgiFd) < 0)
-		{
-			std::cerr << "close() failed" << std::endl;
-		}
+		close(_clients[pollFd.fd].cgiFd);
 		if (client.httpRequest.headers["Connection"] == "close")
 		{
 			client.isClosed = true;
@@ -647,7 +684,6 @@ void SocketInterface::eventLoop()
 int SocketInterface::sendResponse(int fd, std::string response)
 {
 	int ret = write(fd, response.c_str(), response.size());
-
 	if (ret < 0)
 	{
 		std::cerr << "write() failed" << std::endl;
@@ -681,6 +717,8 @@ pollfd SocketInterface::createClient(int fd, State state)
 	client.clientFd = fd;
 	client.isClosed = false;
 	client.lastAccessTime = getNowTime();
+	client.cgiPid = -1;
+	client.cgiLocalRedirectCount = 0;
 	// pollFdのfdをキーにしてクライアントを管理する
 	_clients.insert(std::make_pair(fd, client));
 	return pollFd;

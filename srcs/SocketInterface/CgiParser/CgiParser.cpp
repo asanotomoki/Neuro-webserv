@@ -4,7 +4,7 @@ CgiParser::CgiParser()
 {
 }
 
-CgiParser::CgiParser(std::string header, std::string body) : _body(body)
+CgiParser::CgiParser(std::string header, std::string body, std::string method) : _body(body), _method(method)
 {
 	setHeaders(header);
 	setContentLength();
@@ -68,7 +68,6 @@ std::string CgiParser::generateDocumentResponse()
 	std::string response;
 	response += "HTTP/1.1 " + std::to_string(_statusCode) + " " + _statusMessage + "\r\n";
 	response += "Content-Length: " + std::to_string(_contentLength) + "\r\n";
-
 	for (std::map<std::string, std::string>::const_iterator it = _headers.begin(); it != _headers.end(); ++it)
 	{
 		if (it->first != "Content-Length" && it->first != "Status")
@@ -93,9 +92,17 @@ std::string CgiParser::generateClientRedirectResponse()
 std::string CgiParser::generateServerRedirectResponse()
 {
 	std::string response;
-	response += "HTTP/1.1 302 Found\r\n";
-	response += "Location: " + _location + "\r\n";
+	response += _method + " " + _location + " HTTP/1.1\r\n";
+	response += "Content-Length: " + std::to_string(_contentLength) + "\r\n";
+	for (std::map<std::string, std::string>::const_iterator it = _headers.begin(); it != _headers.end(); ++it)
+	{
+		if (it->first != "Method" && it->first != "Location" && it->first != "Content-Length" && it->first != "Status")
+		{
+			response += it->first + ": " + it->second + "\r\n";
+		}
+	}
 	response += "\r\n";
+	response += _body;
 	return response;
 }
 

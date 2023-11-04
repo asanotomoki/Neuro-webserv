@@ -1,7 +1,6 @@
 #include "iostream"
 
-std::string default_error_page(int status_code)
-{
+std::string getErrorMessage(int status_code) {
 	std::string message;
 	if (400 <= status_code && status_code < 500)
 	{
@@ -41,17 +40,41 @@ std::string default_error_page(int status_code)
 	}
 	else
 		message = "Unknown Error";
+	return message;
+}
+
+std::string errorHeader(int status_code) 
+{
+	std::string message = getErrorMessage(status_code);
 	std::string str_code = std::to_string(status_code);
-	std::string errorBodyContent = "<!DOCTYPE html>\n<html>\n<head>\n<meta charset = 'UTF-8'>\n<meta name = 'viewport'>\n<title> Error " + str_code + "</title>\n</head>\n<body>\n<h1> "+ str_code + " " + message + "</h1>\n</body>\n</html>\n";
 	std::string response = "HTTP/1.1 " + str_code + " " + message;
 	response += "\r\n";
-	response += "Content-Length: " + std::to_string(errorBodyContent.size());
+	response += "content-type: text/html";
 	response += "\r\n";
 	response += "Connection: close";
 	response += "\r\n";
-	response += "content-type: text/html";
+	return response;
+}
+
+std::string default_error_page(int status_code)
+{
+	std::string header = errorHeader(status_code);
+	std::string str_code = std::to_string(status_code);
+	std::string errorBodyContent = "<!DOCTYPE html>\n<html>\n<head>\n<meta charset = 'UTF-8'>\n<meta name = 'viewport'>\n<title> Error " + str_code + "</title>\n</head>\n<body>\n<h1> "+ str_code + " " + getErrorMessage(status_code) + "</h1>\n</body>\n</html>\n";
+	std::string response = header;
+	response += "Content-Length: " + std::to_string(errorBodyContent.size());
 	response += "\r\n\r\n";
 	response += errorBodyContent;
+
+	return response;
+}
+
+std::string error_page(int status_code, std::string page)
+{
+	std::string response = errorHeader(status_code);
+	response += "Content-Length: " + std::to_string(page.size());
+	response += "\r\n\r\n";
+	response += page;
 
 	return response;
 }

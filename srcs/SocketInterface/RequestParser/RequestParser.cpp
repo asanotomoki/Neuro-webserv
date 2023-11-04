@@ -159,6 +159,8 @@ HttpRequest RequestParser::parse(const std::string &request, bool isChunked, con
 
             httpRequest.statusCode = 413;
             return httpRequest;
+        } else {
+            httpRequest.body = body;
         }
     }
     std::vector<std::string> tokens = split(httpRequest.url, '?');

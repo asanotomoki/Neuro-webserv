@@ -93,7 +93,7 @@ private:
     void deleteClient();
     int sendResponse(int fd, std::string response);
     void execReadRequest(pollfd &pollfd, RequestBuffer &client);
-    void execParseRequest(pollfd &pollfd, RequestBuffer &client);
+    void execParseRequest(pollfd &pollfd, RequestBuffer &client, std::string request);
     void execCoreHandler(pollfd &pollfd, RequestBuffer &client);
     void execCgi(pollfd &pollfd, RequestBuffer &client);
     std::string parseCgiResponse(std::string response, std::string method, RequestBuffer &client);

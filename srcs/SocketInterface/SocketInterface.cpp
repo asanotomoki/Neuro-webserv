@@ -104,21 +104,23 @@ std::string SocketInterface::getErrorPage(int status, const std::pair<std::strin
 	ServerContext serverContext = _config->getServerContext(hostAndPort.second, hostAndPort.first);
 	std::string errorPage = "";
 	errorPage = serverContext.getErrorPage(status);
+	std::string page;
 	if (errorPage == "")
 	{
-		return default_error_page(status);
+		return (default_error_page(status));
 	}
 	else
 	{
 		std::ifstream file(errorPage, std::ios::binary);
-		return std::string(std::istreambuf_iterator<char>(file),
+		page =  std::string(std::istreambuf_iterator<char>(file),
 						   std::istreambuf_iterator<char>());
 	}
-	return errorPage;
+	return error_page(status, page);
 }
 
 int parseChunkedRequest(std::string body, RequestBuffer &client)
 {
+	client.lastAccessTime = getNowTime();
 	if (body.empty())
 	{
 		client.isRequestFinished = false;
@@ -130,6 +132,7 @@ int parseChunkedRequest(std::string body, RequestBuffer &client)
 		std::string chunkedSizeStr = body.substr(0, body.find("\r\n"));
 		try
 		{
+			std::cout << "chunkedSize : " << body << std::endl;
 			client.chunkedSize = std::stoi(chunkedSizeStr, 0, 16);
 		}
 		catch (std::exception &e)
@@ -138,7 +141,6 @@ int parseChunkedRequest(std::string body, RequestBuffer &client)
 			client.chunkedSize = -1;
 			return 400;
 		}
-		client.chunkedBody = body.substr(body.find("\r\n") + 2);
 	}
 	else
 	{
@@ -161,11 +163,11 @@ int parseChunkedRequest(std::string body, RequestBuffer &client)
 	{
 		// chunkedSizeの分だけ読み込んだら、chunkedSizeを-1に戻して、chunkedSizeの分だけ読み込んだbodyをresponseに追加する
 		client.request += client.chunkedBody.substr(0, client.chunkedSize);
+		std::cout << "client request : " << client.request << std::endl;
 		// bodyに読み込んでいない部分を残す
-		body = client.chunkedBody.substr(client.chunkedSize + 2);
 		client.chunkedSize = -1;
 		client.chunkedBody = "";
-		return parseChunkedRequest(body, client);
+		return 200;
 	}
 	else
 	{
@@ -182,7 +184,6 @@ void SocketInterface::execReadRequest(pollfd &pollfd, RequestBuffer &client)
 	int ret = read(pollfd.fd, buf, sizeof(buf) - 1);
 	buf[ret] = '\0';
 	std::string request(buf);
-	client.request += request;
 	if (ret < 0)
 	{
 		std::cerr << "read() failed" << std::endl;
@@ -191,7 +192,7 @@ void SocketInterface::execReadRequest(pollfd &pollfd, RequestBuffer &client)
 		return;
 	}
 	pollfd.events = POLLIN;
-	execParseRequest(pollfd, client);
+	execParseRequest(pollfd, client, request);
 }
 
 HttpRequest SocketInterface::parseRequest(std::string request, RequestBuffer &client)
@@ -211,16 +212,18 @@ void SocketInterface::setCgiBody(RequestBuffer &client, std::string &body)
 	_clients[fd].clientFd = client.clientFd;
 }
 
-int parseLine(RequestBuffer &client)
+int parseLine(RequestBuffer &client, std::string request)
 {
-	if (client.request.empty() && client.request == "\r\n")
+	// requestが空の場合またはCRLFは、200を返す
+	if (client.request.empty() && request == "\r\n" && client.isChunked == false)
 	{
 		return 200;
 	}
 	if (client.isChunked)
 	{
-		return parseChunkedRequest(client.request, client);
+		return parseChunkedRequest(request, client);
 	}
+	client.request += request;
 	if (client.request.find("\r\n\r\n") != std::string::npos)
 	{
 		std::string header = client.request.substr(0, client.request.find("\r\n\r\n"));
@@ -228,6 +231,7 @@ int parseLine(RequestBuffer &client)
 		std::string body = client.request.substr(client.request.find("\r\n\r\n") + 4);
 		if (header.find("Transfer-Encoding: chunked") != std::string::npos)
 		{
+			std::cout << "chunked" << std::endl;
 			client.isChunked = true;
 			client.request = header + "\r\n\r\n";
 			return parseChunkedRequest(body, client);
@@ -267,9 +271,12 @@ int parseLine(RequestBuffer &client)
 	return 200;
 }
 
-void SocketInterface::execParseRequest(pollfd &pollfd, RequestBuffer &client)
+void SocketInterface::execParseRequest(pollfd &pollfd, RequestBuffer &client, std::string request)
 {
-	int ret = parseLine(client);
+	std::cout << "execParseRequest" << std::endl;
+	client.lastAccessTime = getNowTime();
+	int ret = parseLine(client, request);
+
 	if (ret != 200)
 	{
 		client.httpRequest.statusCode = ret;
@@ -285,7 +292,7 @@ void SocketInterface::execParseRequest(pollfd &pollfd, RequestBuffer &client)
 		// Requestの解析
 		client.httpRequest = parseRequest(client.request, client);
 		client.hostAndPort.first = client.httpRequest.hostname;
-
+		std::cout << "status code: " << client.httpRequest.statusCode << std::endl;
 		if (client.httpRequest.statusCode != 200)
 		{
 			client.state = WRITE_REQUEST_ERROR;
@@ -318,7 +325,10 @@ void SocketInterface::execParseRequest(pollfd &pollfd, RequestBuffer &client)
 		client.request = "";
 		pollfd.events = POLLOUT;
 		client.lastAccessTime = getNowTime();
-	} 
+	}  else {
+		pollfd.events = POLLIN;
+		client.state = READ_REQUEST;
+	}
 }
 
 void SocketInterface::execWriteResponse(pollfd &pollFd, RequestBuffer &client)
@@ -330,6 +340,10 @@ void SocketInterface::execWriteResponse(pollfd &pollFd, RequestBuffer &client)
 		client.state = READ_REQUEST;
 		client.isChunked = false;
 		client.isRequestFinished = false;
+		client.request = "";
+		client.response = "";
+		client.cgiLocalRedirectCount = 0;
+		client.cgiPid = -1;
 		if (client.httpRequest.headers["Connection"] == "close")
 		{
 			client.isClosed = true;
@@ -353,6 +367,7 @@ void SocketInterface::execWriteResponse(pollfd &pollFd, RequestBuffer &client)
 
 void SocketInterface::execCoreHandler(pollfd &pollFd, RequestBuffer &client)
 {
+	std::cout << "execCoreHandler " << client.request << std::endl;
 	CoreHandler coreHandler(_config->getServerContext(client.hostAndPort.second, client.hostAndPort.first));
 	client.response = coreHandler.processRequest(client.httpRequest, client.hostAndPort);
 	pollFd.events = POLLOUT;
@@ -390,6 +405,7 @@ void SocketInterface::execCgi(pollfd &pollFd, RequestBuffer &client) // client�
 void SocketInterface::execWriteError(pollfd &pollFd, RequestBuffer &client, int index)
 {
 	int ret = sendResponse(pollFd.fd, client.response);
+
 	pollFd.events = POLLOUT;
 	if (ret == 0)
 	{
@@ -401,7 +417,7 @@ void SocketInterface::execWriteError(pollfd &pollFd, RequestBuffer &client, int 
 	{
 		client.response = client.response.substr(ret);
 	}
-	else
+	else if (ret < 0)
 	{
 		pushDelPollFd(pollFd.fd, index);
 	}
@@ -451,11 +467,11 @@ std::string SocketInterface::parseCgiResponse(std::string response, std::string 
 		client.cgiFd = -1;
 		client.cgiPid = -1;
 		client.chunkedBody = "";
-		client.request = cgiResponse; // リクエストの形式でcgiResponseを保存
+		client.request = ""; // リクエストの形式でcgiResponseを保存
 		for (int i = 0; i < _numClients + _numPorts; ++i) {
 			if (_pollFds[i].fd == client.clientFd) {
 				_pollFds[i].events = POLLOUT;
-				execParseRequest(_pollFds[i], _clients[client.clientFd]);
+				execParseRequest(_pollFds[i], _clients[client.clientFd], cgiResponse);
 				break;
 			}
 		}
@@ -617,26 +633,32 @@ void SocketInterface::eventLoop()
 				State state = _clients[_pollFds[i].fd].state;
 				if (state == EXEC_CORE_HANDLER)
 				{
+					std::cout << "exec CoreHandler" << std::endl;
 					execCoreHandler(_pollFds[i], _clients[_pollFds[i].fd]);
 				}
 				if (state == WRITE_RESPONSE)
 				{
+					std::cout << "exec WriteResponse" << std::endl;
 					execWriteResponse(_pollFds[i], _clients[_pollFds[i].fd]);
 				}
 				else if (state == EXEC_CGI)
 				{
+					std::cout << "exec Cgi" << std::endl;
 					execCgi(_pollFds[i], _clients[_pollFds[i].fd]);
 				}
 				else if (state == WRITE_CGI)
 				{
+					std::cout << "exec Write Cgi Response" << std::endl;
 					execWriteCgi(_pollFds[i], _clients[_pollFds[i].fd]);
 				}
 				else if (state == WRITE_REQUEST_ERROR)
 				{
+					std::cout << "exec Write Error " << std::endl;
 					execWriteError(_pollFds[i], _clients[_pollFds[i].fd], i);
 				}
 				else if (state == WRITE_CGI_BODY)
 				{
+					std::cout << "exec WriteCgiBody" << std::endl;
 					execWriteCGIBody(_pollFds[i], _clients[_pollFds[i].fd]);
 				}
 			}
@@ -651,14 +673,17 @@ void SocketInterface::eventLoop()
 					State state = _clients[_pollFds[i].fd].state;
 					if (state == READ_REQUEST) // Client sockets
 					{
+						std::cout << "exec ReadRequest" << std::endl;
 						execReadRequest(_pollFds[i], _clients[_pollFds[i].fd]);
 					}
 					else if (state == WAIT_CGI_CHILD)
 					{
+						std::cout << "exec Wait Cgi Child" << std::endl;
 						execWaitCgiChild(_pollFds[i], _clients[_pollFds[i].fd]);
 					}
 					else if (state == READ_CGI) // CGIの結果を受け取る
 					{
+						std::cout << "exec Read Cgi" << std::endl;
 						execReadCgi(_pollFds[i], _clients[_pollFds[i].fd]);
 					}
 				}
@@ -678,7 +703,6 @@ void SocketInterface::eventLoop()
 int SocketInterface::sendResponse(int fd, std::string response)
 {
 	int ret = write(fd, response.c_str(), response.size());
-
 	if (ret < 0)
 	{
 		std::cerr << "write() failed" << std::endl;

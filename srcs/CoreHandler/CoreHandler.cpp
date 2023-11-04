@@ -35,11 +35,14 @@ std::string redirectResponse(std::string location)
 	return response;
 }
 
-std::string successResponse(std::string fileContent, std::string contentType, const std::string& statusCode)
+std::string successResponse(std::string fileContent, std::string contentType, 
+					const std::string& statusCode, std::string postLocation = "")
 {
 	std::string response = "HTTP/1.1 " + statusCode + " OK\r\n";
 	response += "Content-Type: " + contentType + "; charset=UTF-8\r\n";
 	response += "Content-Length: " + std::to_string(fileContent.size()) + "\r\n";
+	if (postLocation != "")
+		response += "Location: " + postLocation + "\r\n";
 	response += "\r\n";
 	response += fileContent;
 	return response;
@@ -106,9 +109,9 @@ std::string CoreHandler::postMethod(const std::string& body, const std::string& 
 {
 	DataProcessor dataProcessor;
 	ProcessResult result = dataProcessor.processPostData(body, url, _serverContext);
-	if (result.statusCode != 200)
+	if (result.statusCode != 201)
 		return errorResponse(result.statusCode, result.message, _serverContext);
-	std::string response = successResponse(result.message, "text/html", "201");
+	std::string response = successResponse(result.message, "text/html", "201", result.location);
 	return response;
 }
 
@@ -152,6 +155,7 @@ std::string CoreHandler::processRequest(HttpRequest httpRequest,
 	ParseUrlResult parseUrlResult = parseUrl(httpRequest.url);
 	std::cout << "parseUrlResult.statusCode: " << parseUrlResult.statusCode << std::endl;
 	std::cout << "parseUrlResult.directory: " << parseUrlResult.directory << std::endl;
+	std::cout << "parseUrlResult.autoindex: " << parseUrlResult.autoindex << std::endl;
 	if (parseUrlResult.statusCode >= 300 && parseUrlResult.statusCode < 400) {
 		std::cout << "===== process redirect =====" << std::endl;
 		std::string location;

@@ -106,8 +106,6 @@ HttpRequest RequestParser::parse(const std::string &request, bool isChunked, con
         // 不要なホワイトスペースをトリムする
         value.erase(0, value.find_first_not_of(" \n\r\t"));
         value.erase(value.find_last_not_of(" \n\r\t") + 1);
-        std::cerr << "this is value: |" << value << "|" << std::endl;
-
         // ホスト名の取得
         size_t pos = value.find(":");
         if (pos != std::string::npos)
@@ -118,12 +116,9 @@ HttpRequest RequestParser::parse(const std::string &request, bool isChunked, con
         {
             httpRequest.hostname = value;
         }
-        std::cout << "|" << httpRequest.hostname << "|" << std::endl;
-        std::cout << httpRequest.hostname.compare("server2") << std::endl;
     }
 
     ServerContext serverContext = _config->getServerContext(port, httpRequest.hostname);
-    std::cout << "server_name ha!: " << serverContext.getServerName() << std::endl;
     if (httpRequest.method == "POST" && contentLength == -1 && !isChunked)
     {
         httpRequest.statusCode = 411;

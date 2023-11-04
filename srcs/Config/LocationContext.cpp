@@ -44,7 +44,7 @@ const std::string& LocationContext::getDirective(const std::string& directive) c
 {
 	std::map<std::string, std::string>::const_iterator it = _directives.find(directive);
 	if (it == _directives.end())
-		throw std::runtime_error("getDirective :: directive not found: " + directive);
+		throw std::runtime_error("directive not found");
 	return it->second;
 }
 

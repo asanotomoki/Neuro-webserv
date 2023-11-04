@@ -65,8 +65,11 @@ std::string CoreHandler::getFile(std::vector<std::string> tokens, LocationContex
 	if (isFile(tokens[tokens.size() - 1], result.fullpath)) {
 		file = tokens[tokens.size() - 1];
 	} else if (isDirectory_x(result.fullpath)) {
-		if (locationContext.hasDirective("index"))
+		if (locationContext.hasDirective("index")) {
 			file = locationContext.getDirective("index");
+			if (!fileExists(result.fullpath + file) && locationContext.hasDirective("autoindex"))
+				result.autoindex = 1;
+		}
 		else { //設計上、必ずautoindexディレクティブが存在する
 			if (locationContext.getDirective("autoindex") == "on") {
 				if (isFileIncluded(tokens))
@@ -99,6 +102,7 @@ void CoreHandler::parseHomeDirectory(std::string url, ParseUrlResult& result)
 {
 	LocationContext location_context;
 	try {
+		std::cout <<"homehomehome" << std::endl;
 		location_context = _serverContext.getLocationContext("/");
 	} catch (std::exception& e) {
 		result.statusCode = 404;
@@ -167,7 +171,14 @@ ParseUrlResult CoreHandler::parseUrl(std::string url)
 	if (isFile(result.directory)) {
 		result.file = result.directory.substr(1, result.directory.size());
 		result.directory = "/";
-		LocationContext location_context = _serverContext.getLocationContext("/");
+		LocationContext location_context;
+		try {
+			location_context = _serverContext.getLocationContext("/");
+		} catch (std::exception& e) {
+			result.statusCode = 404;
+			result.message = "Not Found";
+			return result;
+		}
 		result.fullpath = location_context.getDirective("alias") + result.file;
 		return result;
 	}
@@ -193,7 +204,6 @@ ParseUrlResult CoreHandler::parseUrl(std::string url)
 		parseHomeDirectory(tokens[0], result);
 		return result;
 	}
-
 	LocationContext locationContext;
 	try {
 		locationContext = _serverContext.getLocationContext(result.directory);

@@ -102,7 +102,6 @@ void CoreHandler::parseHomeDirectory(std::string url, ParseUrlResult& result)
 {
 	LocationContext location_context;
 	try {
-		std::cout <<"homehomehome" << std::endl;
 		location_context = _serverContext.getLocationContext("/");
 	} catch (std::exception& e) {
 		result.statusCode = 404;
@@ -230,6 +229,5 @@ ParseUrlResult CoreHandler::parseUrl(std::string url)
 
 	result.fullpath.erase(result.fullpath.size() - 1, 1);
 	result.fullpath += "/" + result.file;
-	std::cout << "fullpath: " << result.fullpath << std::endl;
 	return result;
 }

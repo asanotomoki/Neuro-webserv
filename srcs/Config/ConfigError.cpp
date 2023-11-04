@@ -11,7 +11,7 @@ ConfigError::ConfigError(const ErrorType errorType, const std::string& errorWord
 		_fileInfo = " in " + filepath + ": " + itostr(lineNumber);
 	else if (!filepath.empty())
 		_fileInfo = " in " + filepath;
-	std::cout << "ConfigError :: " << _fileInfo << std::endl;
+	std::cerr << "ConfigError :: " << _fileInfo << std::endl;
 	setErrorMessage(errorType, errorWord);
 }
 

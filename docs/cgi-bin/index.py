@@ -12,6 +12,7 @@ if request_method == "POST":
 	body = sys.stdin.read(int(os.environ['CONTENT_LENGTH']))
 
 path_info = os.environ['PATH_INFO']
+
 print ("Status: 200 OK")
 print("Content-type: text/html\r\n\r\n")
 print("<html>")

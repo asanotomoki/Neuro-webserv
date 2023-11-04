@@ -117,7 +117,6 @@ std::string CoreHandler::postMethod(const std::string& body, const std::string& 
 
 std::string CoreHandler::deleteMethod(const std::string& directory, const std::string& file)
 {
-	std::cout << "directory + file: " << directory << file << std::endl;
 	if (std::remove(("." + directory + file).c_str()) != 0)
 	{
 		std::cerr << "ERROR: File not found or delete failed.\n";
@@ -146,24 +145,15 @@ std::string CoreHandler::processRequest(HttpRequest httpRequest,
 	{
 		httpRequest.url += '/';
 	}
-	std::cout << "----------------------------------" << std::endl;
-	std::cout << "Request URL: ";
-	std::cout << httpRequest.url << std::endl;
-	std::cout << "----------------------------------" << std::endl;
 
 
 	ParseUrlResult parseUrlResult = parseUrl(httpRequest.url);
-	std::cout << "parseUrlResult.statusCode: " << parseUrlResult.statusCode << std::endl;
-	std::cout << "parseUrlResult.directory: " << parseUrlResult.directory << std::endl;
-	std::cout << "parseUrlResult.autoindex: " << parseUrlResult.autoindex << std::endl;
 	if (parseUrlResult.statusCode >= 300 && parseUrlResult.statusCode < 400) {
-		std::cout << "===== process redirect =====" << std::endl;
 		std::string location;
 		if (parseUrlResult.fullpath[0] == '/')
 			location = "http://" + hostPort.first + ":" + hostPort.second + parseUrlResult.fullpath;
 		else
 			location = parseUrlResult.fullpath;
-		std::cout << "location: " << location << std::endl;
 		return redirectResponse(location);
 	} else if (parseUrlResult.statusCode != 200)
 		return errorResponse(parseUrlResult.statusCode, parseUrlResult.message, _serverContext);
@@ -180,28 +170,22 @@ std::string CoreHandler::processRequest(HttpRequest httpRequest,
 			std::cout << "===== process 404 =====" << std::endl;
 			return errorResponse(404, "Not found", _serverContext);
 		} if (parseUrlResult.autoindex == 1) {
-			std::cout << "===== process autoindex =====" << std::endl;
-			std::cout << "parseUrlResult.fullpath: " << parseUrlResult.fullpath << std::endl;
 			return getMethod(parseUrlResult.fullpath, locationContext, parseUrlResult);
 		}
 		if (!locationContext.isAllowedMethod("GET"))
 			return errorResponse(405, "Method Not Allowed", _serverContext);
-		std::cout << "===== process get method =====" << std::endl;
 		return getMethod(parseUrlResult.fullpath, locationContext, parseUrlResult);
 	}
 	else if (httpRequest.method == "POST")
 	{
 		if (locationContext.hasDirective("limit_except") && !locationContext.isAllowedMethod("POST"))
 		{
-			std::cout << "===== process 405 =====" << std::endl;
 			return errorResponse(405, "Method Not Allowed", _serverContext);
 		}
-		std::cout << "===== process post method =====" << std::endl;
 		return postMethod(httpRequest.body, parseUrlResult.directory);
 	}
 	else if (httpRequest.method == "DELETE")
 	{
-		std::cout << "===== process delete method =====" << std::endl;
 		if (locationContext.hasDirective("limit_except") && !locationContext.isAllowedMethod("DELETE"))
 			return errorResponse(405, "Method Not Allowed", _serverContext);
 		return deleteMethod(parseUrlResult.directory, parseUrlResult.file);

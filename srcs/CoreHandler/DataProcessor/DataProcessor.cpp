@@ -24,7 +24,6 @@ ProcessResult DataProcessor::processPostData(const std::string& body, const std:
         ProcessResult result = ProcessResult("error", "Not found.", 404, fullDirPath);
         return result;
     }
-    std::cout << "fullDirPath: " << fullDirPath << std::endl;
     // インデックスを見つけてファイル名を生成
     int index = 1;
     std::string filePath;

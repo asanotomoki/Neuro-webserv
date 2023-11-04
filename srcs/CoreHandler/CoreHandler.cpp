@@ -109,9 +109,9 @@ std::string CoreHandler::postMethod(const std::string& body, const std::string& 
 {
 	DataProcessor dataProcessor;
 	ProcessResult result = dataProcessor.processPostData(body, url, _serverContext);
-	if (result.statusCode != 200)
+	if (result.statusCode != 201)
 		return errorResponse(result.statusCode, result.message, _serverContext);
-	std::string response = successResponse(result.message, "text/html", "201");
+	std::string response = successResponse(result.message, "text/html", "201", result.location);
 	return response;
 }
 

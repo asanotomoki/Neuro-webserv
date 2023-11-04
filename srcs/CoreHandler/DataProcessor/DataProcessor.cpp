@@ -43,7 +43,7 @@ ProcessResult DataProcessor::processPostData(const std::string& body, const std:
     file.write(fileData.c_str(), fileData.size());
     file.close();
 
-    ProcessResult result = ProcessResult("success", "File uploaded successfully.", 200, filePath);
+    ProcessResult result = ProcessResult("success", "File uploaded successfully.", 201, filePath);
     return result;
 }
 

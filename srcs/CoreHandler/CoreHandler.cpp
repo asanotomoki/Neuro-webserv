@@ -39,9 +39,10 @@ std::string successResponse(std::string fileContent, std::string contentType,
 					const std::string& statusCode, std::string postLocation = "")
 {
 	std::string message = "OK";
-	if (statusCode == "201")
-	{
+	if (statusCode == "201") {
 		message = "Created";
+	} else if (statusCode == "204") {
+		message = "No Content";
 	}
 	std::string response = "HTTP/1.1 " + statusCode + " " + message + "\r\n";
 	response += "Content-Type: " + contentType + "; charset=UTF-8\r\n";
@@ -128,7 +129,8 @@ std::string CoreHandler::deleteMethod(const std::string& fullpath)
 		std::cout << "DELETE FAILED\n";
 		return errorResponse(404, "Not Found", _serverContext);
 	}
-	return "HTTP/1.1 204 No Content\r\n\r\n"; // 成功のレスポンス
+	std::string response = successResponse("DELETE SUCCESS", "text/html", "204", fullpath);
+	return response;
 }
 
 int CoreHandler::validatePath(std::string& path)
@@ -171,14 +173,12 @@ std::string CoreHandler::processRequest(HttpRequest httpRequest,
 	}
 	if (httpRequest.method == "GET")
 	{
-		if (validatePath(parseUrlResult.fullpath) == -1 && parseUrlResult.autoindex == 0) {
-			std::cout << "===== process 404 =====" << std::endl;
-			return errorResponse(404, "Not found", _serverContext);
-		} if (parseUrlResult.autoindex == 1) {
-			return getMethod(parseUrlResult.fullpath, locationContext, parseUrlResult);
-		}
 		if (!locationContext.isAllowedMethod("GET"))
 			return errorResponse(405, "Method Not Allowed", _serverContext);
+		if (validatePath(parseUrlResult.fullpath) == -1 && parseUrlResult.autoindex == 0)
+			return errorResponse(404, "Not found", _serverContext);
+		if (parseUrlResult.autoindex == 1)
+			return getMethod(parseUrlResult.fullpath, locationContext, parseUrlResult);
 		return getMethod(parseUrlResult.fullpath, locationContext, parseUrlResult);
 	}
 	else if (httpRequest.method == "POST")

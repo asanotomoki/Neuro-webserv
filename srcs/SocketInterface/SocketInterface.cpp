@@ -102,20 +102,36 @@ RequestBuffer initRequestBuffer(int fd)
 std::string SocketInterface::getErrorPage(int status, const std::pair<std::string, std::string> &hostAndPort)
 {
 	ServerContext serverContext = _config->getServerContext(hostAndPort.second, hostAndPort.first);
+<<<<<<< HEAD
 	std::string errorPage = "";
 	errorPage = serverContext.getErrorPage(status);
 	std::string page;
 	if (errorPage == "")
 	{
+=======
+	std::string errorPage = serverContext.getErrorPage(status);
+	if (errorPage == "")
+	{
+		std::cout << " default Error Page " << std::endl;
+>>>>>>> other/main
 		return (default_error_page(status));
 	}
 	else
 	{
+<<<<<<< HEAD
 		std::ifstream file(errorPage, std::ios::binary);
 		page =  std::string(std::istreambuf_iterator<char>(file),
 						   std::istreambuf_iterator<char>());
 	}
 	return error_page(status, page);
+=======
+		std::cout << " original Error Page " << std::endl;
+		std::ifstream file(errorPage, std::ios::binary);
+		std::string page =  std::string(std::istreambuf_iterator<char>(file),
+						   std::istreambuf_iterator<char>());
+		return error_page(status, page);
+	}
+>>>>>>> other/main
 }
 
 int parseChunkedRequest(std::string body, RequestBuffer &client)
@@ -445,9 +461,16 @@ std::string SocketInterface::parseCgiResponse(std::string response, std::string 
 	std::string cgiResponse = parser.generateCgiResponse();
 	if (parser.getCgiResponseType() == Server_Redirect) 
 	{
+<<<<<<< HEAD
 		client.cgiLocalRedirectCount++;
 		if (client.cgiLocalRedirectCount > MAX_LOCAL_REDIRECT_COUNT)
 		{
+=======
+		client.cgiLocalRedirectCount += 1;
+		if (client.cgiLocalRedirectCount > MAX_LOCAL_REDIRECT_COUNT)
+		{
+			std::cout << client.cgiLocalRedirectCount << std::endl;
+>>>>>>> other/main
 			client.httpRequest.statusCode = 500;
 			client.response = getErrorPage(500, client.hostAndPort);
 			client.state = WRITE_REQUEST_ERROR;

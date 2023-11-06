@@ -1,3 +1,7 @@
+<<<<<<< HEAD
 
 user_name=hoge
 password=7133bfad2939a488d2755d955e37d1b9d51dd7bd807f5afe2e2d4b32f4faf8ae
+=======
+username=sotaroiwasa&password=sads
+>>>>>>> other/main

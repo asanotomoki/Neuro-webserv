@@ -25,19 +25,6 @@ ProcessResult DataProcessor::processPostData(const std::string& body, const std:
         return result;
     }
     // インデックスを見つけてファイル名を生成
-<<<<<<< HEAD
-    int index = 1;
-    std::string filePath;
-    do {
-        filePath = fullDirPath + "/uploaded_file_" + std::to_string(index) + ".txt";
-        index++;
-    } while (std::ifstream(filePath)); // 既存ファイルがある場合、インデックスを増やす
-
-    // 指定のディレクトリにファイルを保存
-    std::ofstream file(filePath, std::ios::binary);
-    if (!file) {
-        ProcessResult result = ProcessResult("error", "Failed to create file.", 500, filePath);
-=======
     int index = 0;
     std::string filePath;
     do {
@@ -50,18 +37,13 @@ ProcessResult DataProcessor::processPostData(const std::string& body, const std:
     std::ofstream file(filePath, std::ios::binary);
     if (!file) {
         ProcessResult result = ProcessResult("error", "Failed to create file.", 500, location);
->>>>>>> other/main
         return result;
     }
 
     file.write(fileData.c_str(), fileData.size());
     file.close();
 
-<<<<<<< HEAD
-    ProcessResult result = ProcessResult("success", "File uploaded successfully.", 201, filePath);
-=======
     ProcessResult result = ProcessResult("success", "File uploaded successfully.", 201, location);
->>>>>>> other/main
     return result;
 }
 

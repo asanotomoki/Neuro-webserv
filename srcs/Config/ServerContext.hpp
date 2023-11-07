@@ -22,11 +22,7 @@ class ServerContext
         const std::string& getMaxBodySize() const;
         bool getIsCgi() const;
         //const std::vector<std::string>& getAllowedMethods() const;
-<<<<<<< HEAD
-        const std::string& getErrorPage(int status_code) const; 
-=======
         std::string getErrorPage(int status_code) const; 
->>>>>>> other/main
 		void addLocationContext(LocationContext& location);
         void addCGIContext(const CGIContext& cgi);
         void addDirectives(const std::string& directive, const std::string& value,

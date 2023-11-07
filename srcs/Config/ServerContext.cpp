@@ -68,18 +68,12 @@ bool ServerContext::getIsCgi() const
 	return _is_Cgi;
 }
 
-<<<<<<< HEAD
-const std::string& ServerContext::getErrorPage(int status_code) const
-{
-	std::map<int, std::string>::const_iterator it = _errorPages.find(status_code);
-=======
 std::string ServerContext::getErrorPage(int status_code) const
 {
 	std::map<int, std::string>::const_iterator it = _errorPages.find(status_code);
 	// もし見つからなかった場合
 	if (it == _errorPages.end())
 		return "";
->>>>>>> other/main
 	return it->second;
 }
 

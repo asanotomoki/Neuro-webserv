@@ -62,11 +62,7 @@ std::string default_error_page(int status_code)
 	std::string str_code = std::to_string(status_code);
 	std::string errorBodyContent = "<!DOCTYPE html>\n<html>\n<head>\n<meta charset = 'UTF-8'>\n<meta name = 'viewport'>\n<title> Error " + str_code + "</title>\n</head>\n<body>\n<h1> "+ str_code + " " + getErrorMessage(status_code) + "</h1>\n</body>\n</html>\n";
 	std::string response = header;
-<<<<<<< HEAD
-	response += "Content-Length: " + std::to_string(errorBodyContent.size());
-=======
 	response += "Content-Length: " + std::to_string(errorBodyContent.length());
->>>>>>> other/main
 	response += "\r\n\r\n";
 	response += errorBodyContent;
 

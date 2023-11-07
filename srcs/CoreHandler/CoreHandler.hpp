@@ -41,11 +41,7 @@ private:
     std::string getMethod(const std::string &fullpath, const LocationContext &locationContext,
                             const ParseUrlResult& result);
     std::string postMethod(const std::string& body, const std::string& url);
-<<<<<<< HEAD
-    std::string deleteMethod(const std::string& directory, const std::string& file);
-=======
     std::string deleteMethod(const std::string& fullpath);
->>>>>>> other/main
     std::string getFile(std::vector<std::string> tokens, LocationContext &locationContext, ParseUrlResult &result);
     int isFile(const std::string& token, std::string fullpath = "");
     int validatePath(std::string& path);

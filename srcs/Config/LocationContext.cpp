@@ -60,7 +60,9 @@ bool LocationContext::getIsCgi() const
 	std::map<std::string, std::string>::const_iterator it = _directives.find("cgi_on");
 	if (it == _directives.end())
 		return false;
-	return true;
+	if (it->second == "on")
+		return true;
+	return false;
 }
 
 std::map<std::string, std::string> LocationContext::getDirectives() const

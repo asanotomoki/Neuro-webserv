@@ -1,55 +1,11 @@
 #include "RequestParser.hpp"
 #include <sstream>
 #include <iostream>
-
-#include <string.h> // TODO: remove this
+#include "utils.hpp"
 
 RequestParser::RequestParser(Config *config) : _config(config){};
 
 RequestParser::~RequestParser(){};
-
-std::vector<std::string> RequestParser::split(const std::string &s, char delimiter)
-{
-    std::vector<std::string> tokens;
-    std::string token;
-    std::istringstream tokenStream(s);
-
-    if (s.empty())
-        return tokens;
-    if (s == "/")
-    {
-        tokens.push_back("/");
-        return tokens;
-    }
-    while (std::getline(tokenStream, token, delimiter))
-    {
-        tokens.push_back(token);
-    }
-    return tokens;
-}
-
-bool RequestParser::isCgiDir(std::vector<std::string> tokens)
-{
-    return tokens.size() >= 1 && tokens[1] == "cgi-bin";
-}
-
-bool RequestParser::isCgiBlockPath(const ServerContext &server_context, std::vector<std::string> tokens)
-{
-    if (!server_context.getIsCgi())
-        return false;
-    CGIContext cgi_context = server_context.getCGIContext();
-    std::string exe = cgi_context.getDirective("extension");
-    size_t i = 0;
-    while (i < tokens.size())
-    {
-        // 拡張子を取得
-        std::string ext = tokens[i].substr(tokens[i].find_last_of(".") + 1);
-        if (ext == exe)
-            return true;
-        i++;
-    }
-    return false;
-}
 
 HttpRequest RequestParser::parse(const std::string &request, bool isChunked, const std::string &port)
 {
@@ -167,9 +123,6 @@ HttpRequest RequestParser::parse(const std::string &request, bool isChunked, con
     {
         return httpRequest;
     }
-    if (isCgiDir(path_tokens) || isCgiBlockPath(serverContext, path_tokens))
-    {
-        httpRequest.isCgi = true;
-    }
+    httpRequest.isCgi = isCgi(path_tokens, serverContext);
     return httpRequest;
 }

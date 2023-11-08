@@ -1,5 +1,6 @@
 #include "Cgi.hpp"
 #include "RequestParser.hpp"
+#include "utils.hpp"
 #include <string>
 #include <vector>
 #include <map>
@@ -12,50 +13,22 @@ Cgi::Cgi()
 {
 }
 
-std::vector<std::string> splitCgi(const std::string &s, char delimiter)
+ParseUrlCgiResult Cgi::parseCgiBlock(std::vector<std::string> tokens, const ServerContext &server_context, ParseUrlCgiResult &result)
 {
-    std::vector<std::string> tokens;
-    std::string token;
-    std::istringstream tokenStream(s);
+    result.directory = tokens[0] + "/";
 
-    if (s.empty())
-        return tokens;
-    if (s == "/")
-    {
-        tokens.push_back("/");
-        return tokens;
-    }
-    while (std::getline(tokenStream, token, delimiter))
-    {
-        tokens.push_back(token);
-    }
-    return tokens;
-}
-
-bool isCgiBlockPath(const ServerContext &server_context, std::vector<std::string> tokens)
-{
-    if (!server_context.getIsCgi())
-        return false;
     CGIContext cgi_context = server_context.getCGIContext();
     std::string exe = cgi_context.getDirective("extension");
-    size_t i = 0;
-    while (i < tokens.size())
+    try
     {
-        // 拡張子を取得
-        std::string ext = tokens[i].substr(tokens[i].find_last_of(".") + 1);
-        if (ext == exe)
-            return true;
-        i++;
+        result.command = cgi_context.getDirective("command");
     }
-    return false;
-}
-
-ParseUrlCgiResult parseCgiBlock(std::vector<std::string> tokens, const ServerContext &server_context, ParseUrlCgiResult &result)
-{
-    result.directory = "/cgi-bin/";
-    CGIContext cgi_context = server_context.getCGIContext();
-    std::string exe = cgi_context.getDirective("extension");
-    result.command = cgi_context.getDirective("command");
+    catch (std::exception &e)
+    {
+        // ない場合は実行ファイル
+        result.errorflag = 1;
+    }
+    std::string alias = cgi_context.getDirective("alias");
     size_t i = 0;
     while (i < tokens.size())
     {
@@ -65,7 +38,7 @@ ParseUrlCgiResult parseCgiBlock(std::vector<std::string> tokens, const ServerCon
             break;
         i++;
     }
-    result.fullpath = "./docs/cgi-bin" + result.file;
+    result.fullpath = alias + result.file;
     result.pathInfo = "";
     // それ以降がpathinfo
     for (size_t j = i + 1; j < tokens.size(); j++)
@@ -75,20 +48,28 @@ ParseUrlCgiResult parseCgiBlock(std::vector<std::string> tokens, const ServerCon
     return result;
 }
 
-bool isCgiDir(std::vector<std::string> tokens)
+ParseUrlCgiResult Cgi::getCgiPath(std::vector<std::string> tokens, ServerContext &serverContext, ParseUrlCgiResult &result)
 {
     if (tokens.size() < 1)
-        return false;
-    if (tokens[0] == "cgi-bin")
-        return true;
-    return false;
-}
-
-ParseUrlCgiResult getCgiPath(std::vector<std::string> tokens, ServerContext &serverContext, ParseUrlCgiResult &result)
-{
-    result.directory = "/cgi-bin/";
-    LocationContext location_context = serverContext.getLocationContext("/cgi-bin/");
-    result.command = location_context.getDirective("command");
+        return result;
+    result.directory = "/" + tokens[0] + "/";
+    LocationContext location_context = serverContext.getLocationContext(result.directory);
+    std::cout << "method : " << _method << std::endl;
+    if (!location_context.isAllowedMethod(_method))
+    {
+        result.statusCode = 405;
+        return result;
+    }
+    std::string alias = location_context.getDirective("alias");
+    try
+    {
+        result.command = location_context.getDirective("command");
+    }
+    catch (std::exception &e)
+    {
+        // ない場合は実行ファイル
+        result.errorflag = 1;
+    }
     // ファイルが指定されていない場合
     bool isFile = false;
     size_t i = 0;
@@ -102,13 +83,18 @@ ParseUrlCgiResult getCgiPath(std::vector<std::string> tokens, ServerContext &ser
     }
     if (!isFile)
     {
-        result.file = location_context.getDirective("index");
-        result.fullpath = "./docs/cgi-bin/" + result.file;
+        try {
+            result.file = location_context.getDirective("index");
+        } catch (std::exception& e) {
+            result.file = "";
+        }
+        result.fullpath += location_context.getDirective("alias") + "/";
+        result.fullpath += result.file;
         i = 1;
     }
     else
     {
-        i = 0;
+        i = 1;
         for (; i < tokens.size(); i++)
         {
             result.file += "/" + tokens[i];
@@ -116,8 +102,7 @@ ParseUrlCgiResult getCgiPath(std::vector<std::string> tokens, ServerContext &ser
                 break;
         }
         i++;
-        result.fullpath = "./docs/" + result.file;
-        // "//"を"/"に変換
+        result.fullpath = alias + result.file;
         result.fullpath = result.fullpath.replace(result.fullpath.find("//"), 2, "/");
     }
     // その以降の要素がパスインフォ
@@ -125,6 +110,10 @@ ParseUrlCgiResult getCgiPath(std::vector<std::string> tokens, ServerContext &ser
     for (size_t j = i; j < tokens.size(); j++)
     {
         result.pathInfo += "/" + tokens[j];
+    }
+    if (result.errorflag == 1)
+    {
+        result.command = result.fullpath;
     }
     return result;
 }
@@ -135,7 +124,7 @@ void Cgi::parseUrl(std::string url, ServerContext &serverContext)
     result.statusCode = 200;
     result.autoindex = 0;
     result.errorflag = 0;
-    std::vector<std::string> tokens = splitCgi(url, '?');
+    std::vector<std::string> tokens = split(url, '?');
     if (tokens.size() == 1)
     {
         result.query = "";
@@ -147,19 +136,18 @@ void Cgi::parseUrl(std::string url, ServerContext &serverContext)
     }
     tokens[0].erase(0, 1);
     // cgi-bin
-    std::vector<std::string> path_tokens = splitCgi(tokens[0], '/');
-    if (isCgiDir(path_tokens))
-    {
+    std::vector<std::string> path_tokens = split(tokens[0], '/');
+    if (isCgiDir(path_tokens, serverContext))
         getCgiPath(path_tokens, serverContext, result);
-    }
-    else if (isCgiBlockPath(serverContext, path_tokens))
+    else if (isCgiBlockPath(path_tokens, serverContext))
         parseCgiBlock(path_tokens, serverContext, result);
     this->_parseUrlCgiResult = result;
 }
 
 // Cgi::Cgi(HttpRequest& req, ParseUrlCgiResult &url) :
-Cgi::Cgi(HttpRequest &req, ServerContext &server_context) : _request(req)
+Cgi::Cgi(HttpRequest &req, ServerContext &server_context) : _request(req), _method(req.method)
 {
+
     parseUrl(req.url, server_context);
     std::string exec = this->_parseUrlCgiResult.command;
     this->_executable = exec.c_str();
@@ -191,8 +179,8 @@ bool validatePath(std::string &path)
     else if (access(path.c_str(), F_OK) == -1) // ない場合は404
     {
         std::cerr << "access error" << std::endl;
-        //result.statusCode = 404;
-        //std::exit(1);
+        // result.statusCode = 404;
+        // std::exit(1);
     }
     return false;
 }
@@ -202,11 +190,17 @@ void Cgi::execCGI(CgiResult &result)
     int pipe_fd[2];
     char **env = mapToChar(this->_env);
     char **args = vectorToChar(this->_args);
+    if (this->_parseUrlCgiResult.statusCode == 405)
+    {
+        result.statusCode = 405;
+        return;
+    }
     if (!validatePath(_parseUrlCgiResult.fullpath))
     {
         result.statusCode = 404;
         return;
     }
+
     if (pipe(pipe_fd) < 0)
     {
         std::cerr << "pipe error" << std::endl;

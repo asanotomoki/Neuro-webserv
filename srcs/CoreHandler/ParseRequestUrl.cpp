@@ -1,28 +1,11 @@
 #include "CoreHandler.hpp"
 #include "ServerContext.hpp"
+#include "utils.hpp"
 #include <sstream>
 #include <vector>
 #include <iostream>
 #include <dirent.h>
 #include <sys/stat.h>
-
-std::vector<std::string> split(const std::string &s, char delimiter) {
-    std::vector<std::string> tokens;
-    std::string token;
-    std::istringstream tokenStream(s);
-
-	if (s.empty())
-		return tokens;
-	if (s == "/")
-	{
-		tokens.push_back("/");
-		return tokens;
-	}
-    while (std::getline(tokenStream, token, delimiter)) {
-        tokens.push_back(token);
-    }
-    return tokens;
-}
 
 bool fileExists(const std::string& path) {
 

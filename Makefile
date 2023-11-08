@@ -22,9 +22,6 @@ OBJECTS = $(addprefix $(OBJECTS_DIR)/, $(SOURCES:.cpp=.o))
 
 all: $(NAME)
 
-test: 
-	$(CC) $(TEST_CFLAGS) $(SOURCES) -o $(NAME)
-
 $(NAME): $(OBJECTS)
 	$(CC) $(CFLAGS) $^ -o $@
 
@@ -44,6 +41,8 @@ git :
 	git add -A
 	git commit -m "auto commit"
 	git push
+
+bonus: all
 
 .PHONY: all clean fclean re git
 

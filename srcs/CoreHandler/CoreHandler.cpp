@@ -104,7 +104,14 @@ std::string CoreHandler::getMethod(const std::string &fullpath, const LocationCo
 	StaticFileReader fileReader;
 
 	// スラッシュが2個続く場合があるため取り除く
-	std::string fileContent = fileReader.readFile(fullpath, locationContext, _serverContext, result);
+	std::string fileContent;
+	try {
+		fileContent = fileReader.readFile(fullpath, locationContext, _serverContext, result);
+	} catch (std::exception &e) {
+		std::cerr << "ERROR: " << e.what() << std::endl;
+		return errorResponse(404, "Not Found", _serverContext);
+	}
+
   	std::string contentType = getContentType(fullpath);
 	std::string response = successResponse(fileContent, contentType, "200");
 
@@ -177,8 +184,6 @@ std::string CoreHandler::processRequest(HttpRequest httpRequest,
 			return errorResponse(405, "Method Not Allowed", _serverContext);
 		if (validatePath(parseUrlResult.fullpath) == -1 && parseUrlResult.autoindex == 0)
 			return errorResponse(404, "Not found", _serverContext);
-		if (parseUrlResult.autoindex == 1)
-			return getMethod(parseUrlResult.fullpath, locationContext, parseUrlResult);
 		return getMethod(parseUrlResult.fullpath, locationContext, parseUrlResult);
 	}
 	else if (httpRequest.method == "POST")

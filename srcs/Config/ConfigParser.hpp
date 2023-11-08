@@ -23,7 +23,7 @@ class ConfigParser
     {
         SERVER,
         LISTEN,
-        SERVER_NAME,
+        SERVER_NAMES,
         MAX_BODY_SIZE,
         ERROR_PAGE,
         LOCATION,

@@ -447,10 +447,9 @@ std::string SocketInterface::parseCgiResponse(std::string response, std::string 
 	std::string cgiResponse = parser.generateCgiResponse();
 	if (parser.getCgiResponseType() == Server_Redirect)
 	{
-		client.cgiLocalRedirectCount += 1;
+		client.cgiLocalRedirectCount++;
 		if (client.cgiLocalRedirectCount > MAX_LOCAL_REDIRECT_COUNT)
 		{
-			std::cout << client.cgiLocalRedirectCount << std::endl;
 			client.httpRequest.statusCode = 500;
 			client.response = getErrorPage(500, client.hostAndPort);
 			client.state = WRITE_REQUEST_ERROR;

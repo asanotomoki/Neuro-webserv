@@ -7,7 +7,11 @@
     <title>DELETE Test</title>
     <script>
         function deleteResource() {
+<<<<<<< HEAD
+            fetch('http://localhost:2000/post/uploaded_file_1.txt', {
+=======
             fetch('http://localhost:2000/form/uploaded_file_1.txt', {
+>>>>>>> other/main
                 method: 'DELETE',
             })
             .then(response => {
@@ -31,7 +35,11 @@
 </head>
 <body>
     <h1>DELETE Test</h1>
+<<<<<<< HEAD
+    <p>削除するファイル名: /docs/post/uploaded_file_1.txt</p>
+=======
     <p>削除するファイル名: ./docs/form/uploaded_file_1.txt</p>
+>>>>>>> other/main
     <button onclick="deleteResource()">削除</button>
 </body>
 </html>

@@ -46,7 +46,6 @@ ParseUrlCgiResult getCgiPath(std::vector<std::string> tokens, ServerContext &ser
     if (tokens.size()  < 1)
         return result;
     result.directory = "/" + tokens[0] + "/";
-    std::cout << "result.directory : " << result.directory << std::endl;
     LocationContext location_context = serverContext.getLocationContext(result.directory);
     std::string alias = location_context.getDirective("alias");
     result.command = location_context.getDirective("command");
@@ -109,7 +108,6 @@ void Cgi::parseUrl(std::string url, ServerContext &serverContext)
     tokens[0].erase(0, 1);
     // cgi-bin
     std::vector<std::string> path_tokens = split(tokens[0], '/');
-    std::cout << "path_tokens.[0] : " << path_tokens[0] << std::endl;
     if (isCgiDir(path_tokens, serverContext))
         getCgiPath(path_tokens, serverContext, result);
     else if (isCgiBlockPath(path_tokens, serverContext))
@@ -120,7 +118,7 @@ void Cgi::parseUrl(std::string url, ServerContext &serverContext)
 // Cgi::Cgi(HttpRequest& req, ParseUrlCgiResult &url) :
 Cgi::Cgi(HttpRequest &req, ServerContext &server_context) : _request(req)
 {
-    std::cout << "Cgi::Cgi" << std::endl;
+
     parseUrl(req.url, server_context);
     std::string exec = this->_parseUrlCgiResult.command;
     this->_executable = exec.c_str();

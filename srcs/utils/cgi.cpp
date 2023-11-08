@@ -19,7 +19,6 @@ bool isCgiDir(std::vector<std::string> tokens, const ServerContext &server_conte
     }
     catch (std::exception &e)
     {
-        std::cout << "not found : " << dir << std::endl;
     }
 
     if (tokens.size() >= 1)

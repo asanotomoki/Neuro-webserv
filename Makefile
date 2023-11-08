@@ -3,7 +3,7 @@ CC = g++
 INC	= -I ./srcs/Config/ -I ./srcs/SocketInterface/ -I ./srcs/CoreHandler/ \
 		-I ./srcs/SocketInterface/RequestParser/ -I ./srcs/SocketInterface/CgiParser -I ./srcs/CoreHandler/StaticFileReader/ \
 		-I ./srcs/CoreHandler/DataProcessor -I ./srcs/Cgi/ -I ./srcs/utils/
-CFLAGS = -Wall -Wextra -Werror -std=c++98 $(INC)
+CFLAGS = -Wall -Wextra -Werror -std=c++98  -g -fsanitize=address $(INC)
 LDFLAGS =
 SOURCES = srcs/main.cpp srcs/Config/Config.cpp srcs/SocketInterface/SocketInterface.cpp \
 			srcs/SocketInterface/RequestParser/RequestParser.cpp \
@@ -16,7 +16,7 @@ SOURCES = srcs/main.cpp srcs/Config/Config.cpp srcs/SocketInterface/SocketInterf
 			srcs/CoreHandler/StaticFileReader/StaticFileReader.cpp \
 			srcs/CoreHandler/DataProcessor/DataProcessor.cpp \
 			srcs/Cgi/Cgi.cpp \
-			srcs/utils/defaultError.cpp srcs/utils/time.cpp
+			srcs/utils/defaultError.cpp srcs/utils/time.cpp srcs/utils/cgi.cpp  srcs/utils/split.cpp 
 OBJECTS_DIR = objs
 OBJECTS = $(addprefix $(OBJECTS_DIR)/, $(SOURCES:.cpp=.o))
 

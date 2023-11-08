@@ -1,5 +1,6 @@
 #include "Cgi.hpp"
 #include "RequestParser.hpp"
+#include "utils.hpp"
 #include <string>
 #include <vector>
 #include <map>
@@ -12,47 +13,11 @@ Cgi::Cgi()
 {
 }
 
-std::vector<std::string> splitCgi(const std::string &s, char delimiter)
-{
-    std::vector<std::string> tokens;
-    std::string token;
-    std::istringstream tokenStream(s);
-
-    if (s.empty())
-        return tokens;
-    if (s == "/")
-    {
-        tokens.push_back("/");
-        return tokens;
-    }
-    while (std::getline(tokenStream, token, delimiter))
-    {
-        tokens.push_back(token);
-    }
-    return tokens;
-}
-
-bool isCgiBlockPath(const ServerContext &server_context, std::vector<std::string> tokens)
-{
-    if (!server_context.getIsCgi())
-        return false;
-    CGIContext cgi_context = server_context.getCGIContext();
-    std::string exe = cgi_context.getDirective("extension");
-    size_t i = 0;
-    while (i < tokens.size())
-    {
-        // 拡張子を取得
-        std::string ext = tokens[i].substr(tokens[i].find_last_of(".") + 1);
-        if (ext == exe)
-            return true;
-        i++;
-    }
-    return false;
-}
 
 ParseUrlCgiResult parseCgiBlock(std::vector<std::string> tokens, const ServerContext &server_context, ParseUrlCgiResult &result)
 {
-    result.directory = "/cgi-bin/";
+    result.directory = tokens[0] + "/";
+
     CGIContext cgi_context = server_context.getCGIContext();
     std::string exe = cgi_context.getDirective("extension");
     result.command = cgi_context.getDirective("command");
@@ -75,19 +40,15 @@ ParseUrlCgiResult parseCgiBlock(std::vector<std::string> tokens, const ServerCon
     return result;
 }
 
-bool isCgiDir(std::vector<std::string> tokens)
-{
-    if (tokens.size() < 1)
-        return false;
-    if (tokens[0] == "cgi-bin")
-        return true;
-    return false;
-}
 
 ParseUrlCgiResult getCgiPath(std::vector<std::string> tokens, ServerContext &serverContext, ParseUrlCgiResult &result)
 {
-    result.directory = "/cgi-bin/";
-    LocationContext location_context = serverContext.getLocationContext("/cgi-bin/");
+    if (tokens.size()  < 1)
+        return result;
+    result.directory = "/" + tokens[0] + "/";
+    std::cout << "result.directory : " << result.directory << std::endl;
+    LocationContext location_context = serverContext.getLocationContext(result.directory);
+    std::string alias = location_context.getDirective("alias");
     result.command = location_context.getDirective("command");
     // ファイルが指定されていない場合
     bool isFile = false;
@@ -103,12 +64,13 @@ ParseUrlCgiResult getCgiPath(std::vector<std::string> tokens, ServerContext &ser
     if (!isFile)
     {
         result.file = location_context.getDirective("index");
-        result.fullpath = "./docs/cgi-bin/" + result.file;
+        result.fullpath += location_context.getDirective("alias") + "/";
+        result.fullpath +=  result.file;
         i = 1;
     }
     else
     {
-        i = 0;
+        i = 1;
         for (; i < tokens.size(); i++)
         {
             result.file += "/" + tokens[i];
@@ -116,8 +78,7 @@ ParseUrlCgiResult getCgiPath(std::vector<std::string> tokens, ServerContext &ser
                 break;
         }
         i++;
-        result.fullpath = "./docs/" + result.file;
-        // "//"を"/"に変換
+        result.fullpath = alias + result.file;
         result.fullpath = result.fullpath.replace(result.fullpath.find("//"), 2, "/");
     }
     // その以降の要素がパスインフォ
@@ -135,7 +96,7 @@ void Cgi::parseUrl(std::string url, ServerContext &serverContext)
     result.statusCode = 200;
     result.autoindex = 0;
     result.errorflag = 0;
-    std::vector<std::string> tokens = splitCgi(url, '?');
+    std::vector<std::string> tokens = split(url, '?');
     if (tokens.size() == 1)
     {
         result.query = "";
@@ -147,12 +108,11 @@ void Cgi::parseUrl(std::string url, ServerContext &serverContext)
     }
     tokens[0].erase(0, 1);
     // cgi-bin
-    std::vector<std::string> path_tokens = splitCgi(tokens[0], '/');
-    if (isCgiDir(path_tokens))
-    {
+    std::vector<std::string> path_tokens = split(tokens[0], '/');
+    std::cout << "path_tokens.[0] : " << path_tokens[0] << std::endl;
+    if (isCgiDir(path_tokens, serverContext))
         getCgiPath(path_tokens, serverContext, result);
-    }
-    else if (isCgiBlockPath(serverContext, path_tokens))
+    else if (isCgiBlockPath(path_tokens, serverContext))
         parseCgiBlock(path_tokens, serverContext, result);
     this->_parseUrlCgiResult = result;
 }
@@ -160,6 +120,7 @@ void Cgi::parseUrl(std::string url, ServerContext &serverContext)
 // Cgi::Cgi(HttpRequest& req, ParseUrlCgiResult &url) :
 Cgi::Cgi(HttpRequest &req, ServerContext &server_context) : _request(req)
 {
+    std::cout << "Cgi::Cgi" << std::endl;
     parseUrl(req.url, server_context);
     std::string exec = this->_parseUrlCgiResult.command;
     this->_executable = exec.c_str();

@@ -30,9 +30,8 @@ private:
     HttpRequest _httpRequest;
     RequestParser();
     Config *_config;
-    std::vector<std::string> split(const std::string &s, char delimiter);
     bool isCgiBlockPath(const ServerContext &server_context, std::vector<std::string> tokens);
-    bool isCgiDir(std::vector<std::string> tokens);
+    bool isCgiDir(std::vector<std::string> tokens, const ServerContext &server_context);
     HttpRequest _HttpRequest;
 };
 

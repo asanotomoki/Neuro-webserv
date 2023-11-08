@@ -13,14 +13,22 @@ Cgi::Cgi()
 {
 }
 
-
 ParseUrlCgiResult parseCgiBlock(std::vector<std::string> tokens, const ServerContext &server_context, ParseUrlCgiResult &result)
 {
     result.directory = tokens[0] + "/";
 
     CGIContext cgi_context = server_context.getCGIContext();
     std::string exe = cgi_context.getDirective("extension");
-    result.command = cgi_context.getDirective("command");
+    try
+    {
+        result.command = cgi_context.getDirective("command");
+    }
+    catch (std::exception &e)
+    {
+        // ない場合は実行ファイル
+        result.errorflag = 1;
+    }
+    std::string alias = cgi_context.getDirective("alias");
     size_t i = 0;
     while (i < tokens.size())
     {
@@ -30,7 +38,7 @@ ParseUrlCgiResult parseCgiBlock(std::vector<std::string> tokens, const ServerCon
             break;
         i++;
     }
-    result.fullpath = "./docs/cgi-bin" + result.file;
+    result.fullpath = alias + result.file;
     result.pathInfo = "";
     // それ以降がpathinfo
     for (size_t j = i + 1; j < tokens.size(); j++)
@@ -40,15 +48,22 @@ ParseUrlCgiResult parseCgiBlock(std::vector<std::string> tokens, const ServerCon
     return result;
 }
 
-
 ParseUrlCgiResult getCgiPath(std::vector<std::string> tokens, ServerContext &serverContext, ParseUrlCgiResult &result)
 {
-    if (tokens.size()  < 1)
+    if (tokens.size() < 1)
         return result;
     result.directory = "/" + tokens[0] + "/";
     LocationContext location_context = serverContext.getLocationContext(result.directory);
     std::string alias = location_context.getDirective("alias");
-    result.command = location_context.getDirective("command");
+    try
+    {
+        result.command = location_context.getDirective("command");
+    }
+    catch (std::exception &e)
+    {
+        // ない場合は実行ファイル
+        result.errorflag = 1;
+    }
     // ファイルが指定されていない場合
     bool isFile = false;
     size_t i = 0;
@@ -64,7 +79,7 @@ ParseUrlCgiResult getCgiPath(std::vector<std::string> tokens, ServerContext &ser
     {
         result.file = location_context.getDirective("index");
         result.fullpath += location_context.getDirective("alias") + "/";
-        result.fullpath +=  result.file;
+        result.fullpath += result.file;
         i = 1;
     }
     else
@@ -85,6 +100,10 @@ ParseUrlCgiResult getCgiPath(std::vector<std::string> tokens, ServerContext &ser
     for (size_t j = i; j < tokens.size(); j++)
     {
         result.pathInfo += "/" + tokens[j];
+    }
+    if (result.errorflag == 1)
+    {
+        result.command = result.fullpath;
     }
     return result;
 }
@@ -150,8 +169,8 @@ bool validatePath(std::string &path)
     else if (access(path.c_str(), F_OK) == -1) // ない場合は404
     {
         std::cerr << "access error" << std::endl;
-        //result.statusCode = 404;
-        //std::exit(1);
+        // result.statusCode = 404;
+        // std::exit(1);
     }
     return false;
 }

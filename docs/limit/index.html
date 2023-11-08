@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>LOL</title>
+</head>
+<body>
+    <section>
+	<h1>Limit Except Test</h1>
+    <h2>Only Get</h2>
+    <a href="./limit/get">get</a>
+    <form action="./limit/get" method="post">
+        <label>post form</label>
+        <input type="text" name="text">
+        <input type="submit" value="送信">
+    </form>
+    <label>delete button</label>
+    <button onclick="deleteResource('/get/')">delete</button>
+    </section>
+    <section>
+    <h2>Only Post</h2>
+    <a href="./limit/post">post</a>
+    <form action="./limit/post" method="post">
+        <label>post form</label>
+        <input type="text" name="text">
+        <input type="submit" value="送信">
+    </form>
+    <label>delete button</label>
+    <button onclick="deleteResource('/post/')">delete</button>
+    </section>
+    <section>
+    <h2>Only Delete</h2>
+    <a href="./limit/delete">delete</a>
+    <form action="./limit/delete" method="post">
+        <label>post form</label>
+        <input type="text" name="text" >
+        <input type="submit" value="送信">
+    </form>
+    <label>delete button</label>
+    <button onclick="deleteResource('/delete/')">delete</button>
+
+
+
+</body>
+<script>
+    function deleteResource(url) {
+        console.log('http://localhost:2000/limit' + url);
+        fetch('http://localhost:2000/limit' + url, {
+            method: 'DELETE',
+        })
+        .then(response => {
+            if (response.ok) {
+                return response.json();
+            } else {
+                return response.text();
+            }
+        })
+        .then(data =>  {
+            if (typeof data === 'string') {
+                // レスポンスがHTML（エラーページ）の場合、その内容でページを上書きします。
+                document.documentElement.innerHTML = data;
+            } else {
+                console.log(data);  // JSONデータをそのまま出力
+            }
+        })
+        .catch(error => console.error('An error occurred:', error));
+    }
+</script>
+</html>

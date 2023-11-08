@@ -11,7 +11,6 @@ ConfigError::ConfigError(const ErrorType errorType, const std::string& errorWord
 		_fileInfo = " in " + filepath + ": " + itostr(lineNumber);
 	else if (!filepath.empty())
 		_fileInfo = " in " + filepath;
-	std::cerr << "ConfigError :: " << _fileInfo << std::endl;
 	setErrorMessage(errorType, errorWord);
 }
 
@@ -44,9 +43,6 @@ void ConfigError::setErrorMessage(const ErrorType errorType, const std::string& 
 		case INVALID_PATH:
 			_errorMessage += "invalid path \"" + errorWord + "\"" + _fileInfo;
 			break;
-		case DUPLICATE_PORT:
-			_errorMessage += "duplicate port \"" + errorWord + "\"" + _fileInfo;
-			break;
 		case NEED_ALIAS:
 			_errorMessage += "need alias directive" + _fileInfo;
 			break;
@@ -57,7 +53,7 @@ void ConfigError::setErrorMessage(const ErrorType errorType, const std::string& 
 			_errorMessage += "invalid return directive" + _fileInfo;
 			break;
 		case DUPLICATE_PORT_AND_HOST:
-			_errorMessage += "duplicate port and host \"" + errorWord + "\"" + _fileInfo;
+			_errorMessage += "duplicate port and host";
 			break;
 		case SYSTEM_ERROR:
 			_errorMessage += "system call error \"" + errorWord + ": " + strerror(errno) + "\"" + _fileInfo;

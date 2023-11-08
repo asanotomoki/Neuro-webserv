@@ -56,6 +56,9 @@ void ConfigError::setErrorMessage(const ErrorType errorType, const std::string& 
 		case INVALID_RETURN:
 			_errorMessage += "invalid return directive" + _fileInfo;
 			break;
+		case DUPLICATE_PORT_AND_HOST:
+			_errorMessage += "duplicate port and host \"" + errorWord + "\"" + _fileInfo;
+			break;
 		case SYSTEM_ERROR:
 			_errorMessage += "system call error \"" + errorWord + ": " + strerror(errno) + "\"" + _fileInfo;
 			break;

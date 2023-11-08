@@ -17,6 +17,7 @@ class ServerContext
         void setMaxBodySize(const std::string& max_body_size);
         void setIsCgi(bool is_cgi);
         void setErrorPage(int status_code, const std::string& filename);
+        void setPortAndHostVec();
         const std::string& getListen() const;
         const std::string& getServerName() const;
         const std::string& getMaxBodySize() const;
@@ -31,6 +32,7 @@ class ServerContext
 		const LocationContext& getLocationContext(const std::string& path) const;
         const CGIContext& getCGIContext() const; 
         std::string getReturnPath(const std::string& path) const;
+        const std::vector<std::pair<std::string, std::string> >& getPortAndHostVec() const;
         void verifyReturnLocations();
         void addPathPair(const std::pair<std::string, std::string>& path_pair);
         void addServerPathPair(const std::pair<std::string, std::string>& path_pair);
@@ -42,7 +44,7 @@ class ServerContext
 
     private:
         std::string _listen;
-        std::string _serverName;
+        std::vector<std::string> _serverNames;
         std::string _maxBodySize;
         bool _is_Cgi;
         std::map<int, std::string> _errorPages;
@@ -52,6 +54,7 @@ class ServerContext
         std::string::size_type getMaxPrefixLength(const std::string& str1, const std::string& str2) const;
         // returnディレクティブの値を保持
         std::map<std::string, std::string> _returnLocations;
+        std::vector<std::pair<std::string, std::string> > _portAndHostVec;
 
         // default values
         static const std::string DEFAULT_LISTEN;

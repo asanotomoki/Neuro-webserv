@@ -53,7 +53,7 @@ std::string StaticFileReader::readFile(std::string fullpath, LocationContext loc
                 return response;
             }
         }
-        return readErrorFile(404, serverContext, "Not Found");
+        throw std::runtime_error("file not found");
     }
     return std::string(std::istreambuf_iterator<char>(file),
                        std::istreambuf_iterator<char>());

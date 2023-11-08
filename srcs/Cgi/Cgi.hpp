@@ -16,6 +16,7 @@ struct CgiResult
 };
 
 
+
 struct ParseUrlCgiResult
 {
     std::string file;
@@ -42,11 +43,13 @@ class Cgi
 		ParseUrlCgiResult _parseUrlCgiResult;
 		int pipe_stdin[2];
 		std::vector<std::string> _args;
+		std::string _method;
 
 		
 		char** mapToChar(const std::map<std::string, std::string>& map);
 		char** vectorToChar(const std::vector<std::string>& vector);
-
+		ParseUrlCgiResult getCgiPath(std::vector<std::string> tokens, ServerContext &serverContext, ParseUrlCgiResult &result);
+		ParseUrlCgiResult parseCgiBlock(std::vector<std::string> tokens, const ServerContext &server_context, ParseUrlCgiResult &result);
 	public:
 		//Cgi(HttpRequest &request, std::string executable, ParseUrlResult &url);
 		Cgi();

@@ -10,10 +10,6 @@ import os
 request_method = os.environ['REQUEST_METHOD']
 if request_method == "POST":
 	body = sys.stdin.read(int(os.environ['CONTENT_LENGTH']))
-<<<<<<< HEAD
-
-=======
->>>>>>> other/main
 path_info = os.environ['PATH_INFO']
 
 print ("Status: 200 OK")

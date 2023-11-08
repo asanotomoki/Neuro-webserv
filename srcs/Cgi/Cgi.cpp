@@ -13,7 +13,7 @@ Cgi::Cgi()
 {
 }
 
-ParseUrlCgiResult parseCgiBlock(std::vector<std::string> tokens, const ServerContext &server_context, ParseUrlCgiResult &result)
+ParseUrlCgiResult Cgi::parseCgiBlock(std::vector<std::string> tokens, const ServerContext &server_context, ParseUrlCgiResult &result)
 {
     result.directory = tokens[0] + "/";
 
@@ -48,12 +48,18 @@ ParseUrlCgiResult parseCgiBlock(std::vector<std::string> tokens, const ServerCon
     return result;
 }
 
-ParseUrlCgiResult getCgiPath(std::vector<std::string> tokens, ServerContext &serverContext, ParseUrlCgiResult &result)
+ParseUrlCgiResult Cgi::getCgiPath(std::vector<std::string> tokens, ServerContext &serverContext, ParseUrlCgiResult &result)
 {
     if (tokens.size() < 1)
         return result;
     result.directory = "/" + tokens[0] + "/";
     LocationContext location_context = serverContext.getLocationContext(result.directory);
+    std::cout << "method : " << _method << std::endl;
+    if (!location_context.isAllowedMethod(_method))
+    {
+        result.statusCode = 405;
+        return result;
+    }
     std::string alias = location_context.getDirective("alias");
     try
     {
@@ -77,7 +83,11 @@ ParseUrlCgiResult getCgiPath(std::vector<std::string> tokens, ServerContext &ser
     }
     if (!isFile)
     {
-        result.file = location_context.getDirective("index");
+        try {
+            result.file = location_context.getDirective("index");
+        } catch (std::exception& e) {
+            result.file = "";
+        }
         result.fullpath += location_context.getDirective("alias") + "/";
         result.fullpath += result.file;
         i = 1;
@@ -135,7 +145,7 @@ void Cgi::parseUrl(std::string url, ServerContext &serverContext)
 }
 
 // Cgi::Cgi(HttpRequest& req, ParseUrlCgiResult &url) :
-Cgi::Cgi(HttpRequest &req, ServerContext &server_context) : _request(req)
+Cgi::Cgi(HttpRequest &req, ServerContext &server_context) : _request(req), _method(req.method)
 {
 
     parseUrl(req.url, server_context);
@@ -180,11 +190,17 @@ void Cgi::execCGI(CgiResult &result)
     int pipe_fd[2];
     char **env = mapToChar(this->_env);
     char **args = vectorToChar(this->_args);
+    if (this->_parseUrlCgiResult.statusCode == 405)
+    {
+        result.statusCode = 405;
+        return;
+    }
     if (!validatePath(_parseUrlCgiResult.fullpath))
     {
         result.statusCode = 404;
         return;
     }
+
     if (pipe(pipe_fd) < 0)
     {
         std::cerr << "pipe error" << std::endl;

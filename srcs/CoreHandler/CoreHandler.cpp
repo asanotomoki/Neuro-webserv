@@ -20,20 +20,21 @@ CoreHandler::CoreHandler(const ServerContext &serverContext) : _serverContext(co
 {
 }
 
-std::string redirectResponse(std::string location)
+std::string redirectResponse(const std::string& location, const std::string& fullpath)
 {
 	std::string response;
-	if (location[0] == '/')
+	if (fullpath[0] == '/')
 	{
 		response = "HTTP/1.1 302 Moved Temporarily\r\n";
 		response += "Location: " + location + "\r\n";
 		response += "\r\n";
 	}
-	else
+	else {
 		// リダイレクト先が外部のURLの場合
 		response = "HTTP/1.1 302 Moved Temporarily\r\n";
-	response += "Location: http://" + location + "\r\n";
-	response += "\r\n";
+		response += "Location: http://" + location + "\r\n";
+		response += "\r\n";
+	}
 	return response;
 }
 
@@ -173,12 +174,15 @@ std::string CoreHandler::processRequest(HttpRequest httpRequest,
 	ParseUrlResult parseUrlResult = parseUrl(httpRequest.url);
 	if (parseUrlResult.statusCode >= 300 && parseUrlResult.statusCode < 400)
 	{
+		std::cout << "FULLPATH: " << parseUrlResult.fullpath << std::endl;
 		std::string location;
-		if (parseUrlResult.fullpath[0] == '/')
+		if (parseUrlResult.fullpath[0] == '/') {
 			location = "http://" + hostPort.first + ":" + hostPort.second + parseUrlResult.fullpath;
+			std::cout << "LOCATION: " << location << std::endl;
+		}
 		else
 			location = parseUrlResult.fullpath;
-		return redirectResponse(location);
+		return redirectResponse(location, parseUrlResult.fullpath);
 	}
 	else if (parseUrlResult.statusCode != 200)
 		return errorResponse(parseUrlResult.statusCode, parseUrlResult.message, _serverContext);

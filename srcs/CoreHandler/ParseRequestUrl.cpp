@@ -144,12 +144,14 @@ ParseUrlResult CoreHandler::parseUrl(std::string url)
 	// cgi-bin
 	std::vector<std::string> path_tokens = split(tokens[0], '/');
 	result.directory = "/" + path_tokens[0] + "/";
+	std::cout << "directory1: " << result.directory << std::endl;
 	for (size_t i = 1; i < path_tokens.size(); i++) {
 		if (!isFile(path_tokens[i]))
 			result.directory += path_tokens[i] + "/";
 		else
 			break ;
 	}
+	std::cout << "directory2: " << result.directory << std::endl;
 	if (isFile(result.directory)) {
 		result.file = result.directory.substr(1, result.directory.size());
 		result.directory = "/";
@@ -175,11 +177,11 @@ ParseUrlResult CoreHandler::parseUrl(std::string url)
     if (!redirectPath.empty()) {
 		result.statusCode = 302;
 		result.fullpath = redirectPath;
-		size_t i = 1;
-		while (i < path_tokens.size())
-		{
-			result.fullpath += path_tokens[i++] + "/";
-		}
+		// size_t i = 1;
+		// while (i < path_tokens.size())
+		// {
+		// 	result.fullpath += path_tokens[i++] + "/";
+		// }
 		return result;
 	}
 	if (path_tokens.size() == 1 && isFile(path_tokens[0])) {
@@ -194,6 +196,7 @@ ParseUrlResult CoreHandler::parseUrl(std::string url)
 		result.message = "Not Found";
 		return result;
 	}
+
 	std::string alias = locationContext.getDirective("alias");
 
 	// fullpathの最後のスラッシュを削除

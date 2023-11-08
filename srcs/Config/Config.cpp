@@ -11,7 +11,7 @@ Config::Config(const std::string& filepath)
 {
     ConfigParser parser(*this);
     parser.parseFile(filepath);
-    verifyConfig();
+    verifyPortAndHost();
 }
 
 Config::~Config()
@@ -20,38 +20,41 @@ Config::~Config()
 
 const std::vector<std::string> Config::getPorts()
 {
-	std::vector<std::string> ports;
+    // _portAndHostVecAllからportのみを取り出す
+    // 重複がある場合は無視する
+    std::vector<std::string> ports;
 
-	for (std::map<std::string, std::vector<ServerContext> >::const_iterator it = getServers().begin();
-			it != getServers().end(); ++it) {
-		for (std::vector<ServerContext>::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2)
-			ports.push_back(it2->getListen());
-	}
-	return ports;
-}
-
-void Config::addServerContext(const ServerContext& server)
-{
-    std::string listen = server.getListen();
-    std::map<std::string, std::vector<ServerContext> >::iterator
-        port_found = _servers.find(listen);
-
-    if (port_found != _servers.end()) {
-        if (server.getServerName().empty()) {
-            //exception
-        }
-        std::vector<ServerContext> &servers = port_found->second;
-        for (size_t i = 0; i < servers.size(); i++) {
-            if (servers.at(i).getServerName() == server.getServerName()) {
-                //exception
+    for (size_t i = 0; i < _portAndHostVecAll.size(); ++i) {
+        std::string port = _portAndHostVecAll[i].first;
+        bool isDuplicate = false;
+        for (size_t j = 0; j < ports.size(); ++j) {
+            if (port == ports[j]) {
+                isDuplicate = true;
+                break;
             }
         }
-        servers.push_back(server);
+        if (!isDuplicate)
+            ports.push_back(port);
+    } 
+    return ports;
+}
+
+void Config::addServerContext(const std::pair<std::string, std::string> portAndHost, const ServerContext& server)
+{
+    _servers.insert(std::make_pair(portAndHost, server));
+}
+
+void Config::addPortAndHostVecAll(std::pair<std::string, std::string> portAndHost)
+{
+    std::string first = portAndHost.first;
+    std::string second = portAndHost.second;
+    // firstとsecondが共に一致するpairが既に存在する場合、例外をスロー
+    for (size_t i = 0; i < _portAndHostVecAll.size(); ++i) {
+        if (_portAndHostVecAll[i].first == first && _portAndHostVecAll[i].second == second) {
+            throw ConfigError(DUPLICATE_PORT_AND_HOST, first, second);
+        }
     }
-    else {
-        std::vector<ServerContext> new_servers(1, server);
-        _servers.insert(std::make_pair(listen, new_servers));
-    }
+    _portAndHostVecAll.push_back(portAndHost);
 }
 
 void Config::addDirective(const std::string& directive, const std::string& value,
@@ -64,48 +67,23 @@ void Config::addDirective(const std::string& directive, const std::string& value
     _directives.insert(std::make_pair(directive, value));
 }
 
-const std::map<std::string, std::vector<ServerContext> >& Config::getServers() const
-{
-    return _servers;
-}
-
 const ServerContext& Config::getServerContext(const std::string& port, const std::string& host) const
 {
-    // ポート番号が一致するServerブロックをすべて取得する
-    const std::map<std::string, std::vector<ServerContext> >& servers = getServers();
-    const std::vector<ServerContext>* serverContextsPtr;
-    if (servers.find(port) == servers.end()) {
-        std::cerr<<  "getServerContext :: port not found! -> " << port <<  std::endl;
-        serverContextsPtr = &servers.begin()->second;
-    } else {
-        serverContextsPtr = &servers.at(port);
-    }
-    const std::vector<ServerContext>& serverContexts = *serverContextsPtr;
-    // server_nameがhostヘッダーと一致する場合、そのserverブロックを返す
-    for (std::vector<ServerContext>::const_iterator it = serverContexts.begin(); it != serverContexts.end(); ++it) {
-        if (it->getServerName() == host) {
-            std::cerr << "getServerContext :: server_name found! -> " << it->getServerName() << std::endl;
-            return *it;
+    // portとhostのペアから、一致するServerContextを返す
+    std::pair <std::string, std::string> port_host_pair = std::make_pair(port, host);
+    std::map<std::pair<std::string, std::string>, ServerContext >::const_iterator
+        it = _servers.find(port_host_pair);
+    // 一致するServerContextがない場合は、ポートから一致するServerContextを返す
+    if (it == _servers.end()) {
+        for (it = _servers.begin(); it != _servers.end(); ++it) {
+            if (it->first.first == port)
+                return it->second;
         }
     }
-    return serverContexts.at(0);
+    return it->second;
 }
 
-void Config::verifyConfig()
+void Config::verifyPortAndHost()
 {
-    // 各サーバーのポートを確認
-    // ポートが被っていないか確認
-    // ポートが被っている場合に、サーバーネームが異なっているか確認
-    // サーバーネームが同じorサーバーネームがない場合は例外を投げる
-    for (std::map<std::string, std::vector<ServerContext> >::const_iterator it = getServers().begin();
-            it != getServers().end(); ++it) {
-        std::vector<ServerContext> servers = it->second;
-        for (size_t i = 0; i < servers.size(); i++) {
-            for (size_t j = i + 1; j < servers.size(); j++) {
-                if (servers.at(i).getServerName() == servers.at(j).getServerName()) {
-                    throw ConfigError(DUPLICATE_PORT, servers.at(i).getServerName());
-                }
-            }
-        }
-    }
+    
 }

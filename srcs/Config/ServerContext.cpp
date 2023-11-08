@@ -6,7 +6,7 @@
 
 ServerContext::ServerContext():
 	_listen(DEFAULT_LISTEN),
-	_serverName(),
+	_serverNames(),
 	_maxBodySize(DEFAULT_MAX_BODY_SIZE),
 	_is_Cgi(false),
 	_errorPages(),
@@ -29,7 +29,7 @@ void ServerContext::setListen(const std::string& listen)
 
 void ServerContext::setServerName(const std::string& server_name)
 {
-	_serverName = server_name;
+	_serverNames.push_back(server_name);
 }
 
 void ServerContext::setMaxBodySize(const std::string& max_body_size)
@@ -48,14 +48,19 @@ void ServerContext::setErrorPage(int status_code, const std::string& filename)
 	_errorPages.insert(std::make_pair(status_code, filename));
 }
 
+void ServerContext::setPortAndHostVec()
+{
+	if (_serverNames.empty())
+		_serverNames.push_back("localhost");
+	for (std::vector<std::string>::const_iterator it = _serverNames.begin(); it != _serverNames.end(); ++it)
+	{
+		_portAndHostVec.push_back(std::make_pair(_listen, *it));
+	}
+}
+
 const std::string& ServerContext::getListen() const
 {
 	return _listen;
-}
-
-const std::string& ServerContext::getServerName() const
-{
-	return _serverName;
 }
 
 const std::string& ServerContext::getMaxBodySize() const
@@ -75,6 +80,11 @@ std::string ServerContext::getErrorPage(int status_code) const
 	if (it == _errorPages.end())
 		return "";
 	return it->second;
+}
+
+const std::vector<std::pair<std::string, std::string> >& ServerContext::getPortAndHostVec() const
+{
+	return _portAndHostVec;
 }
 
 void ServerContext::addLocationContext(LocationContext& location)

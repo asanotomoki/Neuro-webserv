@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>autoIndexTest</title>
+  </head>
+  <body>
+    <table>
+      <tr>
+        <th>AutoIndex</th>
+        <th>ON</th>
+        <th>OFF</th>
+        <th>なし</th>
+      </tr>
+      <tr>
+        <th>
+          <label>Config : indexあり</label><br />
+          <label>ファイル : あり</label>
+        </th>
+        <td><a href="./autoindex/autoindex_on">ファイル表示</a></td>
+        <td><a href="./autoindex/autoindex_off/">ファイル表示</a></td>
+        <td><a href="./autoindex/autoindex_none/">ファイル表示</a></td>
+      </tr>
+      <tr>
+        <th>
+          <label>Config : indexあり</label><br />
+          <label>ファイル : なし</label>
+        </th>
+        <td><a href="./autoindex/autoindex_on/noneFile">ディレクトリリスト</a></td>
+        <td><a href="./autoindex/autoindex_off/noneFile/">404</a></td>
+        <td><a href="./autoindex/autoindex_none/noneFile/">404</a></td>
+      </tr>
+      <tr>
+        <th>
+          <label>Config : indexなし</label>
+        </th>
+        <td><a href="./autoindex/autoindex_on/noneIndex">ディレクトリスト</a></td>
+        <td><a href="./autoindex/autoindex_off/noneIndex/">403</a></td>
+        <td>config Error</td>
+      </tr>
+    </table>
+  </body>
+  <style>
+    table {
+      border-collapse: collapse;
+    }
+    th,
+    td {
+      border: 1px solid #333;
+      text-align: center;
+      padding: 4px 8px;
+    }
+    th {
+      text-align: left;
+    }
+  </style>
+</html>

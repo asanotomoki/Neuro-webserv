@@ -40,7 +40,8 @@ std::string redirectResponse(std::string location)
 }
 
 std::string successResponse(std::string fileContent, std::string contentType,
-							const std::string &statusCode, std::string postLocation = "")
+							const std::string &statusCode, std::string postLocation = "",
+							std::string sessionId)
 {
 	std::string message = "OK";
 	if (statusCode == "201")
@@ -54,6 +55,7 @@ std::string successResponse(std::string fileContent, std::string contentType,
 	std::string response = "HTTP/1.1 " + statusCode + " " + message + "\r\n";
 	response += "Content-Type: " + contentType + "; charset=UTF-8\r\n";
 	response += "Content-Length: " + std::to_string(fileContent.size()) + "\r\n";
+    response += "Set-Cookie: sessionId=" + sessionId + "; Path=/; HttpOnly\r\n";
 	if (postLocation != "")
 		response += "Location: " + postLocation + "\r\n";
 	response += "\r\n";
@@ -61,10 +63,10 @@ std::string successResponse(std::string fileContent, std::string contentType,
 	return response;
 }
 
-std::string errorResponse(int statusCode, std::string message, const ServerContext &serverContext)
+std::string errorResponse(int statusCode, std::string message, std::string sessionId, const ServerContext &serverContext)
 {
 	StaticFileReader fileReader;
-	std::string response = fileReader.readErrorFile(statusCode, serverContext, message);
+	std::string response = fileReader.readErrorFile(statusCode, serverContext, message, sessionId);
 	return response;
 }
 
@@ -109,7 +111,7 @@ std::string getContentType(const std::string &filepath)
 }
 
 std::string CoreHandler::getMethod(const std::string &fullpath, const LocationContext &locationContext,
-								   const ParseUrlResult &result)
+								   const ParseUrlResult &result, const std::string &sessionId)
 {
 	// 静的ファイルを提供する場合
 	StaticFileReader fileReader;
@@ -122,7 +124,7 @@ std::string CoreHandler::getMethod(const std::string &fullpath, const LocationCo
 		fileContent = fileReader.readFile(fullpath, locationContext, _serverContext, result);
 	} catch (std::exception &e)
 	{
-		return errorResponse(404, "Not Found", _serverContext);
+		return errorResponse(404, "Not Found", sessionId, _serverContext);
 	}
 	std::string contentType = getContentType(fullpath);
 
@@ -131,25 +133,25 @@ std::string CoreHandler::getMethod(const std::string &fullpath, const LocationCo
 	return response;
 }
 
-std::string CoreHandler::postMethod(const std::string &body, const std::string &url)
+std::string CoreHandler::postMethod(const std::string &body, const std::string &url, const std::string &sessionId)
 {
 	DataProcessor dataProcessor;
 	ProcessResult result = dataProcessor.processPostData(body, url, _serverContext);
 	if (result.statusCode != 201)
-		return errorResponse(result.statusCode, result.message, _serverContext);
-	std::string response = successResponse(result.message, "text/html", "201", result.location);
+		return errorResponse(result.statusCode, result.message, sessionId, _serverContext);
+	std::string response = successResponse(result.message, "text/html", "201", result.location, sessionId);
 	return response;
 }
 
-std::string CoreHandler::deleteMethod(const std::string &fullpath)
+std::string CoreHandler::deleteMethod(const std::string &fullpath, const std::string &sessionId)
 {
 	if (std::remove(fullpath.c_str()) != 0)
 	{
 		std::cerr << "ERROR: File not found or delete failed.\n";
 		std::cout << "DELETE FAILED\n";
-		return errorResponse(404, "Not Found", _serverContext);
+		return errorResponse(404, "Not Found", sessionId, _serverContext);
 	}
-	std::string response = successResponse("DELETE SUCCESS", "text/html", "204", fullpath);
+	std::string response = successResponse("DELETE SUCCESS", "text/html", "204", fullpath, sessionId);
 	return response;
 }
 
@@ -163,7 +165,8 @@ int CoreHandler::validatePath(std::string &path)
 }
 
 std::string CoreHandler::processRequest(HttpRequest httpRequest,
-										const std::pair<std::string, std::string> &hostPort)
+										const std::pair<std::string, std::string> &hostPort,
+										const std::string& sessionId)
 {
 
 	// httpRequest.urlが"/"で終わっていない場合に、"/"を追加
@@ -183,7 +186,7 @@ std::string CoreHandler::processRequest(HttpRequest httpRequest,
 		return redirectResponse(location);
 	}
 	else if (parseUrlResult.statusCode != 200)
-		return errorResponse(parseUrlResult.statusCode, parseUrlResult.message, _serverContext);
+		return errorResponse(parseUrlResult.statusCode, parseUrlResult.message, sessionId, _serverContext);
 
 	LocationContext locationContext;
 	try
@@ -192,32 +195,32 @@ std::string CoreHandler::processRequest(HttpRequest httpRequest,
 	}
 	catch (std::exception &e)
 	{
-		return errorResponse(404, "Not found", _serverContext);
+		return errorResponse(404, "Not found", sessionId, _serverContext);
 	}
 	if (httpRequest.method == "GET")
 	{
 		if (!locationContext.isAllowedMethod("GET"))
-			return errorResponse(405, "Method Not Allowed", _serverContext);
+			return errorResponse(405, "Method Not Allowed", sessionId, _serverContext);
 		if (validatePath(parseUrlResult.fullpath) == -1 && parseUrlResult.autoindex == 0)
-			return errorResponse(404, "Not found", _serverContext);
-		return getMethod(parseUrlResult.fullpath, locationContext, parseUrlResult);
+			return errorResponse(404, "Not found", sessionId, _serverContext);
+		return getMethod(parseUrlResult.fullpath, locationContext, parseUrlResult, sessionId);
 	}
 	else if (httpRequest.method == "POST")
 	{
 		if (!locationContext.isAllowedMethod("POST"))
 		{
-			return errorResponse(405, "Method Not Allowed", _serverContext);
+			return errorResponse(405, "Method Not Allowed", sessionId, _serverContext);
 		}
-		return postMethod(httpRequest.body, parseUrlResult.directory);
+		return postMethod(httpRequest.body, parseUrlResult.directory, sessionId);
 	}
 	else if (httpRequest.method == "DELETE")
 	{
 		if (!locationContext.isAllowedMethod("DELETE"))
-			return errorResponse(405, "Method Not Allowed", _serverContext);
-		return deleteMethod(parseUrlResult.fullpath);
+			return errorResponse(405, "Method Not Allowed", sessionId, _serverContext);
+		return deleteMethod(parseUrlResult.fullpath, sessionId);
 	}
 	std::cerr << "ERROR: Invalid method." << std::endl;
-	return errorResponse(405, "Method Not Allowed", _serverContext);
+	return errorResponse(405, "Method Not Allowed", sessionId, _serverContext);
 }
 
 CoreHandler::~CoreHandler()

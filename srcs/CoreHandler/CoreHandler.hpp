@@ -39,9 +39,9 @@ private:
     ParseUrlResult parseUrl(std::string url);
     ServerContext _serverContext;
     std::string getMethod(const std::string &fullpath, const LocationContext &locationContext,
-                            const ParseUrlResult& result);
-    std::string postMethod(const std::string& body, const std::string& url);
-    std::string deleteMethod(const std::string& fullpath);
+                            const ParseUrlResult& result, const std::string& sessionId);
+    std::string postMethod(const std::string& body, const std::string& url, const std::string& sessionId);
+    std::string deleteMethod(const std::string& fullpath, const std::string& sessionId);
     std::string getFile(std::vector<std::string> tokens, LocationContext &locationContext, ParseUrlResult &result);
     int isFile(const std::string& token, std::string fullpath = "");
     int validatePath(std::string& path);
@@ -52,7 +52,8 @@ private:
 public:
     CoreHandler(const ServerContext &serverContext);
     ~CoreHandler();
-    std::string processRequest(HttpRequest httpRequest, const std::pair<std::string, std::string> &hostPort);
+    std::string processRequest(HttpRequest httpRequest, const std::pair<std::string, std::string> &hostPort,
+                                const std::string& sessionId);
 };
 
 #endif

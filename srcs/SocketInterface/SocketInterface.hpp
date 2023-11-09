@@ -2,28 +2,29 @@
 #define SOCKETINTERFACE_HPP
 
 #include "Config.hpp"
-#include <vector>
-#include <map>
-#include <string>
-#include <sys/poll.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <unistd.h>
-#include <cstring>
-#include <iostream>
-#include <fcntl.h>
 #include "ServerContext.hpp"
 #include "Cgi.hpp"
 #include "RequestParser.hpp"
 #include "CgiParser.hpp"
 #include "utils.hpp"
+#include <vector>
+#include <map>
+#include <string>
+#include <cstring>
+#include <cstdlib>
+#include <iostream>
 #include <ctime>
 #include <fstream>
 #include <iterator>
 #include <dirent.h>
+#include <sys/poll.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <unistd.h>
+#include <fcntl.h>
+
 #define TIMEOUT 15
 #define MAX_LOCAL_REDIRECT_COUNT 10
-
 
 enum State
 {
@@ -60,6 +61,7 @@ struct RequestBuffer
     std::pair<std::string, std::string> hostAndPort;
     bool isClosed;
     std::time_t lastAccessTime;
+    std::string sessionId;
 };
 
 

@@ -86,9 +86,25 @@ void SocketInterface::setupPoll()
 	}
 }
 
+std::string generateSessionId(const int length) {
+    static const char alphanum[] =
+        "0123456789"
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        "abcdefghijklmnopqrstuvwxyz";
+
+    std::string sessionId;
+    for (int i = 0; i < length; ++i) {
+        sessionId += alphanum[std::rand() % (sizeof(alphanum) - 1)];
+    }
+
+    return sessionId;
+}
+
 RequestBuffer initRequestBuffer(int fd)
 {
 	RequestBuffer client;
+	std::srand(static_cast<unsigned int>(std::time(0))); // 乱数の初期化 
+
 	client.clientFd = fd;
 	client.cgiFd = -1;
 	client.cgiPid = -1;
@@ -96,6 +112,7 @@ RequestBuffer initRequestBuffer(int fd)
 	client.isRequestFinished = false;
 	client.request = "";
 	client.response = "";
+	client.sessionId = generateSessionId(5);
 	return client;
 }
 
@@ -364,7 +381,7 @@ void SocketInterface::execCoreHandler(pollfd &pollFd, RequestBuffer &client)
 {
 	CoreHandler coreHandler(_config->getServerContext(client.hostAndPort.second, client.hostAndPort.first));
 	client.lastAccessTime = getNowTime();
-	client.response = coreHandler.processRequest(client.httpRequest, client.hostAndPort);
+	client.response = coreHandler.processRequest(client.httpRequest, client.hostAndPort, client.sessionId);
 	pollFd.events = POLLOUT;
 	client.state = WRITE_RESPONSE;
 }

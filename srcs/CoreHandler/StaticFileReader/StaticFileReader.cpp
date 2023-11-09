@@ -15,7 +15,9 @@ bool isFileExist(const std::string& name) {
     return file.is_open();
 }
 
-std::string StaticFileReader::readErrorFile(int statusCode, const ServerContext& serverContext, std::string message) {
+std::string StaticFileReader::readErrorFile(int statusCode, const ServerContext& serverContext, 
+                                            std::string message, std::string sessionId)
+{
 
     std::string filePath = serverContext.getErrorPage(statusCode);
     if (!isFileExist(filePath)) {
@@ -27,6 +29,7 @@ std::string StaticFileReader::readErrorFile(int statusCode, const ServerContext&
     std::string response = "HTTP/1.1 " + std::to_string(statusCode) + " " + message + "\r\n";
 	response += "Content-Type: text/html\r\n";
 	response += "Content-Length: " + std::to_string(fileContent.size()) + "\r\n";
+    response += "Set-Cookie: sessionId=" + sessionId + "; Path=/; HttpOnly\r\n";
 	response += "\r\n";
     response += fileContent;
     return response;

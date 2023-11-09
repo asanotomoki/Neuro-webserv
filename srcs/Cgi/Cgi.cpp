@@ -257,6 +257,7 @@ void Cgi::initEnv(HttpRequest &req)
     env["SERVER_SOFTWARE"] = "webserv";
     env["SCRIPT_NAME"] = _parseUrlCgiResult.fullpath;
     env["QUERY_STRING"] = _parseUrlCgiResult.query;
+    env["Cookie"] = req.headers.find("Cookie") != req.headers.end() ? req.headers["Cookie"] : "";
     this->_env = env;
 }
 

@@ -177,9 +177,9 @@ ParseUrlResult CoreHandler::parseUrl(std::string url)
 		result.statusCode = 302;
 		result.fullpath = redirectPath;
 		std::cout << "redirectPath: " << result.fullpath << std::endl;
-		while (i < path_tokens.size())
-		{
-			result.fullpath +=  "/" + path_tokens[i++];
+		while (i < path_tokens.size()) {
+			result.fullpath += path_tokens[i++];
+			result.fullpath += "/";
 		}
 		return result;
 	}

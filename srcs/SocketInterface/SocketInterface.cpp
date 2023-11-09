@@ -331,7 +331,8 @@ void SocketInterface::execParseRequest(pollfd &pollfd, RequestBuffer &client, st
 		client.isRequestFinished = false;
 		client.request = "";
 		pollfd.events = POLLOUT;
-		_sessionId = generateSessionId(5);
+		if (_sessionId.empty())
+			_sessionId = generateSessionId(10);
 	}
 	else
 	{

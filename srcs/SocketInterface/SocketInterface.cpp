@@ -105,10 +105,7 @@ std::string SocketInterface::getErrorPage(int status, const std::pair<std::strin
 	std::string errorPage = serverContext.getErrorPage(status);
 
 	if (errorPage == "")
-	{
-		std::cout << " default Error Page " << std::endl;
 		return (default_error_page(status));
-	}
 	else
 	{
 		std::cout << " original Error Page " << std::endl;

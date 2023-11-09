@@ -144,7 +144,8 @@ ParseUrlResult CoreHandler::parseUrl(std::string url)
 	// cgi-bin
 	std::vector<std::string> path_tokens = split(tokens[0], '/');
 	result.directory = "/" + path_tokens[0] + "/";
-	for (size_t i = 1; i < path_tokens.size(); i++) {
+	size_t i = 1;
+	for (; i < path_tokens.size(); i++) {
 		if (!isFile(path_tokens[i]))
 			result.directory += path_tokens[i] + "/";
 		else
@@ -175,10 +176,10 @@ ParseUrlResult CoreHandler::parseUrl(std::string url)
     if (!redirectPath.empty()) {
 		result.statusCode = 302;
 		result.fullpath = redirectPath;
-		size_t i = 1;
+		std::cout << "redirectPath: " << result.fullpath << std::endl;
 		while (i < path_tokens.size())
 		{
-			result.fullpath += path_tokens[i++] + "/";
+			result.fullpath +=  "/" + path_tokens[i++];
 		}
 		return result;
 	}

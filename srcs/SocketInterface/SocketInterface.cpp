@@ -108,7 +108,6 @@ std::string SocketInterface::getErrorPage(int status, const std::pair<std::strin
 		return (default_error_page(status));
 	else
 	{
-		std::cout << " original Error Page " << std::endl;
 		std::ifstream file(errorPage, std::ios::binary);
 		std::string page = std::string(std::istreambuf_iterator<char>(file),
 									   std::istreambuf_iterator<char>());

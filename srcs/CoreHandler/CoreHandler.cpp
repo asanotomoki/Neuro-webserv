@@ -175,13 +175,11 @@ std::string CoreHandler::processRequest(HttpRequest httpRequest,
 	ParseUrlResult parseUrlResult = parseUrl(httpRequest.url);
 	if (parseUrlResult.statusCode >= 300 && parseUrlResult.statusCode < 400)
 	{
-		std::cout << "REDIRECT\n";
 		std::string location;
 		if (parseUrlResult.fullpath[0] == '/')
 			location = hostPort.first + ":" + hostPort.second +  parseUrlResult.fullpath;
 		else
 			location = parseUrlResult.fullpath;
-		std::cout << "location : " << location << std::endl;
 		return redirectResponse(location);
 	}
 	else if (parseUrlResult.statusCode != 200)

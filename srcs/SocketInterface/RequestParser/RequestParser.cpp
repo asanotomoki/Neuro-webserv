@@ -7,7 +7,7 @@ RequestParser::RequestParser(Config *config) : _config(config){};
 
 RequestParser::~RequestParser(){};
 
-HttpRequest RequestParser::parse(const std::string &request, bool isChunked, const std::string &port)
+HttpRequest RequestParser::parse(const std::string &request, bool isChunked, const std::string &port, const std::string& sessionId)
 {
     HttpRequest httpRequest;
     httpRequest.isCgi = false;
@@ -71,6 +71,20 @@ HttpRequest RequestParser::parse(const std::string &request, bool isChunked, con
         else
         {
             httpRequest.hostname = value;
+        }
+    }
+    if (header.find("Cookie:") != std::string::npos)
+    {
+        // valueを取得して、引数のsessionIdと比較する
+        std::string value = httpRequest.headers["Cookie"];
+        // 不要なホワイトスペースをトリムする
+        value.erase(0, value.find_first_not_of(" \n\r\t"));
+        value.erase(value.find_last_not_of(" \n\r\t") + 1);
+        // valueから"sessionId="を削除する
+        value.erase(0, 10);
+        if (value != sessionId) {
+            httpRequest.statusCode = 401;
+            return httpRequest;
         }
     }
 

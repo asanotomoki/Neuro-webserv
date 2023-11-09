@@ -40,8 +40,7 @@ std::string redirectResponse(std::string location)
 }
 
 std::string successResponse(std::string fileContent, std::string contentType,
-							const std::string &statusCode, std::string postLocation = "",
-							std::string sessionId)
+					const std::string &statusCode, std::string sessionId, std::string postLocation = "")
 {
 	std::string message = "OK";
 	if (statusCode == "201")
@@ -128,7 +127,7 @@ std::string CoreHandler::getMethod(const std::string &fullpath, const LocationCo
 	}
 	std::string contentType = getContentType(fullpath);
 
-	std::string response = successResponse(fileContent, contentType, "200");
+	std::string response = successResponse(fileContent, contentType, "200", sessionId);
 
 	return response;
 }
@@ -139,7 +138,7 @@ std::string CoreHandler::postMethod(const std::string &body, const std::string &
 	ProcessResult result = dataProcessor.processPostData(body, url, _serverContext);
 	if (result.statusCode != 201)
 		return errorResponse(result.statusCode, result.message, sessionId, _serverContext);
-	std::string response = successResponse(result.message, "text/html", "201", result.location, sessionId);
+	std::string response = successResponse(result.message, "text/html", "201", sessionId, result.location);
 	return response;
 }
 
@@ -151,7 +150,7 @@ std::string CoreHandler::deleteMethod(const std::string &fullpath, const std::st
 		std::cout << "DELETE FAILED\n";
 		return errorResponse(404, "Not Found", sessionId, _serverContext);
 	}
-	std::string response = successResponse("DELETE SUCCESS", "text/html", "204", fullpath, sessionId);
+	std::string response = successResponse("DELETE SUCCESS", "text/html", "204", sessionId, fullpath);
 	return response;
 }
 
@@ -168,7 +167,7 @@ std::string CoreHandler::processRequest(HttpRequest httpRequest,
 										const std::pair<std::string, std::string> &hostPort,
 										const std::string& sessionId)
 {
-
+	std::cout << "sessionId: " << sessionId << std::endl; 
 	// httpRequest.urlが"/"で終わっていない場合に、"/"を追加
 	if (httpRequest.url[httpRequest.url.size() - 1] != '/')
 	{

@@ -13,7 +13,7 @@
 // _client -> clientFdをキーにして、RequestBufferを格納する
 
 SocketInterface::SocketInterface(Config *config)
-	: _config(config), _numClients(0)
+	: _config(config), _numClients(0), _sessionId("")
 {
 	_numPorts = _config->getPorts().size();
 	createSockets(_config->getPorts());
@@ -112,7 +112,6 @@ RequestBuffer initRequestBuffer(int fd)
 	client.isRequestFinished = false;
 	client.request = "";
 	client.response = "";
-	client.sessionId = generateSessionId(5);
 	return client;
 }
 
@@ -121,10 +120,7 @@ std::string SocketInterface::getErrorPage(int status, const std::pair<std::strin
 	ServerContext serverContext = _config->getServerContext(hostAndPort.second, hostAndPort.first);
 	std::string errorPage = serverContext.getErrorPage(status);
 	if (errorPage == "")
-	{
-		std::cout << " default Error Page " << std::endl;
 		return (default_error_page(status));
-	}
 	else
 	{
 		std::cout << " original Error Page " << std::endl;
@@ -212,7 +208,7 @@ void SocketInterface::execReadRequest(pollfd &pollfd, RequestBuffer &client)
 HttpRequest SocketInterface::parseRequest(std::string request, RequestBuffer &client)
 {
 	RequestParser parser(_config);
-	HttpRequest req = parser.parse(request, client.isChunked, client.hostAndPort.second);
+	HttpRequest req = parser.parse(request, client.isChunked, client.hostAndPort.second, _sessionId);
 	return req;
 }
 
@@ -335,6 +331,7 @@ void SocketInterface::execParseRequest(pollfd &pollfd, RequestBuffer &client, st
 		client.isRequestFinished = false;
 		client.request = "";
 		pollfd.events = POLLOUT;
+		_sessionId = generateSessionId(5);
 	}
 	else
 	{
@@ -381,7 +378,7 @@ void SocketInterface::execCoreHandler(pollfd &pollFd, RequestBuffer &client)
 {
 	CoreHandler coreHandler(_config->getServerContext(client.hostAndPort.second, client.hostAndPort.first));
 	client.lastAccessTime = getNowTime();
-	client.response = coreHandler.processRequest(client.httpRequest, client.hostAndPort, client.sessionId);
+	client.response = coreHandler.processRequest(client.httpRequest, client.hostAndPort, _sessionId);
 	pollFd.events = POLLOUT;
 	client.state = WRITE_RESPONSE;
 }

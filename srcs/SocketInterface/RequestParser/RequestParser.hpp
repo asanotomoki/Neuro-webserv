@@ -22,7 +22,8 @@ struct HttpRequest {
 class RequestParser
 {
 public:
-    HttpRequest parse(const std::string &request, bool isChunked, const std::string &client);
+    HttpRequest parse(const std::string &request, bool isChunked, const std::string &client,
+                        const std::string& sessionId);
     RequestParser(Config *config);
     ~RequestParser();
 

@@ -61,7 +61,6 @@ struct RequestBuffer
     std::pair<std::string, std::string> hostAndPort;
     bool isClosed;
     std::time_t lastAccessTime;
-    std::string sessionId;
 };
 
 
@@ -84,6 +83,7 @@ private:
     std::vector<int> _delIndex;
     int _numPorts;
     int _numClients;
+    std::string _sessionId;
 
     // buffer
     std::map<int, RequestBuffer> _clients;

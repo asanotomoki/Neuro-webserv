@@ -103,6 +103,7 @@ std::string SocketInterface::getErrorPage(int status, const std::pair<std::strin
 {
 	ServerContext serverContext = _config->getServerContext(hostAndPort.second, hostAndPort.first);
 	std::string errorPage = serverContext.getErrorPage(status);
+
 	if (errorPage == "")
 	{
 		std::cout << " default Error Page " << std::endl;
@@ -390,10 +391,11 @@ void SocketInterface::execCgi(pollfd &pollFd, RequestBuffer &client) // client�
 	int fd = result.fd;
 	pollfd cgi = createClient(fd, WAIT_CGI_CHILD);
 	_clients[fd].clientFd = pollFd.fd; // clientのpollFdをcgiに渡す
-
 	_clients[fd].cgiPid = result.pid;
+	_clients[fd].hostAndPort = client.hostAndPort;
 	client.cgiPid = result.pid;
 	client.cgiFd = cgi.fd; // 削除時にpollFdを削除するために必要
+
 	pollFd.events = POLLOUT;
 	client.state = WAIT_CGI;
 }
@@ -505,10 +507,17 @@ void SocketInterface::execWaitCgiChild(pollfd &pollFd, RequestBuffer &client)
 	}
 	if (status != 0)
 	{
-		_clients.at(client.clientFd).state = WRITE_REQUEST_ERROR;
-		_clients.at(client.clientFd).httpRequest.statusCode = 500;
-		_clients.at(client.clientFd).response = getErrorPage(500, client.hostAndPort);
-		client.state = WAIT_CGI;
+		try
+		{
+			_clients.at(client.clientFd).state = WRITE_REQUEST_ERROR;
+			_clients.at(client.clientFd).httpRequest.statusCode = 500;
+			_clients.at(client.clientFd).response = getErrorPage(500, client.hostAndPort);
+			client.state = WAIT_CGI;
+		}
+		catch (std::exception &e)
+		{
+			;
+		}
 		return;
 	}
 	client.state = READ_CGI;

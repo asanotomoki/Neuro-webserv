@@ -136,11 +136,11 @@ ParseUrlResult CoreHandler::parseUrl(std::string url)
 		result.query.erase(result.query.size() - 1, 1);
 	}	
 	// home directory
-	if (tokens[0] == "/") {
+	tokens[0].erase(0, 1);
+	if (tokens[0] == "") {
 		parseHomeDirectory(url, result);
 		return result;
 	}
-	tokens[0].erase(0, 1);
 	// cgi-bin
 	std::vector<std::string> path_tokens = split(tokens[0], '/');
 	result.directory = "/" + path_tokens[0] + "/";

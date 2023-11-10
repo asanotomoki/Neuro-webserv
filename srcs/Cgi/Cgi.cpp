@@ -152,7 +152,10 @@ Cgi::Cgi(HttpRequest &req, ServerContext &server_context) : _request(req), _meth
     std::string exec = this->_parseUrlCgiResult.command;
     this->_executable = exec.c_str();
     this->_args.push_back(this->_executable);
-    this->_args.push_back(this->_parseUrlCgiResult.fullpath.c_str());
+	if (exec.compare(this->_parseUrlCgiResult.fullpath) != 0)
+	{
+    	this->_args.push_back(this->_parseUrlCgiResult.fullpath.c_str());
+	}
     if (pipe(this->pipe_stdin) < 0)
     {
         std::cerr << "pipe error" << std::endl;
